@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SIGNAL_TYPES, type Identity, type ProspectInput, type SenderProfile, type Signal, type SignalType, type Source } from "../../types";
+import { SIGNAL_TYPES, type Identity, type ProspectInput, type RunPitch, type SenderProfile, type Signal, type SignalType, type Source } from "../../types";
 import type { StageContext } from "../context";
 import { UNTRUSTED_DATA_RULE, wrapUntrusted } from "../sanitize";
 
@@ -15,6 +15,7 @@ const ExtractionOutput = z.object({
       relevance: z.number(),
       whyItMatters: z.string(),
       offerLink: z.string().nullable(),
+      offeringId: z.string().nullable(),
     }),
   ),
 });
@@ -28,13 +29,23 @@ Rules:
 - claim: one neutral sentence stating only what the quote supports. No embellishment, no numbers that aren't in the quote.
 - eventDate: when the event happened if the source states it (YYYY-MM-DD, YYYY-MM or YYYY), else null. Do not infer dates from today's date.
 - type: pick the most specific type. A funding round is "funding", a launch is "product_launch", a market entry is "expansion"; use "other" only for generic background (founding year, HQ, boilerplate product descriptions or marketing statistics).
-- relevance (0.0-1.0): how useful this is as an opening hook for THIS prospect, given their role and the seller's offering. Specific, role-relevant, actionable signals score high; generic company facts (founding year, HQ, boilerplate "about us") score below 0.3.
+- relevance (0.0-1.0): how useful this is as an opening hook for THIS prospect, given their role and the seller's offerings. Specific, role-relevant, actionable signals score high; generic company facts (founding year, HQ, boilerplate "about us") score below 0.3.
 - whyItMatters: one sentence, clearly an inference, linking the signal to the prospect's likely priorities and the seller's offering.
-- offerLink: one short sentence naming the specific problem this signal suggests that the seller's offering solves (signal → problem → offer). Use null when the signal is interesting but has no clear connection to the offering. Be strict: a real but unrelated signal gets null.
+- offerLink: one short sentence naming the specific problem this signal suggests that one of the seller's offerings solves (signal → problem → offer). Use null when the signal is interesting but has no clear connection to any offering. Be strict: a real but unrelated signal gets null.
+- offeringId: the id of the SELLER OFFERING that offerLink refers to (the single best fit), or null when offerLink is null or no offerings are listed.
 - Sources whose domain is "your document" are files the sales rep uploaded about this prospect (an account brief, CRM row or notes). They are trustworthy descriptions of the prospect: extract signals from them like any other source, quoting them verbatim.
 - Prefer quality over quantity: return at most 10 signals, and return an empty list if nothing qualifies. Never invent signals.`;
 
-export function buildExtractionPrompt(prospect: ProspectInput, identity: Identity, sender: SenderProfile, sources: Source[], today: string): string {
+/** The pitched offerings as the extractor sees them, with the ids it must link findings to. */
+export function offeringsBlock(pitch: RunPitch): string {
+  if (pitch.offerings.length === 0) return "SELLER OFFERINGS: (not set: judge relevance by general business significance for this role)";
+  return [
+    "SELLER OFFERINGS (link each finding to the single best fit by id):",
+    ...pitch.offerings.map((o) => `  [${o.id}] ${o.name} (${o.sectorName}): ${o.whatItDoes || "(no description)"}`),
+  ].join("\n");
+}
+
+export function buildExtractionPrompt(prospect: ProspectInput, identity: Identity, sender: SenderProfile, pitch: RunPitch, sources: Source[], today: string): string {
   return [
     `TODAY: ${today}`,
     `PROSPECT: ${identity.resolvedName ?? prospect.name ?? "(no specific person: research is about the company; only extract company signals)"}`,
@@ -43,8 +54,7 @@ export function buildExtractionPrompt(prospect: ProspectInput, identity: Identit
     identity.companyDescription ? `COMPANY DESCRIPTION: ${identity.companyDescription}` : "",
     "",
     `SELLER: ${sender.companyName || "(not set)"}`,
-    `SELLER OFFERING: ${sender.offering || "(not set: judge relevance by general business significance for this role)"}`,
-    `SELLER VALUE PROPOSITION: ${sender.valueProp || "(not set)"}`,
+    offeringsBlock(pitch),
     "",
     "SOURCES:",
     sources.map(wrapUntrusted).join("\n\n"),
@@ -89,12 +99,16 @@ export async function extractSignals(
     task: "extract_signals",
     effort: "medium",
     system: SYSTEM,
-    user: buildExtractionPrompt(prospect, identity, ctx.sender, sources, ctx.deps.now().toISOString().slice(0, 10)),
+    user: buildExtractionPrompt(prospect, identity, ctx.sender, ctx.pitch, sources, ctx.deps.now().toISOString().slice(0, 10)),
     schema: ExtractionOutput,
   });
   return output.signals.slice(0, 12).map((s, i) => {
     const type = inferSignalType(s.type, s.claim);
-    const noOfferLink = Boolean(ctx.sender.offering.trim()) && !s.offerLink?.trim();
+    const pitched = ctx.pitch.offerings;
+    const offerLink = s.offerLink?.trim() || null;
+    const noOfferLink = pitched.length > 0 && !offerLink;
+    // Only an offering that was actually pitched can be linked; with one offering there's nothing to choose.
+    const offeringId = !offerLink ? null : pitched.some((o) => o.id === s.offeringId) ? s.offeringId : pitched.length === 1 ? pitched[0].id : null;
     return {
     id: `G${i + 1}`,
     type,
@@ -107,7 +121,8 @@ export async function extractSignals(
     // however interesting (capped below the hook threshold). Without a seller offering there's nothing to link to.
     relevance: Number.isFinite(s.relevance) ? Math.min(type === "other" ? 0.5 : 1, noOfferLink ? UNLINKED_RELEVANCE_CAP : 1, Math.max(0, s.relevance)) : 0,
     whyItMatters: s.whyItMatters.trim(),
-    offerLink: s.offerLink?.trim() || null,
+    offerLink,
+    offeringId,
     status: "verified",
     statusReason: null,
     freshness: "unknown",

@@ -11,7 +11,7 @@ interface PlannedQuery {
 }
 
 /** Five targeted queries, one per signal family. Exported for tests. */
-export function planResearchQueries(identity: Identity, prospect: ProspectInput, now: Date): PlannedQuery[] {
+export function planResearchQueries(identity: Identity, prospect: ProspectInput, now: Date, offeringNames: string[] = []): PlannedQuery[] {
   const company = identity.resolvedCompany ?? prospect.company ?? "";
   const name = identity.resolvedName ?? prospect.name;
   const role = identity.resolvedRole ?? prospect.role ?? "";
@@ -24,6 +24,9 @@ export function planResearchQueries(identity: Identity, prospect: ProspectInput,
     { category: "person", query: { query: `"${name}" ${company} interview OR podcast OR keynote OR wrote`, maxResults: 5 } },
     { category: "priorities", query: { query: `${company} strategy priorities challenges ${year - 1} ${year}`, maxResults: 5 } },
   ];
+  // One search aimed at what's being pitched, so a relevant initiative isn't missed by the generic queries.
+  const topics = offeringNames.map((n) => n.trim()).filter(Boolean).slice(0, 3);
+  if (topics.length) plan.push({ category: "priorities", query: { query: `${company} ${topics.map((t) => `"${t}"`).join(" OR ")}`, maxResults: 5 } });
   // Without a named person there is no one to search interviews for; company-level research only.
   return name ? plan : plan.filter((p) => p.category !== "person");
 }
@@ -53,7 +56,7 @@ export async function research(
   prospect: ProspectInput,
   identitySources: Source[],
 ): Promise<ResearchResult> {
-  const planned = planResearchQueries(identity, prospect, ctx.deps.now());
+  const planned = planResearchQueries(identity, prospect, ctx.deps.now(), ctx.pitch.offerings.map((o) => o.name));
   const collector = new SourceCollector(identitySources);
   collector.rescore(identity.companyDomain);
 

@@ -106,6 +106,8 @@ const MIGRATIONS: ((db: Database.Database) => void)[] = [
   (db) => addColumn(db, "runs", "sent_json", "TEXT"),
   // 4: contact-list hold (opt-out or existing relationship)
   (db) => addColumn(db, "runs", "hold_json", "TEXT"),
+  // 5: the offerings a run pitches (snapshot of the sender profile's templates)
+  (db) => addColumn(db, "runs", "pitch_json", "TEXT"),
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

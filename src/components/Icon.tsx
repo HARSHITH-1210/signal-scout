@@ -19,6 +19,7 @@ const PATHS = {
   doc: "M4.5 2.5h7v11h-7zM6.5 5.5h3M6.5 8h3M6.5 10.5h2",
   mail: "M2.5 4h11v8h-11zM2.5 4.5l5.5 4 5.5-4",
   edit: "M10.5 3l2.5 2.5L6 12.5H3.5V10zM9 4.5l2.5 2.5",
+  contacts: "M6 7.5a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5ZM2 13c.6-2 2.1-3 4-3s3.4 1 4 3M10.5 3.2a2.2 2.2 0 0 1 0 4.1M12 10.2c1 .4 1.7 1.3 2 2.8",
 } as const;
 
 export type IconName = keyof typeof PATHS;

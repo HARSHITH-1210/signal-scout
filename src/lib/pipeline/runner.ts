@@ -12,6 +12,7 @@ import { draftConfidence, draftExpiresAt } from "./confidence";
 import { checkContactRules, type ContactSubject } from "./contacts";
 import { buildGuardInput, generateDraft, guardDraft } from "./stages/draft";
 import { generateRevision } from "./stages/revise";
+import { documentsForPitch, pitchOrDefault } from "./pitch";
 import { extractSignals } from "./stages/extractSignals";
 import { research } from "./stages/research";
 import { resolveIdentity } from "./stages/resolveIdentity";
@@ -76,10 +77,12 @@ class StageRunner {
     readonly runId: string,
     deps: PipelineDeps,
   ) {
+    const sender = repo.getSenderProfile();
     this.ctx = {
       runId,
       deps,
-      sender: repo.getSenderProfile(),
+      sender,
+      pitch: pitchOrDefault(repo.getRun(runId)?.pitch ?? null, sender),
       emit: (stage: StageName, status: StageStatus, message: string, detail?: Record<string, unknown>) =>
         repo.addEvent(runId, stage, status, message, detail),
     };
@@ -314,6 +317,11 @@ export async function runPipeline(runId: string, deps: PipelineDeps, mode: RunMo
   }
 }
 
+/** Company-wide seller documents plus those attached to the offerings this run pitches. */
+function sellerDocumentsFor(ctx: StageContext) {
+  return documentsForPitch(repo.listDocuments("sender"), ctx.sender, ctx.pitch).map((d) => ({ name: d.name, text: d.text }));
+}
+
 async function draftAndGuard(runner: StageRunner, kind: DraftKind) {
   const runId = runner.runId;
   const record = repo.getRun(runId)!;
@@ -328,7 +336,7 @@ async function draftAndGuard(runner: StageRunner, kind: DraftKind) {
       hook: kind === "personalised" ? record.hook : null,
       signals,
       sources,
-      sellerDocuments: repo.listDocuments("sender").map((d) => ({ name: d.name, text: d.text })),
+      sellerDocuments: sellerDocumentsFor(runner.ctx),
     }),
   );
   runner.done("draft", "succeeded", `Draft written (${generated.draft.body.split(/\s+/).length} words, ${plural(generated.draft.signalIdsUsed.length, "finding", "findings")} used)`);
@@ -380,15 +388,17 @@ export async function reviseRunDraft(
   });
   if (request.baseVersion !== current.version) return stale(current);
 
+  const sender = repo.getSenderProfile();
   const ctx: StageContext = {
     runId,
     deps,
-    sender: repo.getSenderProfile(),
+    sender,
+    pitch: pitchOrDefault(record.pitch, sender),
     emit: (stage, status, message, detail) => repo.addEvent(runId, stage, status, message, detail),
   };
   const signals = repo.listSignals(runId);
   const sources = repo.listSources(runId);
-  const sellerDocuments = repo.listDocuments("sender").map((d) => ({ name: d.name, text: d.text }));
+  const sellerDocuments = sellerDocumentsFor(ctx);
   const base = { kind: current.kind, prospect: record.prospect, identity: record.identity, hook: current.kind === "personalised" ? record.hook : null, signals, sources, sellerDocuments };
 
   try {

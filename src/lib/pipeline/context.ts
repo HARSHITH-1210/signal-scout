@@ -1,6 +1,6 @@
 import type { LlmProvider } from "../providers/llm";
 import type { SearchProvider, SearchResult } from "../providers/search";
-import type { SenderProfile, Source, SourceCategory, StageName, StageStatus } from "../types";
+import type { RunPitch, SenderProfile, Source, SourceCategory, StageName, StageStatus } from "../types";
 import { chunkText } from "../documents/parse";
 import { looksLikePromptInjection, sanitizeText } from "./sanitize";
 import { assessReliability, domainOf } from "./sourceReliability";
@@ -17,6 +17,8 @@ export interface StageContext {
   runId: string;
   deps: PipelineDeps;
   sender: SenderProfile;
+  /** The offerings this run pitches (empty: no offering set up, keep drafts general). */
+  pitch: RunPitch;
   emit: (stage: StageName, status: StageStatus, message: string, detail?: Record<string, unknown>) => void;
 }
 

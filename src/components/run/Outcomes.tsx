@@ -228,7 +228,7 @@ export function Held({ detail, onResumed }: { detail: RunDetail; onResumed: () =
             {busy ? "Starting…" : "Research anyway"}
           </button>
         )}
-        <span className="text-[13px] text-muted">Edit the list under Sender profile.</span>
+        <span className="text-[13px] text-muted">Edit the list under Contacts.</span>
       </div>
       {error && (
         <p role="alert" className="mt-3 text-sm text-specimen">

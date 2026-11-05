@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "./schema";
+import { pitchOrDefault, upgradeSenderProfile } from "../pipeline/pitch";
 import {
   STAGES,
   type Clarification,
@@ -16,6 +17,7 @@ import {
   type RunDetail,
   type RunDocument,
   type RunEvent,
+  type RunPitch,
   type RunStatus,
   type RunSummary,
   type SenderProfile,
@@ -47,6 +49,7 @@ interface RunRow {
   active_ms: number | null;
   sent_json: string | null;
   hold_json: string | null;
+  pitch_json: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -96,6 +99,8 @@ export interface RunRecord {
   activeMs: number;
   sent: SentRecord | null;
   hold: ContactHold | null;
+  /** Null on runs created before offerings existed. */
+  pitch: RunPitch | null;
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
@@ -118,20 +123,21 @@ function toRecord(row: RunRow): RunRecord {
     activeMs: row.active_ms ?? 0,
     sent: parseJson<SentRecord | null>(row.sent_json ?? null, null),
     hold: parseJson<ContactHold | null>(row.hold_json ?? null, null),
+    pitch: parseJson<RunPitch | null>(row.pitch_json ?? null, null),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     completedAt: row.completed_at,
   };
 }
 
-export function createRun(prospect: ProspectInput, documents: RunDocument[] = []): RunRecord {
+export function createRun(prospect: ProspectInput, documents: RunDocument[] = [], pitch: RunPitch | null = null): RunRecord {
   const id = randomUUID();
   const now = nowIso();
   getDb()
     .prepare(
-      `INSERT INTO runs (id, status, prospect_json, documents_json, created_at, updated_at) VALUES (?, 'queued', ?, ?, ?, ?)`,
+      `INSERT INTO runs (id, status, prospect_json, documents_json, pitch_json, created_at, updated_at) VALUES (?, 'queued', ?, ?, ?, ?, ?)`,
     )
-    .run(id, JSON.stringify(prospect), JSON.stringify(documents), now, now);
+    .run(id, JSON.stringify(prospect), JSON.stringify(documents), pitch ? JSON.stringify(pitch) : null, now, now);
   return getRun(id)!;
 }
 
@@ -389,6 +395,7 @@ export function getRunDetail(id: string, options: { forClient?: boolean } = {}):
   return {
     ...summarise(record),
     documents: record.documents,
+    pitch: pitchOrDefault(record.pitch, getSenderProfile()),
     approvedVersion: record.approvedVersion,
     sent: record.sent,
     hold: record.hold,
@@ -404,23 +411,43 @@ export function getRunDetail(id: string, options: { forClient?: boolean } = {}):
   };
 }
 
+/** A neutral example the rep should replace. */
 export const DEFAULT_SENDER_PROFILE: SenderProfile = {
   senderName: "Alex Morgan",
   senderRole: "Account Executive",
   companyName: "Ledgerline (example — edit in Settings)",
   companyWebsite: "",
-  offering:
-    "AI agents that take over repetitive finance-operations work: invoice processing, vendor onboarding checks and reconciliations, with a human approving every exception.",
-  valueProp:
-    "Finance teams close faster and absorb growth without adding headcount, because routine AP and onboarding work runs automatically with a full audit trail.",
-  callToAction: "Offer a 20-minute call to compare notes on how their team handles this today.",
+  defaultCta: "Offer a 20-minute call to compare notes on how their team handles this today.",
+  sectors: [
+    {
+      id: "ai-solutions",
+      name: "AI solutions",
+      offerings: [
+        {
+          id: "invoice-agents",
+          name: "Invoice-processing agents",
+          whatItDoes: "AI agents that capture, code and match supplier invoices, with a human approving every exception, so finance teams close faster without adding AP headcount.",
+          cta: "",
+          documentIds: [],
+        },
+        {
+          id: "vendor-onboarding",
+          name: "Vendor onboarding checks",
+          whatItDoes: "Automated checks on new vendors' tax, bank and compliance details before their first payment, so new suppliers are set up in days with fewer payment errors.",
+          cta: "",
+          documentIds: [],
+        },
+      ],
+    },
+  ],
 };
 
+/** The saved profile, upgraded from older versions; the example profile until the rep saves one. */
 export function getSenderProfile(): SenderProfile {
   const row = getDb().prepare(`SELECT value_json FROM settings WHERE key = 'sender_profile'`).get() as
     | { value_json: string }
     | undefined;
-  return row ? { ...DEFAULT_SENDER_PROFILE, ...(JSON.parse(row.value_json) as Partial<SenderProfile>) } : DEFAULT_SENDER_PROFILE;
+  return row ? upgradeSenderProfile(JSON.parse(row.value_json), DEFAULT_SENDER_PROFILE) : DEFAULT_SENDER_PROFILE;
 }
 
 export function saveSenderProfile(profile: SenderProfile): void {

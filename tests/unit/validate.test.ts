@@ -54,10 +54,20 @@ describe("validateClarification", () => {
 describe("validateSenderProfile", () => {
   it("accepts the default profile, blank or missing fields, and rejects overlong ones", () => {
     expect(validateSenderProfile(DEFAULT_SENDER_PROFILE).ok).toBe(true);
-    expect(validateSenderProfile({ ...DEFAULT_SENDER_PROFILE, offering: "  " })).toEqual({ ok: true, value: { ...DEFAULT_SENDER_PROFILE, offering: "" } });
-    expect(validateSenderProfile({}).ok).toBe(true);
+    expect(validateSenderProfile({ ...DEFAULT_SENDER_PROFILE, defaultCta: "  " })).toEqual({ ok: true, value: { ...DEFAULT_SENDER_PROFILE, defaultCta: "" } });
+    expect(validateSenderProfile({})).toMatchObject({ ok: true, value: { sectors: [] } });
     const r = validateSenderProfile({ ...DEFAULT_SENDER_PROFILE, senderName: "x".repeat(81) });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(Object.keys(r.errors)).toEqual(["senderName"]);
+  });
+
+  it("requires named sectors and offerings with ids unique across the profile", () => {
+    const offering = { id: "o1", name: "Agents", whatItDoes: "", cta: "", documentIds: [] };
+    const dup = validateSenderProfile({ sectors: [{ id: "s1", name: "AI", offerings: [offering] }, { id: "s2", name: "Data", offerings: [offering] }] });
+    expect(dup.ok).toBe(false);
+    if (!dup.ok) expect(dup.errors["sectors.1.offerings.0.id"]).toBe("Duplicate id");
+    const unnamed = validateSenderProfile({ sectors: [{ id: "s1", name: " ", offerings: [{ ...offering, name: "" }] }] });
+    if (!unnamed.ok) expect(Object.keys(unnamed.errors).sort()).toEqual(["sectors.0.name", "sectors.0.offerings.0.name"]);
+    else throw new Error("expected errors");
   });
 });
