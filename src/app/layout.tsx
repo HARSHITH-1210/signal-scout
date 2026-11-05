@@ -25,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         <header className="sticky top-0 z-30 flex items-center gap-3 bg-rail px-3 py-2 lg:h-screen lg:flex-col lg:items-center lg:gap-6 lg:px-0 lg:py-5">
-          <Link href="/" className="flex items-center gap-2 text-white" aria-label="Signal Scout home">
+          <Link href="/" className="flex shrink-0 items-center gap-2 text-white" aria-label="Signal Scout home">
             <Mark className="h-9 w-9" />
             <span className="sr-only">Signal Scout</span>
           </Link>

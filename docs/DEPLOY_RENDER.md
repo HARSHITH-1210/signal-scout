@@ -25,8 +25,10 @@ About 5 minutes, plus the demo runs:
 2. **Sender profile:** re-enter it, or drop your one-pager and click *Fill profile from this*, then **Save profile**. Keep the text in a note so you can paste it back in.
 3. **Seller documents:** drop them again if you use them.
 4. **Contact list:** paste your do-not-contact and relationship lines again, then **Save list**.
-5. **Gmail:** **Connect Gmail** again, then check *Send when I approve* (Google asks for consent again).
+5. **Gmail:** **Connect Gmail** again (it asks to send and to read headers, for the Outreach page), then check *Send when I approve* (Google asks for consent again).
 6. **Pre-run the demo prospects.** Free-model runs take about 5 minutes each, so start the happy path and edge cases about 30 minutes before the demo (`docs/DEMO_SCENARIOS.md`).
+
+The Outreach numbers reset too, since they come from the runs.
 
 What survives a reset: the API keys, the password and the Google settings (all Render environment variables).
 

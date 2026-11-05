@@ -133,7 +133,7 @@ export function NewRunForm() {
         setSubmitting(false);
         return;
       }
-      router.push("/");
+      router.push("/runs");
     } catch {
       setFormError("Couldn't reach the server. Check that it's running and try again.");
       setSubmitting(false);

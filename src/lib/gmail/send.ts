@@ -1,6 +1,6 @@
 import * as repo from "../db/repo";
 import type { GmailStatus, SentRecord } from "../types";
-import { GmailError, gmailConfigured, sendRaw } from "./client";
+import { canTrack, GmailError, gmailConfigured, sendRaw } from "./client";
 import { buildRawMessage, isSafeAddress } from "./mime";
 import { isExpired } from "../pipeline/confidence";
 import { checkContactRules } from "../pipeline/contacts";
@@ -12,6 +12,7 @@ export function gmailStatus(): GmailStatus {
     connected: Boolean(connection),
     email: connection?.email ?? null,
     autoSendOnApprove: connection?.autoSendOnApprove ?? false,
+    canTrack: connection ? canTrack(connection) : false,
   };
 }
 
@@ -53,13 +54,14 @@ export async function sendApprovedDraft(runId: string, version: number, to: stri
   if (!connection || !draft || draft.version !== version) throw new GmailError("The draft or the Gmail connection changed. Reload and try again.", "rejected");
   if (inFlight.has(runId)) throw new GmailError("This draft is being sent right now.", "rejected");
   inFlight.add(runId);
-  let messageId: string;
+  let sent: { id: string; threadId: string | null };
   try {
-    messageId = await sendRaw(connection, buildRawMessage({ from, to, subject: draft.subject, body: draft.body }));
+    sent = await sendRaw(connection, buildRawMessage({ from, to, subject: draft.subject, body: draft.body }));
   } finally {
     inFlight.delete(runId);
   }
-  const record: SentRecord = { to, from, version, messageId, sentAt: new Date().toISOString() };
+  const messageId = sent.id;
+  const record: SentRecord = { to, from, version, messageId, ...(sent.threadId ? { threadId: sent.threadId } : {}), sentAt: new Date().toISOString() };
   repo.updateRun(runId, { status: "sent", sent: record, error: null });
   repo.addEvent(runId, "guard", "succeeded", `Sent version ${version} to ${to} from ${from} via Gmail (message ${messageId}).`);
   return record;

@@ -186,6 +186,15 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
           <p className="acc mt-1 text-[12px]">
             from {sent.from}, {formatDateTime(sent.sentAt)}, Gmail id {sent.messageId}
           </p>
+          {sent.tracking && (
+            <p className="mt-1 text-[13px]">
+              {{ pending: "Waiting for delivery", delivered: "Delivered, no reply yet", replied: "They replied", auto_reply: "Auto-reply received", bounced: "Bounced: the address was rejected" }[sent.tracking.state]}
+              {sent.tracking.eventAt ? ` (${formatDateTime(sent.tracking.eventAt)})` : ""}.{" "}
+              <Link href="/" className="font-bold underline">
+                Outreach
+              </Link>
+            </p>
+          )}
         </div>
       )}
 

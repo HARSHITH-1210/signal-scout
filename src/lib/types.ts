@@ -297,7 +297,22 @@ export interface SentRecord {
   from: string;
   version: number;
   messageId: string;
+  /** Gmail thread of the sent message; replies and bounces land here. Absent on older sends. */
+  threadId?: string;
   sentAt: string;
+  /** Last reply/bounce check. Absent until the Outreach page first checks. */
+  tracking?: DeliveryTracking;
+}
+
+/**
+ * What Gmail's thread shows after a send. Gmail has no delivery receipts, so "delivered" is inferred:
+ * sent, and no bounce arrived. Opens are deliberately not tracked (that needs a tracking pixel).
+ */
+export interface DeliveryTracking {
+  state: "pending" | "delivered" | "replied" | "auto_reply" | "bounced";
+  checkedAt: string;
+  /** When the first human reply (or the bounce / auto-reply) arrived. */
+  eventAt: string | null;
 }
 
 /** Public view of the Gmail connection (never includes tokens). */
@@ -306,6 +321,8 @@ export interface GmailStatus {
   connected: boolean;
   email: string | null;
   autoSendOnApprove: boolean;
+  /** Header-only read access, for reply and bounce tracking. False on connections made before it existed. */
+  canTrack: boolean;
 }
 
 /** The rep's own list: people and companies not to contact, and existing relationships to check first. */

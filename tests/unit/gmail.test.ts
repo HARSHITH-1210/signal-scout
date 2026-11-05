@@ -99,7 +99,7 @@ describe("Gmail OAuth client", () => {
 
   it("refreshes an expired access token before sending", async () => {
     repo.saveGmailConnection({ email: "rep@example.com", refreshToken: "1//refresh", accessToken: "ya29.old", accessTokenExpiresAt: Date.now() - 1000, connectedAt: "", autoSendOnApprove: true });
-    expect(await sendRaw(repo.getGmailConnection()!, "raw")).toBe("msg-123");
+    expect(await sendRaw(repo.getGmailConnection()!, "raw")).toEqual({ id: "msg-123", threadId: null });
     expect(calls[0].url).toContain("/token");
     expect(new Headers(calls[1].init.headers).get("authorization")).toBe("Bearer ya29.fresh-access-token");
     expect(repo.getGmailConnection()?.accessToken).toBe("ya29.fresh-access-token");
