@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    ports:
+      # Bound to this machine only; there is no login. Use "3000:3000" to expose it on your network.
+      - "127.0.0.1:3000:3000"
+    # Put ANTHROPIC_API_KEY and TAVILY_API_KEY in .env (never commit it). See .env.example.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATA_DIR: /app/data
+    volumes:
+      - signal-scout-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  signal-scout-data:

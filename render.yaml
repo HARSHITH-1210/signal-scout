@@ -1,0 +1,33 @@
+# Render Blueprint for a free demo deployment. Data is NOT persistent on the free plan:
+# every deploy, restart or spin-down starts from an empty database (see docs/DEPLOY_RENDER.md).
+services:
+  - type: web
+    name: signal-scout
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: false # a deploy wipes the demo data; deploy deliberately
+    envVars:
+      # Required: the app is public on Render, so it must have a password.
+      - key: APP_PASSWORD
+        sync: false
+      - key: APP_USERNAME
+        value: demo
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: LLM_PROVIDER
+        value: openrouter
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Optional Gmail sending. The redirect must be https://<your-service>.onrender.com/api/gmail/callback
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false

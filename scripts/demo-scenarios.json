@@ -1,0 +1,80 @@
+[
+  {
+    "key": "happy",
+    "title": "Happy path: finance-relevant leader at a well-covered company",
+    "prospect": {
+      "name": "Eric Glyman",
+      "company": "Ramp",
+      "role": "Co-founder and CEO",
+      "companyWebsite": "ramp.com"
+    },
+    "expect": [
+      "awaiting_review"
+    ]
+  },
+  {
+    "key": "happy-backup",
+    "title": "Happy path backup",
+    "prospect": {
+      "name": "Patrick Collison",
+      "company": "Stripe",
+      "role": "CEO",
+      "companyWebsite": "stripe.com"
+    },
+    "expect": [
+      "awaiting_review"
+    ]
+  },
+  {
+    "key": "ambiguous",
+    "title": "Edge case: ambiguous prospect (only a company name that several firms share)",
+    "prospect": {
+      "company": "Mercury",
+      "role": "CFO"
+    },
+    "expect": [
+      "needs_clarification"
+    ]
+  },
+  {
+    "key": "ambiguous-backup",
+    "title": "Edge case backup: a common name at a shared company name",
+    "prospect": {
+      "name": "Michael Chen",
+      "company": "Mercury",
+      "role": "CFO"
+    },
+    "expect": [
+      "needs_clarification",
+      "insufficient_research"
+    ]
+  },
+  {
+    "key": "insufficient",
+    "title": "Edge case: insufficient research (plausible but fictional small business)",
+    "prospect": {
+      "name": "Dana Whitfield",
+      "company": "Quietbrook Ceramics",
+      "role": "Owner",
+      "companyWebsite": "quietbrookceramics.com"
+    },
+    "expect": [
+      "insufficient_research"
+    ]
+  },
+  {
+    "key": "stale",
+    "title": "Edge case: stale information (company shut down in 2020)",
+    "prospect": {
+      "name": "Jeffrey Katzenberg",
+      "company": "Quibi",
+      "role": "Founder",
+      "notes": "The short-form video app that shut down in 2020"
+    },
+    "expect": [
+      "insufficient_research",
+      "awaiting_review",
+      "needs_clarification"
+    ]
+  }
+]

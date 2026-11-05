@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/* Herbarium Accession: botanical rail, sage mounting board, label-paper panels, determination slips. */
+@theme {
+  --color-rail: #1f3b2d;
+  --color-rail-strong: #16291f;
+  --color-rail-ink: #dfe8dc;
+  --color-rail-muted: #9fb5a5;
+  --color-board: #e8eee6;
+  --color-board-deep: #dde5da;
+  --color-paper: #fbfbf7;
+  --color-ink: #1c2420;
+  --color-ink-soft: #46544b;
+  --color-muted: #56645b;
+  --color-rule: #cfd9cc;
+  --color-rule-soft: #e1e8de;
+  --color-action: #1f3b2d;
+  --color-action-strong: #142a1f;
+
+  /* Determination states */
+  --color-det: #2c3e66; /* verified */
+  --color-det-soft: #e4e9f3;
+  --color-specimen: #b3362b; /* rejected / failed */
+  --color-specimen-soft: #f7e6e3;
+  --color-ochre: #7d5410; /* stale / needs attention (darkened from #b8862b for AA text) */
+  --color-ochre-soft: #f5ecd8;
+  --color-ok: #2e6b43;
+  --color-ok-soft: #e3efe5;
+  --color-quote: #eef2ea;
+
+  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-spline-mono), ui-monospace, monospace;
+
+  --radius-panel: 12px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-board);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-det) 22%, white);
+  color: var(--color-ink);
+}
+
+input,
+textarea {
+  caret-color: var(--color-rail);
+}
+
+html {
+  accent-color: var(--color-rail);
+  scrollbar-color: var(--color-rule) transparent;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-det);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Accession data: ids, dates, scores, domains. Tabular figures so columns line up. */
+.acc {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The determination slip: a small pinned label stating the verdict on a finding. */
+.slip {
+  font-family: var(--font-mono);
+  background: var(--color-paper);
+  border: 1px solid currentColor;
+  box-shadow: 0 6px 14px -6px rgb(31 59 45 / 0.28);
+}
+
+/* A changed row or stage holds its state colour briefly so a watcher notices it. */
+@keyframes settle {
+  from {
+    background-color: color-mix(in oklab, var(--color-det) 14%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+.just-changed {
+  animation: settle 2.4s ease-out;
+}
+
+@keyframes stamp {
+  from {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.stamp-in {
+  animation: stamp 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes pulse-ring {
+  0% {
+    stroke-opacity: 0.9;
+    r: 13;
+  }
+  100% {
+    stroke-opacity: 0;
+    r: 22;
+  }
+}
+.pulse-ring {
+  animation: pulse-ring 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+.flow {
+  animation: flow 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .just-changed,
+  .stamp-in,
+  .pulse-ring,
+  .flow {
+    animation: none;
+  }
+}

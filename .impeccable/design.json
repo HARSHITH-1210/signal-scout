@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-05T12:03:25.521884Z",
+  "title": "Design System: Signal Scout",
+  "extensions": {
+    "colorMeta": {
+      "rail": {
+        "role": "primary",
+        "displayName": "Rail Green",
+        "canonical": "#1f3b2d",
+        "tonalRamp": [
+          "#09120e",
+          "#101e16",
+          "#16291f",
+          "#1f3b2d",
+          "#62766c",
+          "#9aa7a0",
+          "#c7ceca",
+          "#e9ebea"
+        ]
+      },
+      "det": {
+        "role": "secondary",
+        "displayName": "Determination Blue-Black",
+        "canonical": "#2c3e66",
+        "tonalRamp": [
+          "#0d131f",
+          "#161f33",
+          "#1f2b47",
+          "#2c3e66",
+          "#6b7894",
+          "#a0a8ba",
+          "#cacfd9",
+          "#eaecf0"
+        ]
+      },
+      "specimen": {
+        "role": "tertiary",
+        "displayName": "Specimen Red",
+        "canonical": "#b3362b",
+        "tonalRamp": [
+          "#36100d",
+          "#5a1b16",
+          "#7d261e",
+          "#b3362b",
+          "#ca726b",
+          "#dda5a0",
+          "#eccdca",
+          "#f7ebea"
+        ]
+      },
+      "ochre": {
+        "role": "tertiary",
+        "displayName": "Ochre",
+        "canonical": "#7d5410",
+        "tonalRamp": [
+          "#261905",
+          "#3e2a08",
+          "#583b0b",
+          "#7d5410",
+          "#a48758",
+          "#c4b293",
+          "#ded4c3",
+          "#f2eee7"
+        ]
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Check Green",
+        "canonical": "#2e6b43",
+        "tonalRamp": [
+          "#0e2014",
+          "#173622",
+          "#204b2f",
+          "#2e6b43",
+          "#6d977b",
+          "#a1bcaa",
+          "#cbdad0",
+          "#eaf0ec"
+        ]
+      },
+      "board": {
+        "role": "neutral",
+        "displayName": "Mounting Board",
+        "canonical": "#e8eee6",
+        "tonalRamp": [
+          "#464745",
+          "#747773",
+          "#a2a7a1",
+          "#e8eee6",
+          "#eff3ee",
+          "#f5f7f4",
+          "#f9fbf9",
+          "#fdfdfc"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Label Paper",
+        "canonical": "#fbfbf7",
+        "tonalRamp": [
+          "#4b4b4a",
+          "#7e7e7c",
+          "#b0b0ad",
+          "#fbfbf7",
+          "#fcfcf9",
+          "#fdfdfb",
+          "#fefefd",
+          "#fffffe"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1c2420",
+        "tonalRamp": [
+          "#080b0a",
+          "#0e1210",
+          "#141916",
+          "#1c2420",
+          "#606663",
+          "#999c9b",
+          "#c6c8c7",
+          "#e8e9e9"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "page-title": {
+        "displayName": "Page title",
+        "purpose": "One per page: the prospect or page name."
+      },
+      "hook-claim": {
+        "displayName": "Hook claim",
+        "purpose": "The mounted hook's claim on the run view."
+      },
+      "accession": {
+        "displayName": "Accession data",
+        "purpose": "Ids, dates, scores, domains and verbatim quotes only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "slip",
+        "value": "0 6px 14px -6px rgb(31 59 45 / 0.28)",
+        "purpose": "The determination slip only; nothing else lifts."
+      }
+    ],
+    "motion": [
+      {
+        "name": "stamp",
+        "value": "260ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "A ledger node settling into its new state."
+      },
+      {
+        "name": "settle",
+        "value": "2.4s ease-out",
+        "purpose": "A changed row or stage holds its highlight until noticed."
+      },
+      {
+        "name": "flow",
+        "value": "0.9s linear infinite",
+        "purpose": "The spine segment feeding the running stage."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      },
+      {
+        "name": "2xl",
+        "value": "1536px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action per region: Start research, Approve vN, Save profile.",
+      "html": "<button class=\"ds-btn-primary\">Approve v1</button>",
+      "css": ".ds-btn-primary{background:var(--color-rail,#1f3b2d);color:#fff;min-height:44px;padding:0 20px;border:0;border-radius:8px;font:700 14px 'Atkinson Hyperlegible',sans-serif;transition:background .2s}.ds-btn-primary:hover{background:#16291f}.ds-btn-primary:focus-visible{outline:2px solid #2c3e66;outline-offset:2px}.ds-btn-primary:disabled{opacity:.45;cursor:not-allowed}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary actions: Save edits, Search again, Choose file.",
+      "html": "<button class=\"ds-btn-secondary\">Save edits</button>",
+      "css": ".ds-btn-secondary{background:transparent;color:#1f3b2d;border:1px solid #1f3b2d;min-height:44px;padding:0 16px;border-radius:8px;font:700 14px 'Atkinson Hyperlegible',sans-serif}.ds-btn-secondary:hover{background:#e8eee6}.ds-btn-secondary:focus-visible{outline:2px solid #2c3e66;outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled field with hint or error under it.",
+      "html": "<label class=\"ds-field\"><span>Company</span><input placeholder=\"Northwind Freight\"></label>",
+      "css": ".ds-field{display:block;font:700 14px 'Atkinson Hyperlegible',sans-serif;color:#1c2420}.ds-field input{display:block;width:100%;margin-top:6px;padding:10px 12px;border:1px solid #cfd9cc;border-radius:8px;background:#fbfbf7;font:400 15px 'Atkinson Hyperlegible',sans-serif}.ds-field input:focus{outline:none;border-color:#2c3e66;box-shadow:0 0 0 3px rgb(44 62 102 / .3)}"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge-verified",
+      "description": "Run and finding state; colour encodes state only.",
+      "html": "<span class=\"ds-badge\">Ready for review</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;background:#e4e9f3;color:#2c3e66;font:700 12px 'Atkinson Hyperlegible',sans-serif}"
+    },
+    {
+      "name": "Label-paper Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "The only container in the system.",
+      "html": "<section class=\"ds-panel\"><h2>Identity</h2><p>Priya Raman, VP Finance at Northwind Freight</p></section>",
+      "css": ".ds-panel{background:#fbfbf7;border:1px solid #cfd9cc;border-radius:12px;padding:20px;font:400 15px/1.5 'Atkinson Hyperlegible',sans-serif;color:#1c2420}.ds-panel h2{margin:0 0 12px;font-size:15px;font-weight:700}"
+    },
+    {
+      "name": "Determination Slip",
+      "kind": "custom",
+      "refersTo": "slip",
+      "description": "Signature: the verdict pinned to a finding.",
+      "html": "<span class=\"ds-slip\"><strong>det. verified</strong>quote matched in S5 + 1 more</span>",
+      "css": ".ds-slip{display:inline-block;padding:4px 8px;border:1px solid currentColor;border-radius:2px;background:#fbfbf7;color:#2c3e66;font:400 11px/1.25 'Spline Sans Mono',monospace;box-shadow:0 6px 14px -6px rgb(31 59 45 / .28);transform:rotate(2deg)}.ds-slip strong{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.03em}"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-rail",
+      "description": "Icon-and-label rail; the active item is a dark tile.",
+      "html": "<nav class=\"ds-rail\"><a aria-current=\"page\">Runs</a><a>New run</a><a>Sender</a></nav>",
+      "css": ".ds-rail{display:flex;flex-direction:column;gap:8px;width:84px;padding:20px 12px;background:#1f3b2d}.ds-rail a{display:flex;justify-content:center;min-height:44px;align-items:center;border-radius:8px;color:#9fb5a5;font:400 11px 'Atkinson Hyperlegible',sans-serif;text-decoration:none}.ds-rail a:hover{color:#dfe8dc}.ds-rail a[aria-current]{background:#16291f;color:#fff;font-weight:700}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Herbarium Accession",
+    "overview": "Every finding is a collected specimen: mounted with a collection label (source, date, accession id, reliability) and a pinned determination slip stating its verdict. The world lends type, palette, density and that signature move; controls stay standard.",
+    "keyCharacteristics": [
+      "Verbatim quote under every claim",
+      "Determination slips encode verdicts",
+      "Live accession-ledger pipeline",
+      "Label-paper panels on a sage mounting board"
+    ],
+    "rules": [
+      {
+        "name": "The determination rule",
+        "body": "Blue-black verified, red rejected or failed, ochre stale or attention. Never decorative.",
+        "section": "colors"
+      },
+      {
+        "name": "Mono is evidence",
+        "body": "Mono only for data and verbatim quotes.",
+        "section": "typography"
+      },
+      {
+        "name": "Only the slip lifts",
+        "body": "Panels are flat with borders; the determination slip is the single raised element.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Put the verbatim quote under every claim.",
+      "Label inference as inference.",
+      "Keep controls standard with 44px primary targets."
+    ],
+    "donts": [
+      "No eyebrows or kickers above headings.",
+      "No glyph icons; use the authored SVG set.",
+      "No panel shadows.",
+      "No grid or stripe textures on the board."
+    ]
+  }
+}
