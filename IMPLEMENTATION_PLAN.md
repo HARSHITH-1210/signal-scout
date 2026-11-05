@@ -173,3 +173,9 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - Recency windows per signal type; swap test; obviousness penalty for funding/award; congratulations and assumption-as-fact checks; draft expiry by hook type.
   - Tests: `tests/pipeline/edge-cases.test.ts`. Not live-tested.
 - v8 (demo hosting): `render.yaml` (free Docker web service), Basic-auth app password via `APP_PASSWORD` in `src/proxy.ts` (`/api/health` exempt for UptimeRobot), Render hostname trusted automatically. The Docker image was built and run locally with Render's settings (port 10000, 512 MB): auth, host guard, CSRF and a PDF upload all work. Not yet run on Render itself.
+- v9 (Outreach dashboard):
+  - New `/outreach` page: tiles, funnel, action queue, sent log with Gmail links, sends per day, and replies by hook type (`src/lib/outreach/stats.ts`, pure and unit-tested).
+  - Added the `gmail.metadata` scope (user-approved) for header-only reply, bounce and auto-reply detection on threads the app sent (`src/lib/gmail/tracking.ts`). Sends now store `threadId`.
+  - Checks run on page open and on *Check replies*, throttled to once every 5 minutes. Replied and bounced are final states.
+  - Existing connections must reconnect once to grant the new scope.
+  - Tests: `tests/unit/outreach.test.ts`. Not verified live: needs a real Gmail reply and bounce.

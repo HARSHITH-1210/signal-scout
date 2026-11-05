@@ -3,8 +3,11 @@ import { z } from "zod";
 import { getConfig, redact } from "../config";
 import { getGmailConnection, saveGmailConnection, type GmailConnection } from "../db/repo";
 
-// Send-only: the app can send as the user but can never read their mailbox.
-export const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send", "openid", "email"];
+// Send, plus header-only reads (gmail.metadata) to see replies and bounces on threads the app sent.
+// Never a scope that can read message bodies.
+export const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
+export const GMAIL_METADATA_SCOPE = "https://www.googleapis.com/auth/gmail.metadata";
+export const GMAIL_SCOPES = [GMAIL_SEND_SCOPE, GMAIL_METADATA_SCOPE, "openid", "email"];
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const REVOKE_URL = "https://oauth2.googleapis.com/revoke";
@@ -103,7 +106,8 @@ export function emailFromIdToken(idToken: string | undefined): string | null {
 export async function connectWithCode(code: string): Promise<GmailConnection> {
   const { clientId, clientSecret, redirectUri } = requireConfig();
   const tokens = await tokenRequest({ grant_type: "authorization_code", code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri });
-  if (!tokens.scope?.split(" ").includes(GMAIL_SCOPES[0]))
+  const granted = tokens.scope?.split(" ") ?? [];
+  if (!granted.includes(GMAIL_SEND_SCOPE))
     throw new GmailError("Send permission wasn't granted. Connect again and allow Signal Scout to send email.", "rejected");
   if (!tokens.refresh_token) throw new GmailError("Google didn't return a refresh token. Remove Signal Scout's access in your Google account and connect again.", "rejected");
   const email = emailFromIdToken(tokens.id_token);
@@ -116,12 +120,17 @@ export async function connectWithCode(code: string): Promise<GmailConnection> {
     accessTokenExpiresAt: Date.now() + tokens.expires_in * 1000,
     connectedAt: new Date().toISOString(),
     autoSendOnApprove: previous?.autoSendOnApprove ?? true,
+    scopes: granted,
   };
   saveGmailConnection(connection);
   return connection;
 }
 
-async function accessToken(connection: GmailConnection): Promise<string> {
+export function canTrack(connection: GmailConnection): boolean {
+  return Boolean(connection.scopes?.includes(GMAIL_METADATA_SCOPE));
+}
+
+export async function accessToken(connection: GmailConnection): Promise<string> {
   if (connection.accessToken && connection.accessTokenExpiresAt && connection.accessTokenExpiresAt - Date.now() > 60_000) return connection.accessToken;
   const { clientId, clientSecret } = requireConfig();
   const tokens = await tokenRequest({ grant_type: "refresh_token", refresh_token: connection.refreshToken, client_id: clientId, client_secret: clientSecret });
@@ -129,8 +138,8 @@ async function accessToken(connection: GmailConnection): Promise<string> {
   return tokens.access_token;
 }
 
-/** Sends one prepared message. Returns Gmail's message id. Not retried: a retry could send twice. */
-export async function sendRaw(connection: GmailConnection, raw: string): Promise<string> {
+/** Sends one prepared message. Returns Gmail's message and thread ids. Not retried: a retry could send twice. */
+export async function sendRaw(connection: GmailConnection, raw: string): Promise<{ id: string; threadId: string | null }> {
   const token = await accessToken(connection);
   const res = await fetchImpl(SEND_URL, {
     method: "POST",
@@ -139,13 +148,18 @@ export async function sendRaw(connection: GmailConnection, raw: string): Promise
   }).catch((e: unknown) => {
     throw new GmailError(`Couldn't reach Gmail; the email may not have been sent. Check your Sent folder before retrying. (${redact(e instanceof Error ? e.message : String(e))})`, "unavailable");
   });
-  const json = (await res.json().catch(() => ({}))) as { id?: string; error?: { message?: string } };
+  const json = (await res.json().catch(() => ({}))) as { id?: string; threadId?: string; error?: { message?: string } };
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) throw new GmailError("Gmail refused the send. Reconnect Gmail in Sender profile.", "auth");
     throw new GmailError(`Gmail couldn't send the email (${redact(json.error?.message ?? `HTTP ${res.status}`)}).`, "rejected");
   }
   if (!json.id) throw new GmailError("Gmail accepted the request but returned no message id. Check your Sent folder.", "unavailable");
-  return json.id;
+  return { id: json.id, threadId: json.threadId ?? null };
+}
+
+/** For tracking requests: the same fetch tests substitute. */
+export function gmailFetch(input: string, init: RequestInit): Promise<Response> {
+  return fetchImpl(input, init);
 }
 
 /** Revokes Google access (best effort) and forgets the connection. */

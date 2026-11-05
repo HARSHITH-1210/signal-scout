@@ -514,6 +514,8 @@ export interface GmailConnection {
   accessTokenExpiresAt: number | null;
   connectedAt: string;
   autoSendOnApprove: boolean;
+  /** Scopes Google granted. Absent on connections saved before tracking existed (send-only). */
+  scopes?: string[];
 }
 
 export function getGmailConnection(): GmailConnection | null {
@@ -542,4 +544,12 @@ export function saveContactRules(rules: ContactRules): void {
   getDb()
     .prepare(`INSERT INTO settings (key, value_json) VALUES ('contact_rules', ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json`)
     .run(JSON.stringify(rules));
+}
+
+/** Every run with a sent record, newest send first (for tracking and the Outreach page). */
+export function listSentRuns(): { runId: string; sent: SentRecord }[] {
+  const rows = getDb().prepare(`SELECT id, sent_json FROM runs WHERE sent_json IS NOT NULL`).all() as { id: string; sent_json: string }[];
+  return rows
+    .map((r) => ({ runId: r.id, sent: JSON.parse(r.sent_json) as SentRecord }))
+    .sort((a, b) => b.sent.sentAt.localeCompare(a.sent.sentAt));
 }

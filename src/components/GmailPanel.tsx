@@ -35,7 +35,7 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
         </p>
       ) : !status.connected ? (
         <>
-          <p className="mt-1 text-sm text-ink-soft">Connect a Gmail account to send an approved draft from the run page. Signal Scout asks only for permission to send, not to read your mail.</p>
+          <p className="mt-1 text-sm text-ink-soft">Connect a Gmail account to send an approved draft from the run page. Signal Scout asks to send, and to read message headers (sender, time) of threads it sent, to track replies and bounces. It never reads email bodies.</p>
           <a href="/api/gmail/connect" className={`${secondary} mt-4`}>
             Connect Gmail
           </a>
@@ -46,6 +46,15 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
             <Icon name="check" />
             Connected as <span className="acc text-ink">{status.email}</span>
           </p>
+          {!status.canTrack && (
+            <p className="mt-3 text-sm text-ochre">
+              Reply and bounce tracking is off for this connection.{" "}
+              <a href="/api/gmail/connect" className="font-bold underline">
+                Reconnect Gmail
+              </a>{" "}
+              to allow header-only access.
+            </p>
+          )}
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm">
             <input
               type="checkbox"

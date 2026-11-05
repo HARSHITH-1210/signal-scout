@@ -1,8 +1,10 @@
-import { listRuns } from "@/lib/db/repo";
-import { RunDashboard } from "@/components/RunDashboard";
+import { OutreachDashboard } from "@/components/OutreachDashboard";
+import { gmailStatus } from "@/lib/gmail/send";
+import { outreachStats } from "@/lib/outreach/load";
 
 export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
-  return <RunDashboard initialRuns={listRuns()} />;
+/** Home: the Outreach dashboard. The runs list lives at /runs. */
+export default function OutreachPage() {
+  return <OutreachDashboard initial={outreachStats()} gmail={gmailStatus()} />;
 }

@@ -27,7 +27,7 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
     if (!window.confirm("Delete this run and everything it collected? This can't be undone.")) return;
     setDeleting(true);
     const result = await send(`/api/runs/${detail.id}`, "DELETE");
-    if (result.ok) router.push("/");
+    if (result.ok) router.push("/runs");
     else {
       setDeleting(false);
       window.alert(result.error);
@@ -37,7 +37,7 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/" className="inline-flex min-h-11 items-center gap-1 text-sm text-ink-soft hover:text-ink">
+        <Link href="/runs" className="inline-flex min-h-11 items-center gap-1 text-sm text-ink-soft hover:text-ink">
           <Icon name="arrowLeft" className="h-3.5 w-3.5" />
           All runs
         </Link>

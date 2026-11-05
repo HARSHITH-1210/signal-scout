@@ -77,12 +77,19 @@ Keys are read only on the server. They are never sent to the browser or written 
      - **Editing and approval:** *Save edits* creates a new version. *Approve vN* approves that exact version; if someone else changed the draft in the meantime, you're shown the newer one instead. *New version* reuses the same research.
      - **Sending (optional, Gmail).** Connect Gmail under *Sender profile*. With *Send when I approve* on, the button becomes *Approve & send*: after a confirmation showing To and From, the exact approved version is emailed from your account and the run becomes **Sent**, with a receipt (recipient, time, Gmail message id). *Approve only* still records the review without sending. If a send fails, the run stays approved, the reason is shown, and *Send now* retries.
        - The recipient comes from the prospect's *Email* field (or a CSV email column) and can be changed in the draft's *To* field. Emails are never researched or shown to the model.
-       - Safeguards: nothing sends without a click and a confirmation; a draft with blocking check issues, without a valid recipient, or not the latest version is refused before it's approved; a version is sent at most once and a sent draft is read-only; sends are never retried automatically. The app asks only for the `gmail.send` scope, so it can't read your mailbox. Tokens stay in the server's database and are revoked on *Disconnect*.
+       - Safeguards: nothing sends without a click and a confirmation; a draft with blocking check issues, without a valid recipient, or not the latest version is refused before it's approved; a version is sent at most once and a sent draft is read-only; sends are never retried automatically. The app asks for `gmail.send` plus `gmail.metadata` (headers only: sender, time, subject), so it can see replies and bounces on threads it sent but never reads email bodies. Tokens stay in the server's database and are revoked on *Disconnect*.
      - **Deleting:** *Delete run* removes the run and everything it collected.
    - **Needs clarification.** Pick the right candidate, each with an evidence link, or add details and search again.
    - **Not enough signal.** You see what was searched and why nothing qualified. You can ask for a *role-based draft*, which is labelled as such and makes no claims about the prospect.
    - **Failed.** You see the error. Earlier findings are kept, and you can retry the draft or rerun from the start.
-5. **Dashboard.** All runs with status (and the live stage), hook, verified findings out of sources, active time and start time. You can filter by status or search, and it auto-refreshes while runs are active. A row whose status changes flashes once.
+5. **Outreach (home page).** What happened after approval:
+   - **Tiles:** needs review (and expiring soon), sent, delivered, replied (with reply rate) and bounced.
+   - **Funnel:** researched → draft ready → approved → sent → delivered → replied.
+   - **Needs your action:** failed sends, bad-news holds, drafts to review by use-by date, clarifications, relationship holds and expired drafts.
+   - **Sent emails:** each with its status and a link to the Gmail thread.
+   - **Charts:** sends per day, and replies by hook type.
+   - **How tracking works:** on page open, or with *Check replies*, it reads only the headers of threads it sent, throttled to once every 5 minutes. "Delivered" means no bounce was seen, because Gmail has no delivery receipts. Opens aren't tracked.
+6. **Runs** (`/runs`). All runs with status (and the live stage), hook, verified findings out of sources, active time and start time. You can filter by status or search, and it auto-refreshes while runs are active. A row whose status changes flashes once.
 
 ---
 
@@ -156,6 +163,8 @@ The pipeline runs in-process on the Node server, two runs at a time. Each stage 
 | `GET` / `DELETE` | `/api/documents?scope=` / `/api/documents/:id` | List or remove uploaded documents |
 | `POST` | `/api/runs/batch` | `{documentId, rowIndexes}`: one run per CSV row, at most 10 |
 | `DELETE` | `/api/runs/:id` | Delete a finished run and everything it collected |
+| `GET` | `/api/outreach` | Outreach numbers from stored runs (no Gmail calls) |
+| `POST` | `/api/outreach/check` | `{force?}`: check sent threads for replies and bounces (headers only), then return the numbers |
 | `GET` | `/api/health` | Which keys are configured (booleans only) |
 
 ---

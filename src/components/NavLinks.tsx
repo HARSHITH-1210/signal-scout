@@ -5,13 +5,15 @@ import { usePathname } from "next/navigation";
 import { Icon, type IconName } from "./Icon";
 
 const LINKS: { href: string; label: string; icon: IconName }[] = [
-  { href: "/", label: "Runs", icon: "runs" },
+  { href: "/", label: "Outreach", icon: "mail" },
+  { href: "/runs", label: "Runs", icon: "runs" },
   { href: "/runs/new", label: "New run", icon: "plus" },
   { href: "/settings", label: "Sender", icon: "sender" },
 ];
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/" || (pathname.startsWith("/runs/") && pathname !== "/runs/new");
+  if (href === "/") return pathname === "/";
+  if (href === "/runs") return pathname === "/runs" || (pathname.startsWith("/runs/") && pathname !== "/runs/new");
   return pathname.startsWith(href);
 }
 
@@ -19,7 +21,7 @@ function isActive(pathname: string, href: string) {
 export function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="flex gap-1 lg:flex-col lg:gap-2">
+    <nav aria-label="Main" className="flex min-w-0 gap-1 overflow-x-auto lg:flex-col lg:gap-2 lg:overflow-visible">
       {LINKS.map((link) => {
         const active = isActive(pathname, link.href);
         return (
