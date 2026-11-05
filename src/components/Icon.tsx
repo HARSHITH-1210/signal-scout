@@ -18,6 +18,7 @@ const PATHS = {
   chevron: "M6 4l4 4-4 4",
   doc: "M4.5 2.5h7v11h-7zM6.5 5.5h3M6.5 8h3M6.5 10.5h2",
   mail: "M2.5 4h11v8h-11zM2.5 4.5l5.5 4 5.5-4",
+  edit: "M10.5 3l2.5 2.5L6 12.5H3.5V10zM9 4.5l2.5 2.5",
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -17,7 +17,7 @@ The repo started empty, and no project `README.md` existed. Requirements come fr
 | R5 | Never fabricate facts or sources | deterministic evidence-quote verification (`verify.ts`); guard claim check | `verify.test.ts`, `guard.test.ts` |
 | R6 | Extract signals, assess relevance, select hook, explain why | `stages/extractSignals.ts`, `scoring.ts`, `stages/rank.ts` | `scoring.test.ts`, pipeline happy path |
 | R7 | Concise, natural draft: signal + role link + value prop + CTA, no flattery | `stages/draft.ts` + `guard.ts` | `guard.test.ts`, pipeline |
-| R8 | Editable draft; explicit human review before anything is sent | draft versions + `approve` endpoint; optional Gmail send only on a confirmed approval (`src/lib/gmail/`, `checkSendable` before approving) | `tests/unit/api.test.ts`, `tests/unit/gmail.test.ts`, UI check |
+| R8 | Editable draft; explicit human review before anything is sent | draft versions + `approve` endpoint; "Edit with AI" (`stages/revise.ts`, `reviseRunDraft`) rewrites from the rep's instruction as a new, fully re-guarded version; optional Gmail send only on a confirmed approval (`src/lib/gmail/`, `checkSendable` before approving) | `tests/unit/api.test.ts`, `tests/unit/revise.test.ts`, `tests/unit/gmail.test.ts`, UI check |
 | R9 | Live run view with per-stage status | `run_events` table + SSE `/api/runs/[id]/events` + `StageTimeline` | pipeline event assertions, manual UI check |
 | R10 | Dashboard: history, statuses, timestamps, outputs; survives refresh | SQLite persistence, `/` dashboard | manual + repo test |
 | R11 | Clear handling of failures, missing info, research limits | typed `PipelineError`, terminal statuses, limitations panel | pipeline failure tests |
@@ -179,3 +179,9 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - Checks run on page open and on *Check replies*, throttled to once every 5 minutes. Replied and bounced are final states.
   - Existing connections must reconnect once to grant the new scope.
   - Tests: `tests/unit/outreach.test.ts`. Not verified live: needs a real Gmail reply and bounce.
+- v10 (Edit with AI, user-requested):
+  - The draft panel has *Edit with AI*: the rep types an instruction (rewrite, tone, length, grammar, a different finding) or a question (about the sources, findings or wording). `POST /api/runs/:id/draft/revise` calls the configured LLM (task `revise_draft`, no tools, zod-validated output) synchronously.
+  - The model sees verified, non-sensitive findings, excerpts of non-suspicious sources wrapped as untrusted data (for answering questions only; facts that appear only there may not enter the email), the seller profile and material, and the editor's current text including unsaved edits.
+  - A changed email is saved as a new version (`author: "ai"`, `notes.revision` with the instruction and the AI's note) after the full guard, claim audit included; approval is reset. A question returns an answer and saves nothing. Finding ids the model wasn't shown are dropped.
+  - Facts the rep states in the instruction count as the rep's own, like their notes, in the claim audit. Expiry stays with the research. A failed call leaves the draft unchanged; a version saved meanwhile in another tab wins (409).
+  - Tests: `tests/unit/api.test.ts` (rewrite, question, unsupported claim flagged, stale version, model failure, empty instruction), `tests/unit/revise.test.ts` (no bad news, rejected findings or suspicious sources in the prompt; role-based drafts get no findings). Not live-tested: no API key was configured.

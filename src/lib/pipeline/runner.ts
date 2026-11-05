@@ -4,13 +4,14 @@ import { PipelineError, ProviderError } from "../errors";
 import { AnthropicProvider, type LlmProvider, type LlmRequest } from "../providers/llm";
 import { OpenRouterProvider } from "../providers/openrouter";
 import { TavilyProvider, type SearchProvider, type SearchQuery } from "../providers/search";
-import type { Clarification, DraftKind, Identity, ProspectInput, RunDocument, StageName, StageStatus } from "../types";
+import type { Clarification, Draft, DraftKind, Identity, ProspectInput, RunDocument, StageName, StageStatus } from "../types";
 import type { PipelineDeps, StageContext } from "./context";
 import { plural, selectHook } from "./scoring";
 import { badNewsHold } from "./sensitive";
 import { draftConfidence, draftExpiresAt } from "./confidence";
 import { checkContactRules, type ContactSubject } from "./contacts";
-import { generateDraft, guardDraft } from "./stages/draft";
+import { buildGuardInput, generateDraft, guardDraft } from "./stages/draft";
+import { generateRevision } from "./stages/revise";
 import { extractSignals } from "./stages/extractSignals";
 import { research } from "./stages/research";
 import { resolveIdentity } from "./stages/resolveIdentity";
@@ -350,6 +351,83 @@ async function draftAndGuard(runner: StageRunner, kind: DraftKind) {
     guard.issues.length ? `${plural(errors, "issue", "issues")} to fix and ${plural(warnings, "suggestion", "suggestions")} for the reviewer` : "No issues found. Ready for human review.",
   );
   runner.finish({ status: "awaiting_review", error: null, currentStage: "guard", approvedVersion: null });
+}
+
+export type ReviseResult =
+  | { ok: true; draft: Draft; reply: string; changed: boolean }
+  | { ok: false; status: 404 | 409 | 502; error: string; latest?: Draft };
+
+/**
+ * Applies a rep's free-text instruction to the latest draft with the LLM (or answers their question).
+ * A changed email is saved as a new version after the full guard, claim audit included, and needs a
+ * fresh approval. Nothing is sent. A failed call leaves the draft untouched.
+ */
+export async function reviseRunDraft(
+  runId: string,
+  request: { instruction: string; subject: string; body: string; baseVersion: number },
+  deps: PipelineDeps = queue().depsFactory(),
+): Promise<ReviseResult> {
+  const record = repo.getRun(runId);
+  if (!record) return { ok: false, status: 404, error: "Run not found." };
+  const current = repo.latestDraft(runId);
+  if (!current) return { ok: false, status: 409, error: "There is no draft to edit yet." };
+  if (record.status !== "awaiting_review" && record.status !== "approved") return { ok: false, status: 409, error: "Drafts can only be edited once the run is ready for review." };
+  const stale = (latest: Draft): ReviseResult => ({
+    ok: false,
+    status: 409,
+    error: `This draft changed while you were editing (now version ${latest.version}). Review the newer version first.`,
+    latest,
+  });
+  if (request.baseVersion !== current.version) return stale(current);
+
+  const ctx: StageContext = {
+    runId,
+    deps,
+    sender: repo.getSenderProfile(),
+    emit: (stage, status, message, detail) => repo.addEvent(runId, stage, status, message, detail),
+  };
+  const signals = repo.listSignals(runId);
+  const sources = repo.listSources(runId);
+  const sellerDocuments = repo.listDocuments("sender").map((d) => ({ name: d.name, text: d.text }));
+  const base = { kind: current.kind, prospect: record.prospect, identity: record.identity, hook: current.kind === "personalised" ? record.hook : null, signals, sources, sellerDocuments };
+
+  try {
+    const revision = await generateRevision(ctx, { ...base, instruction: request.instruction, subject: request.subject, body: request.body });
+    const changed = revision.outcome === "revision" && Boolean(revision.subject && revision.body) && (revision.subject !== current.subject || revision.body !== current.body);
+    if (!changed) {
+      ctx.emit("draft", "succeeded", "Answered your question; the draft is unchanged.");
+      return { ok: true, draft: current, reply: revision.reply, changed: false };
+    }
+
+    // Facts the rep states in the instruction count as theirs, like their notes; the audit still checks everything else.
+    const repNotes = [record.prospect.notes, `Rep's edit instruction: ${request.instruction}`].filter(Boolean).join(" | ");
+    const draft = { subject: revision.subject, body: revision.body, signalIdsUsed: revision.signalIdsUsed };
+    const guard = await guardDraft(ctx, draft, buildGuardInput({ ...base, repNotes }, draft.signalIdsUsed));
+
+    // The model call takes a while; refuse to overwrite a version saved meanwhile in another tab.
+    const latest = repo.latestDraft(runId);
+    if (latest && latest.version !== current.version) return stale(latest);
+
+    const hookSignal = current.kind === "personalised" ? signals.find((s) => s.id === record.hook?.signalId) : undefined;
+    // The expiry stays with the research: rewording doesn't make old news fresh.
+    const notes = {
+      alternateSubjects: current.notes?.alternateSubjects ?? [],
+      rationale: current.notes?.rationale ?? [],
+      ...(current.notes?.expiresAt ? { expiresAt: current.notes.expiresAt } : {}),
+      confidence: draftConfidence(current.kind, hookSignal, record.identity, guard.issues),
+      revision: { instruction: request.instruction, reply: revision.reply, fromVersion: current.version },
+    };
+    const saved = repo.addDraft(runId, { ...draft, kind: current.kind, author: "ai", guard, recipientHint: current.recipientHint, notes });
+    // Any change after approval needs a fresh approval.
+    repo.updateRun(runId, { status: "awaiting_review", approvedVersion: null, error: null });
+    ctx.emit("guard", guard.issues.length ? "warning" : "succeeded", `Version ${saved.version} rewritten from your instruction`);
+    return { ok: true, draft: saved, reply: revision.reply, changed: true };
+  } catch (error) {
+    const message = userMessage(error, "draft");
+    logError(`revise draft for run ${runId}`, error);
+    ctx.emit("draft", "warning", `Edit with AI failed, the draft is unchanged: ${message}`);
+    return { ok: false, status: 502, error: `The draft wasn't changed: ${message}` };
+  }
 }
 
 // ---------------------------------------------------------------------------

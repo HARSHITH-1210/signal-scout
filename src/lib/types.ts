@@ -229,6 +229,15 @@ export interface DraftNotes {
   confidence?: DraftConfidence;
   /** After this the draft must be re-researched, not sent. */
   expiresAt?: string;
+  /** Set when this version was rewritten by the AI from the rep's instruction. */
+  revision?: DraftRevision;
+}
+
+/** The rep's instruction behind an AI revision, and the AI's note on what it changed. */
+export interface DraftRevision {
+  instruction: string;
+  reply: string;
+  fromVersion: number;
 }
 
 export interface Draft {

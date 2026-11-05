@@ -5,6 +5,7 @@ import { runPipeline, setDepsFactory } from "@/lib/pipeline/runner";
 import { POST as createRunRoute, GET as listRunsRoute } from "@/app/api/runs/route";
 import { POST as draftAction, PUT as editDraft } from "@/app/api/runs/[id]/draft/route";
 import { POST as clarify } from "@/app/api/runs/[id]/clarify/route";
+import { POST as reviseDraftRoute } from "@/app/api/runs/[id]/draft/revise/route";
 import { DELETE as deleteRunRoute } from "@/app/api/runs/[id]/route";
 import { POST as uploadDocument } from "@/app/api/documents/route";
 import { POST as batchRuns } from "@/app/api/runs/batch/route";
@@ -107,6 +108,74 @@ describe("draft review endpoints", () => {
 
   it("returns 404 for unknown runs", async () => {
     expect((await draftAction(req({ action: "approve" }), params("nope"))).status).toBe(404);
+  });
+});
+
+describe("edit with AI (POST /api/runs/[id]/draft/revise)", () => {
+  const REVISED = "Hi Priya,\n\nSaw the Series B news about expanding cross-border lanes.\n\nCurious how your team is handling carrier invoices today?\n\nBest,\nSam";
+
+  async function readyRun(revise: (r: { user: string; system: string }) => unknown, checkClaims?: () => unknown) {
+    const run = repo.createRun(NORTHWIND);
+    await runPipeline(run.id, deps(northwindSearch(), northwindLlm()));
+    const llm = northwindLlm({ revise_draft: revise, ...(checkClaims ? { check_claims: checkClaims } : {}) });
+    setDepsFactory(() => deps(northwindSearch(), llm));
+    return { id: run.id, llm };
+  }
+  const revise = (id: string, instruction: string, baseVersion = 1) => {
+    const d = repo.latestDraft(id)!;
+    return reviseDraftRoute(req({ instruction, subject: d.subject, body: d.body, baseVersion }), params(id));
+  };
+
+  it("saves a rewrite as a new AI version, re-runs the full guard and resets approval", async () => {
+    const { id, llm } = await readyRun((r) => {
+      expect(r.user).toContain("INSTRUCTION FROM THE REP:\nMake it shorter");
+      expect(r.user).toContain("<untrusted_source");
+      return { outcome: "revision", reply: "Cut it to four lines.", subject: "Cross-border lanes", body: REVISED, signalIdsUsed: ["G1", "G999"] };
+    });
+    await draftAction(req({ action: "approve", version: 1 }), params(id));
+    const res = await revise(id, "Make it shorter");
+    expect(res.status).toBe(200);
+    const { draft, changed, reply } = await res.json();
+    expect(changed).toBe(true);
+    expect(reply).toBe("Cut it to four lines.");
+    expect(draft).toMatchObject({ version: 2, author: "ai", body: REVISED, signalIdsUsed: ["G1"] }); // unknown ids dropped
+    expect(draft.notes.revision).toMatchObject({ instruction: "Make it shorter", fromVersion: 1 });
+    expect(draft.guard.claims).not.toBeNull(); // the claim audit ran, unlike a manual edit
+    expect(llm.callsFor("check_claims")[0].user).toContain("Rep's edit instruction: Make it shorter");
+    expect(repo.getRun(id)).toMatchObject({ status: "awaiting_review", approvedVersion: null });
+  });
+
+  it("answers a question without creating a version", async () => {
+    const { id } = await readyRun(() => ({ outcome: "answer", reply: "G1 says they raised a Series B.", subject: "x", body: "y", signalIdsUsed: [] }));
+    const res = await revise(id, "What did the funding source say?");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ changed: false, reply: "G1 says they raised a Series B." });
+    expect(repo.listDrafts(id)).toHaveLength(1);
+  });
+
+  it("flags an unsupported fact the AI introduces instead of hiding it", async () => {
+    const { id } = await readyRun(
+      () => ({ outcome: "revision", reply: "Added the office.", subject: "Austin", body: REVISED + "\n\nP.S. Congrats on the Austin office.", signalIdsUsed: [] }),
+      () => ({ claims: [{ text: "Congrats on the Austin office", kind: "prospect_fact", supportedBy: null }] }),
+    );
+    const { draft } = await (await revise(id, "Add something about their new office")).json();
+    expect(draft.guard.issues.map((i: { code: string }) => i.code)).toContain("unsupported_claim");
+    expect(draft.notes.confidence.level).not.toBe("high");
+  });
+
+  it("refuses a stale base version and keeps the draft when the model fails", async () => {
+    const { id } = await readyRun(() => new Error("model down"));
+    expect((await revise(id, "Shorter", 7)).status).toBe(409);
+    const failed = await revise(id, "Shorter");
+    expect(failed.status).toBe(502);
+    expect((await failed.json()).error).toMatch(/wasn't changed/);
+    expect(repo.listDrafts(id)).toHaveLength(1);
+    expect(repo.getRun(id)!.status).toBe("awaiting_review");
+  });
+
+  it("rejects an empty instruction", async () => {
+    const { id } = await readyRun(() => ({}));
+    expect((await revise(id, "   ")).status).toBe(400);
   });
 });
 

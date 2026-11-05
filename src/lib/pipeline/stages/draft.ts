@@ -62,7 +62,8 @@ Grounding rules:
 - Do not mention any news, event, funding, hiring, launch, quote or other specific fact about the prospect or their company. Only their name, company name, role, and the rep's own notes may appear.
 - postscript must be null. signalIdsUsed must be an empty array.`;
 
-function findingBlock(signal: Signal, source: Source | undefined, label: string): string {
+/** One finding as the drafter sees it: the quote is authoritative, the rest is context. */
+export function findingBlock(signal: Signal, source: Source | undefined, label: string): string {
   const date = signal.eventDate ?? source?.publishedDate ?? null;
   return [
     `${label} ${signal.id} (${signal.type}, about the ${signal.about}; ${source?.origin === "prospect_document" ? "from the rep's own document" : `from ${source?.domain ?? "unknown"}`})`,
@@ -78,7 +79,8 @@ function findingBlock(signal: Signal, source: Source | undefined, label: string)
 
 const NOT_SET = "(not set: keep this general and make no specific claims)";
 
-function senderBlock(sender: SenderProfile): string {
+/** The seller profile as prompt text. */
+export function senderBlock(sender: SenderProfile): string {
   const who = [sender.senderName, sender.senderRole && sender.companyName ? `${sender.senderRole} at ${sender.companyName}` : sender.senderRole || sender.companyName]
     .filter(Boolean)
     .join(", ");
@@ -102,7 +104,8 @@ export function sellerMaterialBlock(docs: SellerDocument[], query: string): stri
   return `SELLER MATERIAL (the seller's own documents; use only for claims about the seller):\n${blocks.slice(0, 5).join("\n\n")}`;
 }
 
-function prospectBlock(prospect: ProspectInput, identity: Identity | null): string {
+/** The prospect (name, role, company, rep notes) as prompt text. */
+export function prospectBlock(prospect: ProspectInput, identity: Identity | null): string {
   const name = identity?.resolvedName ?? prospect.name;
   return [
     `PROSPECT: ${name ?? "NOT SPECIFIED. Write to the leader at this company most relevant to the seller's offering, greet with \"Hi there,\" and never invent a name."}`,
@@ -234,21 +237,34 @@ export async function generateDraft(
       rationale: output.rationale.map((s) => s.trim()).filter(Boolean).slice(0, 5),
     },
   };
-  const recipientNamed = Boolean(input.identity?.resolvedName ?? input.prospect.name);
+  return { draft, guardInput: buildGuardInput({ ...input, sellerDocuments: sellerDocs }, signalIdsUsed) };
+}
+
+/** What the guard needs to check a draft that relies on `signalIdsUsed`. */
+export function buildGuardInput(
+  input: {
+    kind: DraftKind;
+    prospect: ProspectInput;
+    identity: Identity | null;
+    hook: Hook | null;
+    signals: Signal[];
+    sources: Source[];
+    sellerDocuments: SellerDocument[];
+    repNotes?: string | null;
+  },
+  signalIdsUsed: string[],
+): GuardInput {
   // Recency wording is checked against every stale finding the draft relies on, not only the hook.
   const staleUsed = input.signals.some((s) => signalIdsUsed.includes(s.id) && s.freshness === "stale");
   return {
-    draft,
-    guardInput: {
-      signals: input.signals,
-      sources: input.sources,
-      staleHook: Boolean(input.hook?.staleCaveat) || staleUsed,
-      recipientNamed,
-      sellerDocuments: sellerDocs,
-      repNotes: input.prospect.notes ?? null,
-      hookSignalId: input.kind === "personalised" ? (input.hook?.signalId ?? null) : null,
-      prospectNames: prospectNames(input.prospect, input.identity),
-    },
+    signals: input.signals,
+    sources: input.sources,
+    staleHook: Boolean(input.hook?.staleCaveat) || staleUsed,
+    recipientNamed: Boolean(input.identity?.resolvedName ?? input.prospect.name),
+    sellerDocuments: input.sellerDocuments,
+    repNotes: input.repNotes !== undefined ? input.repNotes : (input.prospect.notes ?? null),
+    hookSignalId: input.kind === "personalised" ? (input.hook?.signalId ?? null) : null,
+    prospectNames: prospectNames(input.prospect, input.identity),
   };
 }
 

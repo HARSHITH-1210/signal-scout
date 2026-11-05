@@ -28,6 +28,9 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
   const [openedAt] = useState(() => Date.now());
   const [to, setTo] = useState(detail.sent?.to ?? detail.prospect.email ?? "");
   const titleId = useId();
+  const [aiOpen, setAiOpen] = useState(false);
+  const [instruction, setInstruction] = useState("");
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
 
   if (!draft) return null;
   const dirty = subject !== draft.subject || body !== draft.body;
@@ -90,6 +93,29 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
     if (!result.ok) return setMessage({ tone: "bad", text: result.error });
     router.push(`/runs/${(result.data as { id: string }).id}`);
   }
+  /** Asks the AI to apply the rep's instruction; a changed email comes back as a new, fully re-checked version. */
+  async function reviseWithAi() {
+    const text = instruction.trim();
+    if (!text) return;
+    setBusy("revise");
+    setMessage(null);
+    setAiAnswer(null);
+    const result = await send(`/api/runs/${detail.id}/draft/revise`, "POST", { instruction: text, subject, body, baseVersion: draft!.version });
+    setBusy(null);
+    if (!result.ok) {
+      setMessage({ tone: "bad", text: result.error });
+      if ((result.data as { latest?: unknown } | undefined)?.latest) onChanged();
+      return;
+    }
+    const data = result.data as { changed: boolean; reply: string };
+    if (data.changed) {
+      // The new version remounts this editor; its AI note is shown from the saved draft.
+      onChanged();
+    } else {
+      setAiAnswer(data.reply);
+    }
+  }
+
   const regenerate = () =>
     act("regenerate", () => send(`/api/runs/${detail.id}/draft`, "POST", { action: draft.kind === "role_based" ? "role_based" : "regenerate" }), "Writing a new version from the same research.", onResumed);
 
@@ -120,7 +146,7 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
           )}
         </div>
         <span className="acc text-muted">
-          v{draft.version} by {draft.author === "ai" ? "Signal Scout" : "you"}, {formatDateTime(draft.createdAt)}
+          v{draft.version} by {draft.notes?.revision ? "AI, from your instruction" : draft.author === "ai" ? "Signal Scout" : "you"}, {formatDateTime(draft.createdAt)}
           {expiresAt && !sent && !expired ? `, use by ${formatDateTime(expiresAt).split(",")[0]}` : ""}
         </span>
       </div>
@@ -195,6 +221,17 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
               </Link>
             </p>
           )}
+        </div>
+      )}
+
+      {draft.notes?.revision && !sent && (
+        <div className="border-b border-rule bg-det-soft px-5 py-3 text-sm text-det">
+          <p className="font-bold">Rewritten from your instruction on v{draft.notes.revision.fromVersion}</p>
+          <p className="acc mt-0.5 text-[12px]">“{draft.notes.revision.instruction}”</p>
+          <p className="mt-1.5">
+            <span className="font-bold">AI note:</span> {draft.notes.revision.reply}
+          </p>
+          <p className="mt-1 text-[13px]">Read it before approving. The checks below were re-run on this version.</p>
         </div>
       )}
 
@@ -287,6 +324,19 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
             </button>
           )}
           {!sent && (
+            <button
+              type="button"
+              onClick={() => setAiOpen((v) => !v)}
+              aria-expanded={aiOpen}
+              aria-controls={`${titleId}-ai`}
+              disabled={busy !== null && busy !== "revise"}
+              className={`${btn} border border-rail text-rail hover:bg-board`}
+            >
+              <Icon name="edit" />
+              Edit with AI
+            </button>
+          )}
+          {!sent && (
             <button onClick={save} disabled={!dirty || busy !== null} className={`${btn} border border-rail text-rail hover:bg-board`}>
               {busy === "save" ? "Saving…" : "Save edits"}
             </button>
@@ -302,6 +352,46 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
             </button>
           )}
         </div>
+        {aiOpen && !sent && (
+          <div id={`${titleId}-ai`} className="mt-3 rounded-lg border border-rule bg-board/60 p-3">
+            <label className="block text-sm">
+              <span className="font-bold">What should change?</span>
+              <textarea
+                value={instruction}
+                onChange={(e) => setInstruction(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    if (busy === null) void reviseWithAi();
+                  }
+                }}
+                rows={3}
+                maxLength={2000}
+                placeholder="e.g. Make it shorter and warmer. Lead with the hiring news instead. Fix the grammar. Or ask: what did the source say about their expansion?"
+                aria-describedby={`${titleId}-ai-help`}
+                className="mt-1.5 w-full rounded-lg border border-rule bg-white px-3 py-2.5 text-[15px] focus:border-det focus:outline-none focus:ring-2 focus:ring-det/30"
+              />
+            </label>
+            <p id={`${titleId}-ai-help`} className="mt-1 text-[13px] text-muted">
+              Ask for a rewrite or ask a question. Your unsaved edits are included. New facts can only come from verified findings or from what you state yourself, and the result is checked again before you can approve it.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button onClick={reviseWithAi} disabled={!instruction.trim() || busy !== null} className={`${btn} bg-action text-white hover:bg-action-strong`}>
+                {busy === "revise" ? "Working…" : "Apply"}
+              </button>
+              <button type="button" onClick={() => setAiOpen(false)} disabled={busy === "revise"} className={`${btn} border border-rule text-ink-soft hover:bg-board`}>
+                Close
+              </button>
+            </div>
+            {aiAnswer && (
+              <div className="mt-3 rounded-lg border border-rule bg-paper p-3 text-sm">
+                <p className="font-bold">AI answer (the draft is unchanged)</p>
+                <p className="mt-1 whitespace-pre-line text-ink-soft">{aiAnswer}</p>
+                <p className="mt-1 text-[12px] text-muted">Written by the AI from the research. Check it against the cited source before relying on it.</p>
+              </div>
+            )}
+          </div>
+        )}
         <p role="status" className={`mt-2 min-h-5 text-sm ${message?.tone === "bad" ? "text-specimen" : "text-ok"}`}>
           {message?.text}
         </p>
@@ -389,9 +479,10 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
                 .map((d) => (
                   <li key={d.id} className="rounded-lg bg-board/60 p-3">
                     <p className="acc text-muted">
-                      v{d.version} by {d.author === "ai" ? "Signal Scout" : "you"}, {formatDateTime(d.createdAt)}
+                      v{d.version} by {d.notes?.revision ? "AI, from your instruction" : d.author === "ai" ? "Signal Scout" : "you"}, {formatDateTime(d.createdAt)}
                       {detail.approvedVersion === d.version ? ", approved" : ""}
                     </p>
+                    {d.notes?.revision && <p className="acc mt-0.5 text-[12px] text-muted">“{d.notes.revision.instruction}”</p>}
                     <p className="mt-1 font-bold">{d.subject}</p>
                     <p className="mt-1 whitespace-pre-line text-ink-soft">{d.body}</p>
                   </li>

@@ -4,7 +4,7 @@ import type { z } from "zod";
 import { getConfig, redact } from "../config";
 import { ProviderError } from "../errors";
 
-export type LlmTask = "resolve_identity" | "extract_signals" | "find_conflicts" | "draft" | "check_claims" | "extract_profile";
+export type LlmTask = "resolve_identity" | "extract_signals" | "find_conflicts" | "draft" | "check_claims" | "extract_profile" | "revise_draft";
 
 export interface LlmRequest<T> {
   task: LlmTask;
