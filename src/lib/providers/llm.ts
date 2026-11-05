@@ -13,10 +13,14 @@ export interface LlmRequest<T> {
   schema: z.ZodType<T>;
   effort: "low" | "medium" | "high";
   maxTokens?: number;
+  /** Prefer a different provider from the one that served this task (an independent check). */
+  independentOf?: LlmTask;
 }
 
 export interface LlmProvider {
   generate<T>(request: LlmRequest<T>): Promise<T>;
+  /** Which backend served a task last (fallback chains only), so a second opinion can tell it came from elsewhere. */
+  served?(task: LlmTask): string | null;
 }
 
 /**

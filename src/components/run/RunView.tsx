@@ -11,6 +11,7 @@ import { send } from "./api";
 import { DraftEditor } from "./DraftEditor";
 import { FindingsPanel, HookSpecimen, IdentityPanel, LimitationsPanel, SourcesPanel } from "./Evidence";
 import { Clarify, Failed, InProgress, Insufficient, Held } from "./Outcomes";
+import { DegradedBanner, ProvenancePanel } from "./Provenance";
 import { PipelineDiagram } from "./PipelineDiagram";
 import { useRunDetail } from "./useRunDetail";
 
@@ -18,10 +19,20 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
   const router = useRouter();
   const { detail, refresh, resume, connection, isActive } = useRunDetail(initial);
   const [deleting, setDeleting] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const p = detail.prospect;
   const subtitle = prospectDetail(p, detail.resolvedLabel);
   const latestDraft = detail.drafts[detail.drafts.length - 1];
   const showLimitations = detail.status !== "insufficient_research";
+
+  async function stop() {
+    if (!window.confirm("Stop this run? Everything found so far is kept, and you can resume it later.")) return;
+    setStopping(true);
+    const result = await send(`/api/runs/${detail.id}/stop`, "POST");
+    setStopping(false);
+    if (!result.ok) window.alert(result.error);
+    refresh();
+  }
 
   async function remove() {
     if (!window.confirm("Delete this run and everything it collected? This can't be undone.")) return;
@@ -41,6 +52,16 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
           <Icon name="arrowLeft" className="h-3.5 w-3.5" />
           All runs
         </Link>
+        {isActive && (
+          <button
+            onClick={stop}
+            disabled={stopping}
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-rule px-3 text-sm font-bold text-ink-soft hover:border-specimen hover:text-specimen disabled:opacity-45"
+          >
+            <Icon name="cross" />
+            {stopping ? "Stopping…" : "Stop run"}
+          </button>
+        )}
         {!isActive && (
           <button onClick={remove} disabled={deleting} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-specimen-soft hover:text-specimen">
             <Icon name="trash" />
@@ -71,9 +92,12 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
           )}
         </div>
         <div className="flex flex-col items-start gap-1 sm:items-end">
-          <Badge tone={RUN_STATUS_TONE[detail.status]} live={isActive}>
-            {RUN_STATUS_LABEL[detail.status]}
-          </Badge>
+          <span className="flex flex-wrap items-center gap-1.5">
+            <Badge tone={RUN_STATUS_TONE[detail.status]} live={isActive}>
+              {RUN_STATUS_LABEL[detail.status]}
+            </Badge>
+            {(detail.degraded?.length ?? 0) > 0 && <Badge tone="warn">Degraded</Badge>}
+          </span>
           {isActive && connection === "reconnecting" && <span className="text-[13px] text-muted">Reconnecting to live updates…</span>}
         </div>
       </header>
@@ -99,11 +123,12 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
         </aside>
 
         <div className="min-w-0 space-y-6">
+          <DegradedBanner degraded={detail.degraded ?? []} />
           {isActive && <InProgress detail={detail} />}
           {detail.status === "needs_clarification" && <Clarify detail={detail} onResumed={resume} />}
           {detail.status === "held" && <Held detail={detail} onResumed={resume} />}
           {detail.status === "insufficient_research" && <Insufficient detail={detail} onResumed={resume} />}
-          {detail.status === "failed" && <Failed detail={detail} onResumed={resume} />}
+          {(detail.status === "failed" || detail.status === "stopped") && <Failed detail={detail} onResumed={resume} />}
           {/* On narrower screens the draft sits here, right after the outcome. */}
           {latestDraft && !isActive && (
             <div className="xl:hidden">
@@ -115,6 +140,7 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
           {detail.signals.length > 0 && <FindingsPanel signals={detail.signals} sources={detail.sources} />}
           {detail.identity && <IdentityPanel identity={detail.identity} />}
           {(detail.sources.length > 0 || detail.researchLog.length > 0) && <SourcesPanel sources={detail.sources} log={detail.researchLog} />}
+          <ProvenancePanel calls={detail.providerCalls ?? []} />
         </div>
 
         <div className="hidden xl:block">

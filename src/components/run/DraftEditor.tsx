@@ -26,6 +26,7 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
   const router = useRouter();
   const [acknowledged, setAcknowledged] = useState(false);
   const [openedAt] = useState(() => Date.now());
+  const [factsChecked, setFactsChecked] = useState(false);
   const [to, setTo] = useState(detail.sent?.to ?? detail.prospect.email ?? "");
   const titleId = useId();
   const [aiOpen, setAiOpen] = useState(false);
@@ -38,6 +39,9 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
   const warnings = draft.guard.issues.filter((i) => i.severity === "warning");
   const approved = detail.status === "approved" && detail.approvedVersion === draft.version;
   const sent = detail.status === "sent" ? detail.sent : null;
+  // The claim audit couldn't run: sending waits for the rep's word that every fact was checked.
+  const unaudited = draft.guard.issues.some((i) => i.code === "claim_check_unavailable");
+  const sendBlocked = unaudited && !factsChecked;
   const confidence = draft.notes?.confidence;
   const expiresAt = draft.notes?.expiresAt;
   // A draft that crosses its expiry while open is caught by the server on approve.
@@ -75,11 +79,11 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
     window.confirm(`Send version ${draft.version} to ${to.trim()} from ${gmail.email}?\n\nSubject: ${draft.subject}\n\nThis sends a real email through Gmail and can't be undone.`);
   const approveAndSend = () => {
     if (!confirmSend()) return;
-    act("approve", () => send(`/api/runs/${detail.id}/draft`, "POST", { action: "approve", version: draft.version, send: true, to: to.trim(), acknowledgeBadNews: acknowledged }), `Approved and sent to ${to.trim()}.`, onChanged);
+    act("approve", () => send(`/api/runs/${detail.id}/draft`, "POST", { action: "approve", version: draft.version, send: true, to: to.trim(), acknowledgeBadNews: acknowledged, acknowledgeUnaudited: factsChecked }), `Approved and sent to ${to.trim()}.`, onChanged);
   };
   const sendNow = () => {
     if (!confirmSend()) return;
-    act("send", () => send(`/api/runs/${detail.id}/draft`, "POST", { action: "send", version: draft.version, to: to.trim() }), `Sent to ${to.trim()}.`, onChanged);
+    act("send", () => send(`/api/runs/${detail.id}/draft`, "POST", { action: "send", version: draft.version, to: to.trim(), acknowledgeUnaudited: factsChecked }), `Sent to ${to.trim()}.`, onChanged);
   };
   async function researchAgain() {
     setBusy("rerun");
@@ -257,6 +261,14 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
             </span>
           </label>
         )}
+        {gmail.connected && !sent && unaudited && (
+          <label className="mb-4 flex cursor-pointer items-start gap-2 rounded-lg border border-ochre/40 bg-ochre-soft px-3 py-2.5 text-sm text-ochre">
+            <input type="checkbox" className="mt-0.5 h-4 w-4" checked={factsChecked} onChange={(e) => setFactsChecked(e.target.checked)} />
+            <span>
+              <span className="font-bold">The automatic claim audit didn&apos;t run.</span> I&apos;ve checked every fact in this email against the findings myself.
+            </span>
+          </label>
+        )}
         <label className="block text-sm">
           <span className="font-bold">Subject</span>
           <input
@@ -300,7 +312,7 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
             <>
               <button
                 onClick={approveAndSend}
-                disabled={dirty || !toValid || onHold || busy !== null}
+                disabled={dirty || !toValid || onHold || sendBlocked || busy !== null}
                 title={dirty ? "Save your edits before approving" : !toValid ? "Add the recipient's email address" : undefined}
                 className={`${btn} bg-action text-white hover:bg-action-strong`}
               >
@@ -319,7 +331,7 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
             </button>
           )}
           {approved && gmail.connected && (
-            <button onClick={sendNow} disabled={dirty || !toValid || expired || busy !== null} title={dirty ? "Save and re-approve your edits before sending" : undefined} className={`${btn} bg-action text-white hover:bg-action-strong`}>
+            <button onClick={sendNow} disabled={dirty || !toValid || expired || sendBlocked || busy !== null} title={dirty ? "Save and re-approve your edits before sending" : undefined} className={`${btn} bg-action text-white hover:bg-action-strong`}>
               {busy === "send" ? "Sending…" : "Send now"}
             </button>
           )}

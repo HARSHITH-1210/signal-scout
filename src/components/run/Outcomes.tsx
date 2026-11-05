@@ -145,14 +145,23 @@ export function Insufficient({ detail, onResumed }: { detail: RunDetail; onResum
   );
 }
 
+/** Resume picks up at research or later: earlier stages' outputs are reused. */
+function stageLabel(stage: RunDetail["currentStage"]): string {
+  if (!stage || stage === "validate") return "the start";
+  if (stage === "rank_hook" || stage === "verify") return "extracting signals";
+  if (stage === "guard") return "the draft";
+  return stage.replace(/_/g, " ").replace("resolve identity", "identity");
+}
+
 export function Failed({ detail, onResumed }: { detail: RunDetail; onResumed: () => void }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function retryDraft() {
+  async function resume() {
     setBusy(true);
-    const result = await send(`/api/runs/${detail.id}/draft`, "POST", { action: "regenerate" });
+    setError(null);
+    const result = await send(`/api/runs/${detail.id}/resume`, "POST");
     setBusy(false);
     if (!result.ok) return setError(result.error);
     onResumed();
@@ -171,15 +180,17 @@ export function Failed({ detail, onResumed }: { detail: RunDetail; onResumed: ()
   }
 
   return (
-    <Shell tone="bad" title="This run stopped with an error">
+    <Shell tone={detail.status === "stopped" ? "info" : "bad"} title={detail.status === "stopped" ? "You stopped this run" : "This run stopped with an error"}>
       <p className="mt-1 text-sm">{detail.error}</p>
-      <p className="mt-1 text-[13px] text-muted">Everything found before the error is kept below.</p>
+      <p className="mt-1 text-[13px] text-muted">
+        Everything found before the error is kept below. Resuming continues from {stageLabel(detail.currentStage)} and reuses it, so searches that already ran
+        aren&apos;t paid for again.
+      </p>
       <div className="mt-4 flex flex-wrap gap-3">
-        {detail.hook && (
-          <button onClick={retryDraft} disabled={busy} className={primary}>
-            Retry the draft
-          </button>
-        )}
+        <button onClick={resume} disabled={busy} className={primary}>
+          <Icon name="refresh" />
+          {busy ? "Resuming…" : `Resume from ${stageLabel(detail.currentStage)}`}
+        </button>
         <button onClick={rerun} disabled={busy} className={secondary}>
           Run again from the start
         </button>

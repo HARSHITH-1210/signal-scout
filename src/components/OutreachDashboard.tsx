@@ -8,6 +8,8 @@ import { formatDate, formatDateTime, signalTypeLabel, type Tone } from "@/lib/ui
 import { Badge } from "./Badge";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
+import { SystemStatus } from "./SystemStatus";
+import type { ProviderStatus } from "@/lib/providers/status";
 
 type CheckResult = { checked: number; skipped: "throttled" | "not_connected" | "no_permission" | null; error: string | null };
 
@@ -53,7 +55,7 @@ function since(iso: string | null, now: number): string {
 }
 
 /** Outreach after approval: what's waiting on the rep, what was sent, and what came back. */
-export function OutreachDashboard({ initial, gmail }: { initial: OutreachStats; gmail: GmailStatus }) {
+export function OutreachDashboard({ initial, gmail, providers }: { initial: OutreachStats; gmail: GmailStatus; providers: ProviderStatus[] }) {
   const [stats, setStats] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
@@ -300,6 +302,10 @@ export function OutreachDashboard({ initial, gmail }: { initial: OutreachStats; 
             </>
           )}
         </section>
+      </div>
+
+      <div className="mt-6">
+        <SystemStatus initial={providers} />
       </div>
 
       <p className="mt-6 text-[13px] text-muted">

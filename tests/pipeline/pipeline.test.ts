@@ -192,16 +192,16 @@ describe("failures", () => {
     expect(d.error).toMatch(/Tavily is unavailable/);
   });
 
-  it("fails at research when every research query fails", async () => {
+  it("carries on from identity results, marked degraded, when every research query fails", async () => {
     const run = repo.createRun(NORTHWIND);
     const err = new ProviderError("tavily", "unavailable", "timeout");
     const search = northwindSearch({ person: err, news: err, funding: err, hiring: err, priorities: err });
     await runPipeline(run.id, deps(search, northwindLlm()));
     const d = finalStatus(run.id);
-    expect(d.status).toBe("failed");
-    expect(d.stageStatuses.research).toBe("failed");
-    expect(d.error).toMatch(/All research searches failed/);
-    expect(d.identity?.status).toBe("resolved"); // earlier work is preserved
+    expect(d.status).not.toBe("failed");
+    expect(d.stageStatuses.research).toBe("warning");
+    expect(d.degraded.map((x) => x.code)).toContain("research_failed");
+    expect(d.identity?.status).toBe("resolved");
   });
 
   it("continues with a warning when some research queries fail", async () => {

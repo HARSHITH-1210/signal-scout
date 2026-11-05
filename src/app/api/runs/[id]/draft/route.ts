@@ -54,7 +54,7 @@ export const PUT = handle(async (request: Request, { params }: { params: Promise
   const guard = buildGuardReport(draft.body, issues, null, "Edited by a human: the automated claim audit was not re-run. You are responsible for every factual statement.");
   const hookSignal = current.kind === "personalised" ? signals.find((s) => s.id === run.hook?.signalId) : undefined;
   // The expiry stays with the research, not the edit: editing doesn't make old news fresh.
-  const notes = current.notes ? { ...current.notes, confidence: draftConfidence(current.kind, hookSignal, run.identity, issues) } : null;
+  const notes = current.notes ? { ...current.notes, confidence: draftConfidence(current.kind, hookSignal, run.identity, issues, run.degraded) } : null;
   const saved = addDraft(id, { ...draft, kind: current.kind, author: "human", guard, recipientHint: current.recipientHint, notes });
   // Any edit after approval needs a fresh approval.
   updateRun(id, { status: "awaiting_review", approvedVersion: null });
@@ -72,6 +72,8 @@ const ActionSchema = z.object({
   to: z.string().trim().max(254).optional(),
   /** approve only: the rep has seen the recent bad news about this prospect and still wants to reach out. */
   acknowledgeBadNews: z.boolean().optional(),
+  /** approve-and-send / send: the rep checked every fact themselves because the claim audit couldn't run. */
+  acknowledgeUnaudited: z.boolean().optional(),
 });
 
 /** Sends the approved version; on failure the run stays approved and records why it wasn't sent. */
@@ -107,8 +109,8 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
       if (badNewsHold(listSignals(id)).length > 0 && !parsed.data.acknowledgeBadNews)
         return json({ error: "This prospect is on hold: there's recent bad news about them. Confirm you still want to reach out now.", hold: "bad_news" }, 409);
       // Check everything sending needs BEFORE approving, so a blocked send leaves the draft in review.
-      const check = parsed.data.send ? checkSendable(id, draft.version, parsed.data.to) : null;
-      if (check && !check.ok) return conflict(check.reason);
+      const check = parsed.data.send ? checkSendable(id, draft.version, parsed.data.to, { acknowledgeUnaudited: parsed.data.acknowledgeUnaudited }) : null;
+      if (check && !check.ok) return json({ error: check.reason, ...(check.unaudited ? { unaudited: true } : {}) }, 409);
       updateRun(id, { status: "approved", approvedVersion: draft.version });
       if (check?.ok) {
         addEvent(id, "guard", "succeeded", `Rep approved version ${draft.version} and sent it to ${check.to}.`);
@@ -124,8 +126,8 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
         return conflict("Only the approved, latest version can be sent.");
       const expired = expiredResponse(draft);
       if (expired) return expired;
-      const check = checkSendable(id, draft.version, parsed.data.to);
-      if (!check.ok) return conflict(check.reason);
+      const check = checkSendable(id, draft.version, parsed.data.to, { acknowledgeUnaudited: parsed.data.acknowledgeUnaudited });
+      if (!check.ok) return json({ error: check.reason, ...(check.unaudited ? { unaudited: true } : {}) }, 409);
       return deliver(id, draft.version, check.to, check.from);
     }
     case "regenerate": {

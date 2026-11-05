@@ -169,3 +169,19 @@ describe("live-run regressions", () => {
     expect(inferSignalType("hiring", "anything")).toBe("hiring");
   });
 });
+
+describe("source ids after a clarification", () => {
+  it("never reuses an id when the kept sources have gaps", async () => {
+    const { SourceCollector } = await import("@/lib/pipeline/context");
+    const kept = [
+      { id: "S1", url: "https://a.com/1" },
+      { id: "S2", url: "https://a.com/2" },
+      { id: "S5", url: "https://a.com/5" },
+    ] as never;
+    const collector = new SourceCollector(kept);
+    const page = (url: string) => ({ url, title: "t", content: "Northwind Freight is a digital freight network in Chicago.", rawContent: "Northwind Freight is a digital freight network in Chicago.", publishedDate: null, score: 0.5 });
+    const ids = ["https://b.com/1", "https://b.com/2", "https://b.com/3"].map((u) => collector.add(page(u), "news", null)?.id);
+    expect(ids).toEqual(["S6", "S7", "S8"]);
+    expect(new Set(collector.all().map((s) => s.id)).size).toBe(collector.all().length);
+  });
+});

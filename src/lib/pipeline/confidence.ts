@@ -1,4 +1,4 @@
-import type { DraftConfidence, DraftKind, GuardIssue, Identity, Signal, SignalType } from "../types";
+import type { Degradation, DraftConfidence, DraftKind, GuardIssue, Identity, Signal, SignalType } from "../types";
 
 /** How long a draft stays sendable after it's written, by what its hook is about. Role-based drafts age slowest. */
 const EXPIRY_DAYS: Partial<Record<SignalType, number>> = {
@@ -23,7 +23,7 @@ export function isExpired(expiresAt: string | null | undefined, now = new Date()
 }
 
 /** A plain confidence label for the reviewer: what the draft rests on, and what weakens it. */
-export function draftConfidence(kind: DraftKind, hook: Signal | undefined, identity: Identity | null, issues: GuardIssue[]): DraftConfidence {
+export function draftConfidence(kind: DraftKind, hook: Signal | undefined, identity: Identity | null, issues: GuardIssue[], degraded: Degradation[] = []): DraftConfidence {
   if (kind === "role_based" || !hook)
     return { level: "low", basis: "role", reasons: ["No verified finding was strong enough, so it speaks to their role in general and claims nothing about them."] };
 
@@ -46,6 +46,8 @@ export function draftConfidence(kind: DraftKind, hook: Signal | undefined, ident
   if ((hook.score ?? 0) < 0.5) lower("medium", "The hook is only moderately relevant to the offer.");
   if (issues.some((i) => i.code === "generic_personalisation")) lower("low", "The draft fails the swap test: it could go to anyone.");
   if (issues.some((i) => i.severity === "error")) lower("low", "Checks found issues that must be fixed.");
+  if (degraded.some((d) => d.code === "model_review_skipped")) lower("medium", "The AI context and conflict review didn't run; findings are quote-verified only.");
+  if (degraded.some((d) => d.code === "documents_only" || d.code === "research_failed")) lower("medium", "Web research was partly unavailable, so fewer sources were checked.");
 
   return { level, basis, reasons };
 }

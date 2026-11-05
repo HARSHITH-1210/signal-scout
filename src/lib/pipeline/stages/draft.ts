@@ -4,6 +4,7 @@ import type { ClaimCheck, DraftKind, DraftNotes, GuardReport, Hook, Identity, Pr
 import type { StageContext } from "../context";
 import { buildGuardReport, claimIssues, runDeterministicGuard, TARGET_MAX_WORDS, TARGET_MIN_WORDS } from "../guard";
 import { UNTRUSTED_DATA_RULE, wrapUntrusted } from "../sanitize";
+import type { LlmTask } from "../../providers/llm";
 
 /** Seller material (sender-profile documents) passed to the drafter and the claim audit. */
 export interface SellerDocument {
@@ -251,6 +252,8 @@ export function buildGuardInput(
     sources: Source[];
     sellerDocuments: SellerDocument[];
     repNotes?: string | null;
+    /** The LLM task that wrote this text; the claim audit prefers a different provider for independence. */
+    writtenBy?: LlmTask;
   },
   signalIdsUsed: string[],
 ): GuardInput {
@@ -265,6 +268,7 @@ export function buildGuardInput(
     repNotes: input.repNotes !== undefined ? input.repNotes : (input.prospect.notes ?? null),
     hookSignalId: input.kind === "personalised" ? (input.hook?.signalId ?? null) : null,
     prospectNames: prospectNames(input.prospect, input.identity),
+    writtenBy: input.writtenBy ?? "draft",
   };
 }
 
@@ -282,6 +286,7 @@ export interface GuardInput {
   repNotes: string | null;
   hookSignalId: string | null;
   prospectNames: string[];
+  writtenBy?: LlmTask;
 }
 
 /** Deterministic checks plus a model claim audit. A failed claim audit is reported, never silently skipped. */
@@ -298,6 +303,7 @@ export async function guardDraft(
     ctx.emit("guard", "running", "Auditing every factual claim against its quote");
     const output = await ctx.deps.llm.generate({
       task: "check_claims",
+      independentOf: input.writtenBy,
       effort: "low",
       system: CLAIM_SYSTEM,
       user: [
@@ -322,6 +328,7 @@ export async function guardDraft(
   } catch (error) {
     note = `Automated claim check could not run (${error instanceof Error ? error.message : "unknown error"}). Review every factual statement manually.`;
     issues.push({ severity: "warning", code: "claim_check_unavailable", message: note });
+    ctx.degrade?.("claim_audit_skipped", "The automatic claim audit couldn't run, so sending needs your confirmation that every fact was checked.");
   }
   return buildGuardReport(draft.body, issues, claims, note);
 }

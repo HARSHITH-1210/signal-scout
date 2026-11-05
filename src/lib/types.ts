@@ -10,6 +10,7 @@ export const RUN_STATUSES = [
   "approved",
   "sent",
   "failed",
+  "stopped",
 ] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
@@ -22,6 +23,7 @@ export const TERMINAL_STATUSES: readonly RunStatus[] = [
   "approved",
   "sent",
   "failed",
+  "stopped",
 ];
 
 export const STAGES = [
@@ -71,7 +73,7 @@ export interface SenderProfile {
   callToAction: string;
 }
 
-export type SourceCategory = "identity" | "website" | "news" | "funding" | "hiring" | "person" | "priorities" | "document";
+export type SourceCategory = "identity" | "website" | "news" | "funding" | "hiring" | "person" | "priorities" | "document" | "corroboration";
 
 /** Where a source came from. Rep documents are uploaded files; their quotes are verified like web pages. */
 export type SourceOrigin = "web" | "prospect_document";
@@ -350,9 +352,44 @@ export interface ContactHold {
   overridden: boolean;
 }
 
+/** Something a run had to do without, or got from a fallback. Shown as a "Degraded" badge with reasons. */
+export interface Degradation {
+  stage: StageName;
+  code: "search_fallback" | "reader_fallback" | "llm_fallback" | "research_failed" | "documents_only" | "model_review_skipped" | "claim_audit_skipped";
+  message: string;
+}
+
+/** One external call (or a provider skipped by the circuit breaker), for the run's audit trail. */
+export interface ProviderCall {
+  id: number;
+  stage: StageName | null;
+  task: string;
+  provider: string;
+  model: string | null;
+  outcome: "ok" | "error" | "skipped";
+  errorKind: string | null;
+  message: string | null;
+  fallbackFrom: string | null;
+  durationMs: number;
+  createdAt: string;
+}
+
+/** Circuit-breaker state for one provider. */
+export interface ProviderHealth {
+  provider: string;
+  downUntil: string | null;
+  consecutiveFailures: number;
+  lastError: string | null;
+  lastErrorKind: string | null;
+  lastOkAt: string | null;
+  updatedAt: string;
+}
+
 export interface RunDetail extends RunSummary {
   sent: SentRecord | null;
   hold: ContactHold | null;
+  degraded: Degradation[];
+  providerCalls: ProviderCall[];
   documents: RunDocument[];
   /** The draft version a person approved, if any. */
   approvedVersion: number | null;

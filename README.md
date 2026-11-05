@@ -43,7 +43,13 @@ docker compose up --build       # http://localhost:3000, data persisted in a nam
 | `TAVILY_API_KEY` | yes | Web and news search, plus reading the company website ([get a key](https://app.tavily.com)) |
 | `ANTHROPIC_API_KEY` | one LLM key | Claude does identity matching, signal extraction, conflict checks, drafting and the claim audit |
 | `OPENROUTER_API_KEY` | one LLM key | Alternative LLM backend through [OpenRouter](https://openrouter.ai/keys), including free `:free` models |
-| `LLM_PROVIDER` | no | `anthropic` or `openrouter`. If blank: Anthropic when its key is set, else OpenRouter. |
+| `LLM_PROVIDER` | no | `openrouter`, `gemini` or `anthropic`: the primary AI provider. If blank: Anthropic when its key is set, else OpenRouter, else Gemini. |
+| `GEMINI_API_KEY` | recommended | **Backup AI provider** ([free key](https://aistudio.google.com/apikey)): used when the primary fails or runs out of quota. `GEMINI_MODEL` overrides the model (default `gemini-flash-latest`). When it is overloaded (503) or retired (404), `GEMINI_FALLBACK_MODELS` are tried (default `gemini-flash-lite-latest,gemini-2.5-flash`); a busy model is skipped for 5 minutes. |
+| `EXA_API_KEY` | recommended | **Backup search provider** ([free monthly credit](https://dashboard.exa.ai)): used when Tavily fails. Either `TAVILY_API_KEY` or `EXA_API_KEY` is required. |
+| `LLM_FALLBACKS` | no | Fallback order after the primary, e.g. `gemini,anthropic`, or `none`. Default: every provider with a key. |
+| `OPENROUTER_FALLBACK_MODELS` | no | Up to two extra OpenRouter models tried in the same request (they share OpenRouter's quota, so they help with outages, not a used-up limit) |
+| `JINA_API_KEY` | no | Raises the keyless Jina Reader limit (page reading when Tavily and Exa can't) |
+| `FAULT_INJECT` | no | Demo only: simulate provider failures, e.g. `tavily:quota,openrouter:down`. Never produces data. |
 | `ANTHROPIC_MODEL` | no | Override the Claude model (default `claude-opus-5-5`) |
 | `OPENROUTER_MODEL` | no | OpenRouter model id; must support structured outputs (default `nvidia/nemotron-3.5-super-vl:free`) |
 | `ALLOWED_HOSTS` | no | Extra hostnames the app may be served under (comma-separated). localhost, IP addresses and `.local` names always work; any other host is refused, to block DNS rebinding. |
@@ -150,6 +156,10 @@ The pipeline runs in-process on the Node server, two runs at a time. Each stage 
 | `GET` | `/api/runs?status=` | List runs |
 | `GET` | `/api/runs/:id` | Full run detail |
 | `GET` | `/api/runs/:id/events` | SSE stream of stage events (replays history) |
+| `POST` | `/api/runs/:id/stop` | Stop a queued or running run (`202`); everything collected is kept and it can be resumed. A stopped draft regeneration keeps the previous draft. `409` if it isn't queued or running |
+| `POST` | `/api/runs/:id/resume` | Resume a failed or stopped run from the stage it stopped at, reusing earlier results (409 unless failed; 503 if every AI provider is paused) |
+| `GET` | `/api/providers` | Provider chain status: up, recent failures, paused until, calls in the last day (no external calls) |
+| `POST` | `/api/providers/test` | *Test connections*: cheap key checks (no model tokens or search credits); a passing check un-pauses the provider |
 | `POST` | `/api/runs/:id/clarify` | `{candidateIndex}` or extra details; resumes an ambiguous run |
 | `PUT` | `/api/runs/:id/draft` | Save a human edit as a new version (`baseVersion` required; 409 if the draft moved on) |
 | `POST` | `/api/runs/:id/draft` | `{action: "approve", version, send?, to?, acknowledgeBadNews?}` (409 if not the latest, expired, held for bad news without acknowledgement, or if `send` is set and sending isn't possible; 502 if approved but the send failed), `{action: "send", version, to?}` for an approved draft, `{action: "regenerate" \| "role_based"}` |
@@ -196,6 +206,8 @@ The automated tests run the real pipeline code with fixture-backed providers. Th
 | Draft failure (refusal) keeps research, retry succeeds; failed regeneration keeps the existing draft | pipeline |
 | Claim audit unavailable is reported, not hidden | pipeline |
 | Missing API keys fail fast with a clear message | pipeline |
+| **Provider failures:** LLM fallback on quota with circuit breaker and skip; all providers failing with each reason; independent claim audit; search fallback; "couldn't search" vs "found nothing"; documents-only identity; AI review down → quote-verified only; resume without repeating searches; run deadline; unaudited send gate; preflight 503 and queue pause; fault switch; corroboration; identity second opinion | `tests/pipeline/resilience.test.ts` |
+| Provider adapters: Gemini (schema, correction, quota/limit/safety/truncation), Exa, GDELT (phrase, dates, cache, plain-text errors), SSRF-guarded direct reads (private ranges, redirects), Jina, status and key probes | `tests/unit/providers.test.ts` |
 | Scoring, freshness, reliability, guard rules, identity guardrails, consistency, redaction | `tests/unit/*` |
 | Risk-assessment fixes: full-name and whole-word entity matching, quote stitching, claim-to-quote review and narrowing, grounded dates, syndication, former employees, grounded roles, stale supporting findings, request budget | `tests/unit/evidence.test.ts`, `tests/unit/stages.test.ts`, `tests/pipeline/hardening.test.ts` |
 | Documents: real PDF text extraction, scanned-PDF refusal, CSV parsing and CRM mapping, document-only runs, only the chosen CSV row as evidence, seller material in drafting and claim audit | `tests/unit/documents.test.ts`, `tests/pipeline/hardening.test.ts`, `tests/unit/api.test.ts` |
@@ -240,6 +252,34 @@ See [`docs/DEMO_SCENARIOS.md`](docs/DEMO_SCENARIOS.md) for the run order, inputs
 | Guess presented as fact | Drafts state what was observed and ask about the implication; "I can see you're struggling…" is flagged. |
 | Draft goes out of date | Each draft has a use-by date by hook type (hiring 14 days, funding 30, role-based 45). After it, approve and send are refused and you're offered *Research again*. |
 
+## Resilience
+
+Every external call goes through a **fallback chain** (details in [docs/RESILIENCE_PLAN.md](docs/RESILIENCE_PLAN.md)):
+
+| Step | Chain | If all fail |
+|---|---|---|
+| AI (every LLM step) | primary (e.g. OpenRouter) → Gemini → Anthropic, whichever have keys | The stage fails with each provider's reason; **Resume** continues from there |
+| Search | Tavily → Exa → GDELT news (keyless) | Identity: "couldn't search" (resumable), or continue on your documents. Research: continue on what identity found, marked **Degraded** |
+| Reading pages | Tavily → Exa → Jina Reader → direct read (SSRF-guarded) | Skipped, with a limitation |
+| AI review in Verify | AI chain | Findings stay quote-verified; confidence capped at Medium; **Degraded** |
+| Claim audit | AI chain, preferring a different provider from the drafter | Warning, and sending needs your "I checked every fact" confirmation |
+
+**How the chains behave**
+- **Circuit breaker:** a provider that runs out of quota is skipped until it resets (OpenRouter at midnight UTC, Gemini at midnight Pacific, Tavily and Exa on the 1st); a rejected key pauses it for an hour; three outages in a row pause it for two minutes.
+- **Before a run starts:** if every AI provider is paused, the run is refused with the time the first one returns, and queued runs (CSV batches) wait instead of failing one by one.
+- **Time limit:** each run gets 20 minutes.
+- **Resume:** failures and server restarts are resumable from the stage that failed.
+- **Stop:** a queued or running run can be stopped from its page (*Stop run*). It ends as **Stopped**, keeps everything found so far, and offers *Resume* or *Run again from the start*. A call already in flight finishes on the provider's side (and may be billed), but its result is ignored.
+
+**Cross-verification**
+- Every finding, from any provider, must still match its source word for word.
+- The chosen hook gets one corroboration search on the backup search provider. An independent page stating the same fact is matched deterministically, not by a model.
+- A match resting on a single source gets a second opinion from a different AI provider; if they disagree, the run pauses for you.
+
+**Where to see it**
+- Each run shows a **Degraded** badge with its reasons, and "How this run was produced": every call, its provider and model, the outcome, any fallback, and the time taken.
+- The Outreach home has a **System status** panel with *Test connections*.
+
 ## Limitations
 
 - **Coverage depends on public, indexed sources.** LinkedIn is not scraped (it is login-walled and against its terms), so LinkedIn activity is only seen when it is publicly indexed. Very private people produce company-level hooks or an honest "not enough signal".
@@ -251,6 +291,7 @@ See [`docs/DEMO_SCENARIOS.md`](docs/DEMO_SCENARIOS.md) for the run order, inputs
 - **Documents:** text PDFs and CSVs only. There is no OCR for scanned PDFs, and no Word or Excel files. Long documents contribute their first ~19k characters as evidence chunks.
 - **Live ambiguity is a judgment call.** Whether a vague input triggers *Needs clarification* depends on what the web returns and on the model. A confident model may resolve the most prominent match instead. Adding one more detail is always the fix.
 - **Sending is a deliberate deviation from PS-3's "human reviews before anything is sent".** A human still reviews and confirms every send, but the app can now deliver the email itself when Gmail is connected. It's opt-in (no Google keys, no connection, or the toggle off means approval only records the review). Google limits unverified OAuth apps to the test users you add, which suits a single-user local tool.
+- **Fallbacks are real providers with their own limits.** All free OpenRouter models share one daily allowance, so only a different provider (Gemini, Anthropic) survives OpenRouter quota exhaustion. GDELT returns headlines and only the top few articles are read, so its findings are thinner. Gemini's free limits are shown per project in AI Studio and change; the default model alias `gemini-flash-latest` should be checked against your key with *Test connections*. Not yet verified against the live Gemini, Exa, GDELT and Jina APIs.
 - **Local by default.** `npm run dev` / `npm start` listen on `127.0.0.1` only, because there's no login. Use `npm run dev:lan` / `npm run start:lan` to open the app to your network, and set `ALLOWED_HOSTS` for any other hostname.
 
 ## Project docs

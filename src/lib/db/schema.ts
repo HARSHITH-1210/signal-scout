@@ -106,6 +106,35 @@ const MIGRATIONS: ((db: Database.Database) => void)[] = [
   (db) => addColumn(db, "runs", "sent_json", "TEXT"),
   // 4: contact-list hold (opt-out or existing relationship)
   (db) => addColumn(db, "runs", "hold_json", "TEXT"),
+  // 5: resilience: every external call, provider health (circuit breaker), and what a run had to fall back on
+  (db) => {
+    db.exec(`CREATE TABLE IF NOT EXISTS provider_calls (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      run_id TEXT,
+      stage TEXT,
+      task TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      model TEXT,
+      outcome TEXT NOT NULL,
+      error_kind TEXT,
+      message TEXT,
+      fallback_from TEXT,
+      duration_ms INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_provider_calls_run ON provider_calls(run_id);
+    CREATE INDEX IF NOT EXISTS idx_provider_calls_created ON provider_calls(created_at);
+    CREATE TABLE IF NOT EXISTS provider_health (
+      provider TEXT PRIMARY KEY,
+      down_until TEXT,
+      consecutive_failures INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      last_error_kind TEXT,
+      last_ok_at TEXT,
+      updated_at TEXT NOT NULL
+    );`);
+    addColumn(db, "runs", "degraded_json", "TEXT");
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
@@ -177,7 +206,7 @@ export function recoverInterruptedRuns(db: Database.Database, isAlive: (pid: num
     updated_at: string;
   }[];
   const fail = db.prepare(
-    `UPDATE runs SET status = 'failed', error = 'The server restarted while this run was in progress. Start a new run or retry the draft.',
+    `UPDATE runs SET status = 'failed', error = 'The server restarted while this run was in progress. Resume it to continue from where it stopped.',
      updated_at = ?, completed_at = ? WHERE id = ?`,
   );
   for (const row of rows) {

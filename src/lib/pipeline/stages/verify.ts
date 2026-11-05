@@ -235,7 +235,9 @@ export async function verifySignals(
   if (verified.length === 0) return { signals: checked, reviewed: false };
 
   const sourceById = new Map(sources.map((s) => [s.id, s]));
-  const output = await ctx.deps.llm.generate({
+  let output: ReviewOutput;
+  try {
+    output = await ctx.deps.llm.generate({
     task: "find_conflicts",
     effort: "low",
     system: REVIEW_SYSTEM,
@@ -251,6 +253,12 @@ export async function verifySignals(
       })
       .join("\n\n"),
     schema: ReviewOutput,
-  });
+    });
+  } catch (error) {
+    // The word-for-word quote checks above still hold; only the context and conflict review is missing.
+    const reason = error instanceof Error ? error.message : "unknown error";
+    ctx.degrade?.("model_review_skipped", `The AI context and conflict review couldn't run (${reason}). Findings are quote-verified only, and confidence is capped at Medium.`);
+    return { signals: checked, reviewed: false };
+  }
   return { signals: applyReview(checked, sources, output, identity.companyDomain), reviewed: true };
 }

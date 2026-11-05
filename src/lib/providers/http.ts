@@ -10,9 +10,14 @@ export class ResponseTooLargeError extends Error {
 
 /** Reads a fetch Response as JSON with a hard size cap, streaming so an oversized body is cut off early. */
 export async function readJsonCapped(response: Response, limit = MAX_RESPONSE_BYTES): Promise<unknown> {
+  return JSON.parse(await readTextCapped(response, limit));
+}
+
+/** Reads a fetch Response as text with a hard size cap. */
+export async function readTextCapped(response: Response, limit = MAX_RESPONSE_BYTES): Promise<string> {
   const declared = Number(response.headers.get("content-length") ?? 0);
   if (declared > limit) throw new ResponseTooLargeError();
-  if (!response.body) return JSON.parse(await response.text());
+  if (!response.body) return await response.text();
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -32,5 +37,5 @@ export async function readJsonCapped(response: Response, limit = MAX_RESPONSE_BY
     bytes.set(c, offset);
     offset += c.byteLength;
   }
-  return JSON.parse(new TextDecoder().decode(bytes));
+  return new TextDecoder().decode(bytes);
 }

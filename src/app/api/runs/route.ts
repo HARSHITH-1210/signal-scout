@@ -3,6 +3,7 @@ import { badRequest, handle, json, readJson } from "@/lib/api/http";
 import { AttachmentList, resolveAttachments } from "@/lib/api/attachments";
 import { createRun, findRecentDuplicate, listRuns } from "@/lib/db/repo";
 import { enqueueRun } from "@/lib/pipeline/runner";
+import { preflight } from "@/lib/providers/preflight";
 import { validateProspect } from "@/lib/pipeline/validate";
 import { RUN_STATUSES, type RunStatus } from "@/lib/types";
 
@@ -36,6 +37,8 @@ export const POST = handle(async (request: Request) => {
     const duplicate = findRecentDuplicate(result.value);
     if (duplicate) return json({ error: "You researched this prospect recently.", duplicate }, 409);
   }
+  const ready = preflight();
+  if (!ready.ok) return json({ error: ready.error, retryAt: ready.retryAt }, 503);
   const run = createRun(result.value, attachments.documents);
   enqueueRun(run.id);
   return json({ id: run.id, status: "queued" }, 202);

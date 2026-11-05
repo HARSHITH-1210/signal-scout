@@ -3,6 +3,7 @@ import { badRequest, handle, json, readJson } from "@/lib/api/http";
 import { createRun, getDocument } from "@/lib/db/repo";
 import { prospectFromCsvRow } from "@/lib/documents/parse";
 import { enqueueRun } from "@/lib/pipeline/runner";
+import { preflight } from "@/lib/providers/preflight";
 import { validateProspect } from "@/lib/pipeline/validate";
 
 export const runtime = "nodejs";
@@ -23,6 +24,8 @@ export const POST = handle(async (request: Request) => {
   const doc = getDocument(parsed.data.documentId);
   if (!doc || doc.scope !== "prospect" || doc.kind !== "csv" || !doc.rows || !doc.csv) return badRequest("That CSV no longer exists. Upload it again.");
 
+  const ready = preflight();
+  if (!ready.ok) return json({ error: ready.error, retryAt: ready.retryAt }, 503);
   const created: { id: string; rowIndex: number }[] = [];
   const skipped: number[] = [];
   for (const rowIndex of [...new Set(parsed.data.rowIndexes)]) {

@@ -54,7 +54,7 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
 ```
 
 ### Run statuses
-`queued | running | needs_clarification | held | insufficient_research | awaiting_review | approved | sent | failed`
+`queued | running | needs_clarification | held | insufficient_research | awaiting_review | approved | sent | failed | stopped`
 
 ### Stage statuses
 `pending | running | succeeded | warning | failed | skipped`
@@ -185,3 +185,15 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - A changed email is saved as a new version (`author: "ai"`, `notes.revision` with the instruction and the AI's note) after the full guard, claim audit included; approval is reset. A question returns an answer and saves nothing. Finding ids the model wasn't shown are dropped.
   - Facts the rep states in the instruction count as the rep's own, like their notes, in the claim audit. Expiry stays with the research. A failed call leaves the draft unchanged; a version saved meanwhile in another tab wins (409).
   - Tests: `tests/unit/api.test.ts` (rewrite, question, unsupported claim flagged, stale version, model failure, empty instruction), `tests/unit/revise.test.ts` (no bad news, rejected findings or suspicious sources in the prompt; role-based drafts get no findings). Not live-tested: no API key was configured.
+- v10 (resilience, docs/RESILIENCE_PLAN.md):
+  - Fallback chains: LLM (primary → Gemini → Anthropic), search (Tavily → Exa → GDELT) and page readers (Tavily → Exa → Jina → SSRF-guarded direct).
+  - Every call is logged (`provider_calls`), with a persisted circuit breaker (`provider_health`), a 20-minute run deadline, preflight (503) and a queue pause.
+  - Degrade-not-fail in identity (documents), research and verify review. Resume from the failed stage (`/api/runs/:id/resume`, `from_extract` mode). Unaudited drafts are gated for sending.
+  - Cross-verification: an independent claim audit, deterministic hook corroboration, and an identity second opinion.
+  - System status panel with *Test connections*; a Degraded banner and "How this run was produced" on runs; the `FAULT_INJECT` demo switch. Migration 5.
+  - Tests: `tests/pipeline/resilience.test.ts`, `tests/unit/providers.test.ts`.
+  - Not live-verified: Gemini, Exa, GDELT, Jina.
+- v11 (stop a run):
+  - *Stop run* on active runs (`POST /api/runs/:id/stop`). A queued run is dropped at once; a running one is aborted at once through an `AbortSignal` (the stage promise is abandoned, and late events are suppressed).
+  - New `stopped` status, resumable like `failed`. A stopped regeneration keeps the previous draft.
+  - Tests: `tests/pipeline/stop.test.ts`.

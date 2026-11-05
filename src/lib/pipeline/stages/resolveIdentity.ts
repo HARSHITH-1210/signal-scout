@@ -128,7 +128,7 @@ export async function resolveIdentity(
   for (const query of queries) {
     ctx.emit("resolve_identity", "running", `Searching: ${query}`);
     try {
-      const results = await search.search({ query, maxResults: 8 });
+      const results = await search.search({ query, maxResults: 8, subject: prospect.name ?? prospect.company });
       for (const r of results) collector.add(r, "identity", userDomain);
       log.push({ category: "identity", query, resultCount: results.length, error: null });
     } catch (error) {
@@ -141,7 +141,9 @@ export async function resolveIdentity(
   const attempts = queries.length + (prospect.companyWebsite ? 1 : 0);
   if (attempts > 0 && failures === attempts) {
     const first = log.find((l) => l.error)?.error ?? "Search failed.";
-    throw new ProviderError("tavily", "unavailable", `Identity search failed: ${first}`);
+    // Uploaded documents can still identify the prospect; without them, this is "couldn't search", not "found nothing".
+    if (documents.length === 0) throw new ProviderError("tavily", "unavailable", `Couldn't search the web, so the prospect wasn't looked up: ${first}`);
+    ctx.degrade?.("documents_only", "Web search was unavailable, so identity rests on your documents alone.");
   }
 
   const sources = collector.all();
@@ -155,15 +157,76 @@ export async function resolveIdentity(
   }
 
   ctx.emit("resolve_identity", "running", `Matching the prospect against ${sources.length} results`);
-  const output = await llm.generate({
-    task: "resolve_identity",
-    effort: "low",
+  const request = {
+    task: "resolve_identity" as const,
+    effort: "low" as const,
     system: SYSTEM,
     user: `PROSPECT (from the sales rep):\n${describeProspect(prospect)}\n\nSOURCES:\n${sources.map(wrapUntrusted).join("\n\n")}`,
     schema: IdentityOutput,
-  });
+  };
+  const output = await llm.generate(request);
+  const result = applyIdentityChecks(output, prospect, sources, userDomain, log);
+  return secondOpinion(ctx, result, request, prospect, sources, userDomain, log);
+}
 
-  return applyIdentityChecks(output, prospect, sources, userDomain, log);
+/**
+ * A match that rests on a single source gets a second opinion from a different AI provider, when one is
+ * configured. If the two disagree about who this is, the run pauses for the rep instead of guessing.
+ * Exported for tests.
+ */
+export async function secondOpinion(
+  ctx: StageContext,
+  result: IdentityStageResult,
+  request: Parameters<StageContext["deps"]["llm"]["generate"]>[0] & { schema: typeof IdentityOutput },
+  prospect: ProspectInput,
+  sources: Source[],
+  userDomain: string | null,
+  log: QueryLogEntry[],
+): Promise<IdentityStageResult> {
+  const first = result.identity;
+  const llm = ctx.deps.llm;
+  if (first.status !== "resolved" || first.evidenceUrls.length > 1 || !llm.served) return result;
+  const firstBy = llm.served("resolve_identity");
+  let other: IdentityStageResult;
+  try {
+    const output = await llm.generate({ ...request, independentOf: "resolve_identity" });
+    other = applyIdentityChecks(output, prospect, sources, userDomain, log);
+  } catch {
+    return result; // a second opinion is a bonus check; its failure never fails the run
+  }
+  const secondBy = llm.served("resolve_identity");
+  if (!secondBy || secondBy === firstBy) return result; // no independent provider was available
+  const second = other.identity;
+  const sameCompany =
+    second.status === "resolved" &&
+    (mentionsCompany(second.resolvedCompany ?? "", first.resolvedCompany, null) || mentionsCompany(first.resolvedCompany ?? "", second.resolvedCompany, null));
+  const samePerson = !first.resolvedName || !second.resolvedName || mentionsPerson(second.resolvedName, first.resolvedName);
+  if (sameCompany && samePerson) {
+    ctx.emit("resolve_identity", "running", `A second AI provider (${secondBy}) independently confirmed the match.`);
+    return result;
+  }
+  const describe = (i: Identity) => [i.resolvedName, i.resolvedCompany].filter(Boolean).join(" at ") || "no confident match";
+  const candidates: IdentityCandidate[] = [
+    { name: first.resolvedName ?? first.resolvedCompany ?? "Match A", role: first.resolvedRole, company: first.resolvedCompany, description: `${firstBy ?? "First model"}'s match`, evidenceUrl: first.evidenceUrls[0] ?? null },
+    ...(second.status === "resolved"
+      ? [{ name: second.resolvedName ?? second.resolvedCompany ?? "Match B", role: second.resolvedRole, company: second.resolvedCompany, description: `${secondBy}'s match`, evidenceUrl: second.evidenceUrls[0] ?? null }]
+      : second.candidates),
+  ].slice(0, 5);
+  return {
+    ...result,
+    identity: {
+      ...first,
+      status: "ambiguous",
+      resolvedName: null,
+      resolvedRole: null,
+      resolvedCompany: null,
+      companyDomain: null,
+      companyDescription: null,
+      personConfirmed: false,
+      candidates,
+      reasoning: `Two AI providers disagreed about this match (${firstBy ?? "first"}: ${describe(first)}; ${secondBy}: ${describe(second)}), and it rests on a single source. Pick the right one.`,
+    },
+  };
 }
 
 function notFound(reasoning: string): Identity {

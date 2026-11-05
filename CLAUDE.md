@@ -5,7 +5,7 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 ## Project context
 - **Purpose:** ASA Case Study, Problem Statement 3. A rep names a prospect. The app researches real public information, extracts and verifies signals, picks the strongest outreach hook, and drafts a short, personalised message for a human to review. **Nothing is sent without a rep's confirmed approval**, and only through their own connected Gmail.
 - **Source of requirements:** the PS-3 section of the ASA Case Study Candidate Guide (PDF, not in repo) and the build brief. Both are summarised in `IMPLEMENTATION_PLAN.md` § Requirements traceability.
-- **Stack:** Next.js (App Router, Node runtime) + TypeScript (strict) + Tailwind, SQLite via `better-sqlite3`, `zod`, LLM via `@anthropic-ai/sdk` (Claude, default) or OpenRouter (`fetch`), Tavily REST API (search) via `fetch`, Vitest. Every LLM backend must implement `LlmProvider`, take no tools, and return output validated against the caller's zod schema.
+- **Stack:** Next.js (App Router, Node runtime) + TypeScript (strict) + Tailwind, SQLite via `better-sqlite3`, `zod`, LLM via `@anthropic-ai/sdk` (Claude), OpenRouter or Gemini (`fetch`), search via Tavily with Exa and GDELT as fallbacks, Vitest. Providers sit behind fallback chains (`src/lib/providers/chain.ts`); see `docs/RESILIENCE_PLAN.md`. Every LLM backend must implement `LlmProvider`, take no tools, and return output validated against the caller's zod schema.
 
 ## Key directories
 | Path | What lives there |
@@ -52,12 +52,15 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 | Anthropic Claude | `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL` (default `claude-opus-5-5`) | Identity classification, signal extraction, conflict check, drafting, claim check | `messages.parse` + zod schema; check `stop_reason` (`refusal`, `max_tokens`); SDK retries 429/5xx; a failure fails the stage with a clear message and a retry option |
 | OpenRouter (alternative LLM) | `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL`, `LLM_PROVIDER` | Same tasks as Claude, for any OpenRouter model incl. free ones | Strict `json_schema` output with `provider.require_parameters`; zod-validated with one corrective retry; empty replies retried; hard cap of 14 requests per run; daily free-limit 429s aren't retried |
 | Gmail (optional) | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, optional `GOOGLE_REDIRECT_URI` | Send an approved draft from the rep's account | OAuth web flow with state cookie; tokens in SQLite settings, never sent to the browser; refresh on expiry; a send is never retried |
+| Gemini (backup LLM) | `GEMINI_API_KEY`, optional `GEMINI_MODEL`, `LLM_FALLBACKS` | Same tasks as Claude/OpenRouter when the primary fails | REST `generateContent` with `responseJsonSchema`; zod-validated, one corrective retry; 14 requests per run; daily quota opens the circuit until midnight Pacific |
+| Exa (backup search) | `EXA_API_KEY` | Search and page text when Tavily fails | Single attempt per call (the chain decides); 402 = quota until the 1st |
+| GDELT, Jina Reader, direct read | none (`JINA_API_KEY` optional) | Keyless last-resort news search and page reading | Only active when a keyed search provider is configured; direct reads are SSRF-guarded (public http(s) only, redirects re-checked, size/time caps) |
 | Tavily Search | `TAVILY_API_KEY` | Web and news search with publish dates and content | About 7 calls per run by construction (not separately enforced); 40s timeout; 2 attempts with backoff; partial failure gives a warning, total failure fails the stage |
 
 - Uploaded files are untrusted data like web pages. Prospect documents become sources with `origin: "prospect_document"`, and their quotes are verified against the stored text. A CSV contributes only the chosen row, never other rows. Sender documents are seller material: authoritative only for claims about the seller.
 - Never use a model-written claim as a fact. Facts in drafts come from evidence quotes (or the rep's notes). The review step narrows or rejects claims that overreach their quotes.
 - Drafts may contain no links except the sender's own website. Sources containing instructions aimed at an AI are flagged (`suspicious`) and can never support a finding.
-- Missing keys must fail fast with a clear message. Never fall back to fake data in product code. Fixture providers exist **only** in `tests/`.
+- Missing keys must fail fast with a clear message. Never fall back to fake data in product code. `FAULT_INJECT` may simulate provider *failures* for demos; it never produces data. Fixture providers exist **only** in `tests/`.
 - The only other outbound calls allowed are Google OAuth and the Gmail send endpoint (see guardrails). No CRM, LinkedIn or other email services.
 
 ## Testing requirements

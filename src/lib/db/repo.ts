@@ -21,6 +21,9 @@ import {
   type SenderProfile,
   type SentRecord,
   type ContactHold,
+  type Degradation,
+  type ProviderCall,
+  type ProviderHealth,
   type ContactRules,
   type Signal,
   type SignalType,
@@ -47,6 +50,7 @@ interface RunRow {
   active_ms: number | null;
   sent_json: string | null;
   hold_json: string | null;
+  degraded_json: string | null;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -96,6 +100,7 @@ export interface RunRecord {
   activeMs: number;
   sent: SentRecord | null;
   hold: ContactHold | null;
+  degraded: Degradation[];
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
@@ -118,6 +123,7 @@ function toRecord(row: RunRow): RunRecord {
     activeMs: row.active_ms ?? 0,
     sent: parseJson<SentRecord | null>(row.sent_json ?? null, null),
     hold: parseJson<ContactHold | null>(row.hold_json ?? null, null),
+    degraded: parseJson<Degradation[]>(row.degraded_json ?? null, []),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     completedAt: row.completed_at,
@@ -183,6 +189,7 @@ export interface RunPatch {
   approvedVersion?: number | null;
   sent?: SentRecord | null;
   hold?: ContactHold | null;
+  degraded?: Degradation[];
   completedAt?: string | null;
 }
 
@@ -200,6 +207,7 @@ const PATCH_COLUMNS: Record<keyof RunPatch, { column: string; json: boolean }> =
   approvedVersion: { column: "approved_version", json: false },
   sent: { column: "sent_json", json: true },
   hold: { column: "hold_json", json: true },
+  degraded: { column: "degraded_json", json: true },
   completedAt: { column: "completed_at", json: false },
 };
 
@@ -392,6 +400,8 @@ export function getRunDetail(id: string, options: { forClient?: boolean } = {}):
     approvedVersion: record.approvedVersion,
     sent: record.sent,
     hold: record.hold,
+    degraded: record.degraded,
+    providerCalls: listProviderCalls(id),
     identity: record.identity,
     hook: record.hook,
     limitations: record.limitations,
@@ -552,4 +562,101 @@ export function listSentRuns(): { runId: string; sent: SentRecord }[] {
   return rows
     .map((r) => ({ runId: r.id, sent: JSON.parse(r.sent_json) as SentRecord }))
     .sort((a, b) => b.sent.sentAt.localeCompare(a.sent.sentAt));
+}
+
+// ---------------------------------------------------------------------------
+// Resilience: provider call log and circuit-breaker state.
+
+type ProviderCallRow = {
+  id: number;
+  stage: string | null;
+  task: string;
+  provider: string;
+  model: string | null;
+  outcome: ProviderCall["outcome"];
+  error_kind: string | null;
+  message: string | null;
+  fallback_from: string | null;
+  duration_ms: number;
+  created_at: string;
+};
+
+export function addProviderCall(call: Omit<ProviderCall, "id" | "createdAt"> & { runId: string | null }): void {
+  getDb()
+    .prepare(
+      `INSERT INTO provider_calls (run_id, stage, task, provider, model, outcome, error_kind, message, fallback_from, duration_ms, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(call.runId, call.stage, call.task, call.provider, call.model, call.outcome, call.errorKind, call.message, call.fallbackFrom, Math.round(call.durationMs), new Date().toISOString());
+}
+
+export function listProviderCalls(runId: string): ProviderCall[] {
+  const rows = getDb().prepare(`SELECT * FROM provider_calls WHERE run_id = ? ORDER BY id`).all(runId) as ProviderCallRow[];
+  return rows.map((r) => ({
+    id: r.id,
+    stage: r.stage as ProviderCall["stage"],
+    task: r.task,
+    provider: r.provider,
+    model: r.model,
+    outcome: r.outcome,
+    errorKind: r.error_kind,
+    message: r.message,
+    fallbackFrom: r.fallback_from,
+    durationMs: r.duration_ms,
+    createdAt: r.created_at,
+  }));
+}
+
+/** Calls and failures per provider since a time (for the status panel). Drops entries older than 30 days. */
+export function providerCallCounts(sinceIso: string): Record<string, { calls: number; failures: number }> {
+  getDb().prepare(`DELETE FROM provider_calls WHERE created_at < ?`).run(new Date(Date.now() - 30 * 86_400_000).toISOString());
+  const rows = getDb()
+    .prepare(`SELECT provider, SUM(outcome = 'ok') AS ok, SUM(outcome = 'error') AS failed FROM provider_calls WHERE created_at >= ? GROUP BY provider`)
+    .all(sinceIso) as { provider: string; ok: number; failed: number }[];
+  return Object.fromEntries(rows.map((r) => [r.provider, { calls: r.ok + r.failed, failures: r.failed }]));
+}
+
+type HealthRow = {
+  provider: string;
+  down_until: string | null;
+  consecutive_failures: number;
+  last_error: string | null;
+  last_error_kind: string | null;
+  last_ok_at: string | null;
+  updated_at: string;
+};
+
+const toHealth = (r: HealthRow): ProviderHealth => ({
+  provider: r.provider,
+  downUntil: r.down_until,
+  consecutiveFailures: r.consecutive_failures,
+  lastError: r.last_error,
+  lastErrorKind: r.last_error_kind,
+  lastOkAt: r.last_ok_at,
+  updatedAt: r.updated_at,
+});
+
+export function getProviderHealth(provider: string): ProviderHealth | null {
+  const row = getDb().prepare(`SELECT * FROM provider_health WHERE provider = ?`).get(provider) as HealthRow | undefined;
+  return row ? toHealth(row) : null;
+}
+
+export function listProviderHealth(): ProviderHealth[] {
+  return (getDb().prepare(`SELECT * FROM provider_health ORDER BY provider`).all() as HealthRow[]).map(toHealth);
+}
+
+export function saveProviderHealth(h: ProviderHealth): void {
+  getDb()
+    .prepare(
+      `INSERT INTO provider_health (provider, down_until, consecutive_failures, last_error, last_error_kind, last_ok_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(provider) DO UPDATE SET down_until = excluded.down_until, consecutive_failures = excluded.consecutive_failures,
+         last_error = excluded.last_error, last_error_kind = excluded.last_error_kind, last_ok_at = excluded.last_ok_at, updated_at = excluded.updated_at`,
+    )
+    .run(h.provider, h.downUntil, h.consecutiveFailures, h.lastError, h.lastErrorKind, h.lastOkAt, h.updatedAt);
+}
+
+export function clearProviderHealth(provider?: string): void {
+  if (provider) getDb().prepare(`DELETE FROM provider_health WHERE provider = ?`).run(provider);
+  else getDb().prepare(`DELETE FROM provider_health`).run();
 }

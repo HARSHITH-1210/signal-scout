@@ -24,6 +24,11 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Fallbacks (recommended): a backup AI provider and a backup search provider
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: EXA_API_KEY
+        sync: false
       # Optional Gmail sending. The redirect must be https://<your-service>.onrender.com/api/gmail/callback
       - key: GOOGLE_CLIENT_ID
         sync: false

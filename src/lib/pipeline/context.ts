@@ -1,6 +1,7 @@
+import type { CallRecorder } from "../providers/chain";
 import type { LlmProvider } from "../providers/llm";
 import type { SearchProvider, SearchResult } from "../providers/search";
-import type { SenderProfile, Source, SourceCategory, StageName, StageStatus } from "../types";
+import type { Degradation, SenderProfile, Source, SourceCategory, StageName, StageStatus } from "../types";
 import { chunkText } from "../documents/parse";
 import { looksLikePromptInjection, sanitizeText } from "./sanitize";
 import { assessReliability, domainOf } from "./sourceReliability";
@@ -11,6 +12,10 @@ export interface PipelineDeps {
   search: SearchProvider;
   llm: LlmProvider;
   now: () => Date;
+  /** Audit trail and degradation collector for real providers; absent with test fakes. */
+  recorder?: CallRecorder;
+  /** Aborted when the rep stops the run. */
+  signal?: AbortSignal;
 }
 
 export interface StageContext {
@@ -18,6 +23,8 @@ export interface StageContext {
   deps: PipelineDeps;
   sender: SenderProfile;
   emit: (stage: StageName, status: StageStatus, message: string, detail?: Record<string, unknown>) => void;
+  /** Notes that this stage carried on with less (shown as a "Degraded" reason on the run). */
+  degrade?: (code: Degradation["code"], message: string) => void;
 }
 
 export function normaliseUrl(url: string): string {
@@ -34,9 +41,15 @@ export function normaliseUrl(url: string): string {
 /** Accumulates deduplicated sources with stable ids (S1, S2, ...) across stages of one run. */
 export class SourceCollector {
   private readonly byUrl = new Map<string, Source>();
+  // Ids continue from the highest existing one, not the count: a clarification can keep a gappy subset
+  // (S1, S2, S5), and counting would hand out S5 again.
+  private lastId = 0;
 
   constructor(existing: Source[] = []) {
-    for (const s of existing) this.byUrl.set(normaliseUrl(s.url), s);
+    for (const s of existing) {
+      this.byUrl.set(normaliseUrl(s.url), s);
+      this.lastId = Math.max(this.lastId, Number(/^S(\d+)$/.exec(s.id)?.[1] ?? 0));
+    }
   }
 
   add(result: SearchResult, category: SourceCategory, companyDomain: string | null): Source | null {
@@ -50,7 +63,7 @@ export class SourceCollector {
     const suspicious = looksLikePromptInjection(`${result.title}\n${result.rawContent ?? ""}\n${result.content}`);
     const reliability = suspicious ? SUSPICIOUS : assessReliability(domain, companyDomain);
     const source: Source = {
-      id: `S${this.byUrl.size + 1}`,
+      id: `S${++this.lastId}`,
       url: result.url,
       title: sanitizeText(result.title, 300),
       domain,
@@ -80,7 +93,7 @@ export class SourceCollector {
       if (this.byUrl.has(key) || text.length < 20) return;
       const suspicious = looksLikePromptInjection(text);
       const source: Source = {
-        id: `S${this.byUrl.size + 1}`,
+        id: `S${++this.lastId}`,
         url,
         title: parts.length > 1 ? `${doc.name} (part ${i + 1} of ${parts.length})` : doc.name,
         domain: "your document",
