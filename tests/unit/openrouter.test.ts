@@ -96,10 +96,10 @@ describe("provider selection", () => {
   });
 
   it("flags an unknown LLM_PROVIDER instead of guessing", () => {
-    process.env.LLM_PROVIDER = "gemini";
+    process.env.LLM_PROVIDER = "mistral";
     expect(getHealth().llmProvider).toBe("invalid");
     expect(missingSettings().join(" ")).toMatch(/LLM_PROVIDER/);
-    expect(() => createLlmProvider()).toThrow(/must be "anthropic" or "openrouter"/);
+    expect(() => createLlmProvider()).toThrow(/LLM_PROVIDER must be/);
   });
 
   it("reports the active provider's key and model, never values", () => {

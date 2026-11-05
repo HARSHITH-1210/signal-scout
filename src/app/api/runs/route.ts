@@ -4,6 +4,7 @@ import { AttachmentList, resolveAttachments } from "@/lib/api/attachments";
 import { createRun, findRecentDuplicate, getSenderProfile, listRuns } from "@/lib/db/repo";
 import { buildPitch } from "@/lib/pipeline/pitch";
 import { enqueueRun } from "@/lib/pipeline/runner";
+import { preflight } from "@/lib/providers/preflight";
 import { PitchChoiceSchema, validateProspect } from "@/lib/pipeline/validate";
 import { RUN_STATUSES, type RunStatus } from "@/lib/types";
 
@@ -39,6 +40,8 @@ export const POST = handle(async (request: Request) => {
     const duplicate = findRecentDuplicate(result.value);
     if (duplicate) return json({ error: "You researched this prospect recently.", duplicate }, 409);
   }
+  const ready = preflight();
+  if (!ready.ok) return json({ error: ready.error, retryAt: ready.retryAt }, 503);
   const run = createRun(result.value, attachments.documents, pitch.pitch);
   enqueueRun(run.id);
   return json({ id: run.id, status: "queued" }, 202);

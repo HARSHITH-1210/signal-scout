@@ -49,13 +49,13 @@ function errorFor(status: number, message: string): ProviderError {
   const detail = redact(message).slice(0, 300);
   if (status === 401) return new ProviderError("openrouter", "auth", "OpenRouter rejected the API key. Check OPENROUTER_API_KEY.");
   if (status === 402)
-    return new ProviderError("openrouter", "rate_limit", "OpenRouter says this account has insufficient credits for the model. Use a model ending in :free, or add credits.");
+    return new ProviderError("openrouter", "quota", "OpenRouter says this account has insufficient credits for the model. Use a model ending in :free, or add credits.");
   if (status === 403) return new ProviderError("openrouter", "refusal", `OpenRouter's moderation blocked this request. ${detail}`);
   if (status === 404)
     return new ProviderError("openrouter", "bad_request", `OpenRouter couldn't use this model (${detail}). Check OPENROUTER_MODEL and that the model supports structured outputs.`);
   if (status === 429)
     return /per[- ]day|daily/i.test(message)
-      ? new ProviderError("openrouter", "rate_limit", "OpenRouter's daily limit for free models is used up. It resets daily; buying $10 of credits raises it.")
+      ? new ProviderError("openrouter", "quota", "OpenRouter's daily limit for free models is used up. It resets daily; buying $10 of credits raises it.")
       : new ProviderError("openrouter", "rate_limit", "OpenRouter rate limit reached. Wait a minute and retry.");
   if (status === 503)
     return new ProviderError("openrouter", "unavailable", "No OpenRouter provider is currently serving this model with structured outputs. Retry, or pick another model.");
@@ -64,7 +64,7 @@ function errorFor(status: number, message: string): ProviderError {
 }
 
 const isRetryable = (e: ProviderError) =>
-  e.kind === "unavailable" || (e.kind === "rate_limit" && !/daily|credits/i.test(e.message));
+  e.kind === "unavailable" || e.kind === "rate_limit";
 
 /**
  * Any OpenRouter model (including free ones) via schema-constrained JSON output. Like the Anthropic
@@ -79,6 +79,9 @@ export class OpenRouterProvider implements LlmProvider {
     apiKey = getConfig().openrouterApiKey,
     model = getConfig().openrouterModel,
     private readonly fetchImpl: FetchLike = (input, init) => fetch(input, init),
+    // Same-account models OpenRouter tries when the first is down. They share its quota, so they help with
+    // outages, not with a used-up daily limit (that's what the next provider in the chain is for).
+    private readonly fallbackModels: string[] = getConfig().openrouterFallbackModels,
   ) {
     if (!apiKey) throw new ProviderError("openrouter", "config", "OPENROUTER_API_KEY is not set. Add it to .env.local and restart.");
     this.apiKey = apiKey;
@@ -130,6 +133,7 @@ export class OpenRouterProvider implements LlmProvider {
           },
           body: JSON.stringify({
             model: this.model,
+            ...(this.fallbackModels.length ? { models: [this.model, ...this.fallbackModels] } : {}),
             messages,
             max_tokens: request.maxTokens ?? 16_000,
             response_format: { type: "json_schema", json_schema: { name: request.task, strict: true, schema } },

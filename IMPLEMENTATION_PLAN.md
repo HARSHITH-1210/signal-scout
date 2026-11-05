@@ -54,7 +54,7 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
 ```
 
 ### Run statuses
-`queued | running | needs_clarification | held | insufficient_research | awaiting_review | approved | sent | failed`
+`queued | running | needs_clarification | held | insufficient_research | awaiting_review | approved | sent | failed | stopped`
 
 ### Stage statuses
 `pending | running | succeeded | warning | failed | skipped`
@@ -191,3 +191,15 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - Pipeline: research adds one query for the pitched offering names; extraction lists the offerings with ids and returns `offeringId` per finding (ids not pitched are dropped; a sole offering is linked by default; unlinked findings stay capped). `pitchFocus` picks the lead: the hook's offering, else the most-linked, else the first. The draft prompt details only the lead and names the others for a new `alsoOffer` sentence after the value paragraph (chosen mode: every other chosen offering; auto mode: up to two other linked ones). The claim audit and Edit with AI see every pitched offering. Seller documents: company-wide plus those tagged to pitched offerings.
   - Decision (user): one email leads with the best fit and only names the others. Defaults taken without an answer: "Let Signal Scout choose" exists, and the contact list has its own page.
   - Tests: `tests/unit/pitch.test.ts`, pitch cases in `tests/unit/api.test.ts` and `tests/unit/validate.test.ts`, "offerings the run pitches" in `tests/pipeline/pipeline.test.ts`. A real run with chosen offerings was started against live Tavily/OpenRouter and stored its snapshot; a full live draft with offerings wasn't reviewed.
+- v12 (resilience, docs/RESILIENCE_PLAN.md):
+  - Fallback chains: LLM (primary → Gemini → Anthropic), search (Tavily → Exa → GDELT) and page readers (Tavily → Exa → Jina → SSRF-guarded direct).
+  - Every call is logged (`provider_calls`), with a persisted circuit breaker (`provider_health`), a 20-minute run deadline, preflight (503) and a queue pause.
+  - Degrade-not-fail in identity (documents), research and verify review. Resume from the failed stage (`/api/runs/:id/resume`, `from_extract` mode). Unaudited drafts are gated for sending.
+  - Cross-verification: an independent claim audit, deterministic hook corroboration, and an identity second opinion.
+  - System status panel with *Test connections*; a Degraded banner and "How this run was produced" on runs; the `FAULT_INJECT` demo switch. Migration 6 (it also adds `pitch_json`, for databases that ran it as step 5 before offerings were merged).
+  - Tests: `tests/pipeline/resilience.test.ts`, `tests/unit/providers.test.ts`.
+  - Not live-verified: Gemini, Exa, GDELT, Jina.
+- v13 (stop a run):
+  - *Stop run* on active runs (`POST /api/runs/:id/stop`). A queued run is dropped at once; a running one is aborted at once through an `AbortSignal` (the stage promise is abandoned, and late events are suppressed).
+  - New `stopped` status, resumable like `failed`. A stopped regeneration keeps the previous draft.
+  - Tests: `tests/pipeline/stop.test.ts`.

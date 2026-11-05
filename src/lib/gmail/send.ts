@@ -19,13 +19,13 @@ export function gmailStatus(): GmailStatus {
 // Runs with a send in flight. Checked and set without an await in between, so two tabs can't both send.
 const inFlight = new Set<string>();
 
-export type SendCheck = { ok: true; to: string; from: string } | { ok: false; reason: string };
+export type SendCheck = { ok: true; to: string; from: string } | { ok: false; reason: string; unaudited?: boolean };
 
 /**
  * Everything that must be true before an approval may send an email. Checked BEFORE approving, so a
  * failed check leaves the draft in review rather than approved-but-unsent.
  */
-export function checkSendable(runId: string, version: number, to: string | undefined): SendCheck {
+export function checkSendable(runId: string, version: number, to: string | undefined, options: { acknowledgeUnaudited?: boolean } = {}): SendCheck {
   if (!gmailConfigured()) return { ok: false, reason: "Gmail isn't set up (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)." };
   const connection = repo.getGmailConnection();
   if (!connection) return { ok: false, reason: "Connect Gmail in Sender profile first." };
@@ -41,6 +41,9 @@ export function checkSendable(runId: string, version: number, to: string | undef
   const draft = repo.latestDraft(runId);
   if (!draft || draft.version !== version) return { ok: false, reason: "A newer version exists. Review it before sending." };
   if (isExpired(draft.notes?.expiresAt)) return { ok: false, reason: "This draft has expired. Run the research again before sending." };
+  // An AI draft whose claim audit couldn't run goes out only once the rep says they checked every fact.
+  if (draft.guard.issues.some((i) => i.code === "claim_check_unavailable") && !options.acknowledgeUnaudited)
+    return { ok: false, reason: "The automatic claim audit didn't run for this draft. Confirm you checked every fact before sending.", unaudited: true };
   const blocking = draft.guard.issues.filter((i) => i.severity === "error");
   if (blocking.length > 0)
     return { ok: false, reason: `Fix ${blocking.length === 1 ? "the issue" : `the ${blocking.length} issues`} flagged in Checks before sending (${blocking[0].message})` };

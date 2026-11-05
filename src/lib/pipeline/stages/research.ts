@@ -18,11 +18,11 @@ export function planResearchQueries(identity: Identity, prospect: ProspectInput,
   const year = now.getUTCFullYear();
   const qualified = identity.companyDomain ? `${company} (${identity.companyDomain})` : company;
   const plan: PlannedQuery[] = [
-    { category: "news", query: { query: `${qualified} news announcement`, topic: "news", maxResults: 6, startDate: isoDateDaysAgo(now, 540) } },
-    { category: "funding", query: { query: `${company} raises funding round OR acquisition OR investment`, maxResults: 5 } },
-    { category: "hiring", query: { query: `${company} hiring jobs careers ${role ? roleFunction(role) : ""}`.trim(), maxResults: 5 } },
-    { category: "person", query: { query: `"${name}" ${company} interview OR podcast OR keynote OR wrote`, maxResults: 5 } },
-    { category: "priorities", query: { query: `${company} strategy priorities challenges ${year - 1} ${year}`, maxResults: 5 } },
+    { category: "news", query: { query: `${qualified} news announcement`, topic: "news", maxResults: 6, startDate: isoDateDaysAgo(now, 540), subject: company } },
+    { category: "funding", query: { query: `${company} raises funding round OR acquisition OR investment`, maxResults: 5, subject: company } },
+    { category: "hiring", query: { query: `${company} hiring jobs careers ${role ? roleFunction(role) : ""}`.trim(), maxResults: 5, subject: company } },
+    { category: "person", query: { query: `"${name}" ${company} interview OR podcast OR keynote OR wrote`, maxResults: 5, subject: name ?? company } },
+    { category: "priorities", query: { query: `${company} strategy priorities challenges ${year - 1} ${year}`, maxResults: 5, subject: company } },
   ];
   // One search aimed at what's being pitched, so a relevant initiative isn't missed by the generic queries.
   const topics = offeringNames.map((n) => n.trim()).filter(Boolean).slice(0, 3);
@@ -92,7 +92,9 @@ export async function research(
 
   if (failedQueries === planned.length) {
     const first = log.find((l) => l.error)?.error ?? "unknown error";
-    throw new ProviderError("tavily", "unavailable", `All research searches failed (${first}).`);
+    // Carry on with what identity search and documents already found; fail only with nothing to work from.
+    if (collector.size === 0) throw new ProviderError("tavily", "unavailable", `All research searches failed and nothing was found earlier (${first}).`);
+    ctx.degrade?.("research_failed", `Every research search failed (${first}), so findings come only from the identity results and your documents.`);
   }
   return { sources: collector.all(), log, failedQueries };
 }

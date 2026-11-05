@@ -4,6 +4,7 @@ import { createRun, getDocument, getSenderProfile } from "@/lib/db/repo";
 import { buildPitch } from "@/lib/pipeline/pitch";
 import { prospectFromCsvRow } from "@/lib/documents/parse";
 import { enqueueRun } from "@/lib/pipeline/runner";
+import { preflight } from "@/lib/providers/preflight";
 import { PitchChoiceSchema, validateProspect } from "@/lib/pipeline/validate";
 
 export const runtime = "nodejs";
@@ -27,6 +28,8 @@ export const POST = handle(async (request: Request) => {
   const pitch = buildPitch(getSenderProfile(), { offeringIds: parsed.data.offeringIds, auto: parsed.data.autoPitch });
   if (!pitch.ok) return badRequest(pitch.error);
 
+  const ready = preflight();
+  if (!ready.ok) return json({ error: ready.error, retryAt: ready.retryAt }, 503);
   const created: { id: string; rowIndex: number }[] = [];
   const skipped: number[] = [];
   for (const rowIndex of [...new Set(parsed.data.rowIndexes)]) {

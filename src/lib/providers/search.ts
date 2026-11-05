@@ -9,6 +9,8 @@ export interface SearchQuery {
   maxResults?: number;
   /** Only return results published on/after this date (YYYY-MM-DD). */
   startDate?: string;
+  /** The company or person the query is about, for providers that need a plain phrase (GDELT). */
+  subject?: string;
 }
 
 export interface SearchResult {
@@ -28,6 +30,8 @@ export interface ExtractResult {
 export interface SearchProvider {
   search(query: SearchQuery): Promise<SearchResult[]>;
   extract(urls: string[]): Promise<ExtractResult[]>;
+  /** Searches with a provider other than the primary, for an independent second look. Null when there is none. */
+  searchIndependent?(query: SearchQuery): Promise<{ results: SearchResult[]; provider: string } | null>;
 }
 
 const TavilySearchResponse = z.object({
@@ -61,7 +65,7 @@ function classifyStatus(status: number): ProviderError {
   if (status === 429)
     return new ProviderError("tavily", "rate_limit", "Tavily rate limit reached. Wait a minute and retry.");
   if (status === 432 || status === 433 || status === 434)
-    return new ProviderError("tavily", "rate_limit", "Tavily plan or usage limit reached for this API key.");
+    return new ProviderError("tavily", "quota", "Tavily plan or usage limit reached for this API key.");
   if (status >= 500) return new ProviderError("tavily", "unavailable", `Tavily is unavailable (HTTP ${status}).`);
   return new ProviderError("tavily", "bad_request", `Tavily rejected the request (HTTP ${status}).`);
 }

@@ -10,6 +10,7 @@ export const RUN_STATUS_LABEL: Record<RunStatus, string> = {
   approved: "Approved",
   sent: "Sent",
   failed: "Failed",
+  stopped: "Stopped",
 };
 
 export type Tone = "ok" | "warn" | "bad" | "info" | "neutral";
@@ -24,6 +25,7 @@ export const RUN_STATUS_TONE: Record<RunStatus, Tone> = {
   approved: "ok",
   sent: "ok",
   failed: "bad",
+  stopped: "neutral",
 };
 
 export const STAGE_STATUS_TONE: Record<StageStatus, Tone> = {

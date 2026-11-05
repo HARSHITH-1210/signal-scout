@@ -136,8 +136,8 @@ describe("5. contact list", () => {
     await runPipeline(run.id, deps(northwindSearch(), northwindLlm()));
     expect(repo.getRunDetail(run.id)).toMatchObject({ status: "held", hold: { kind: "relationship", note: "Customer, owner Sam" } });
     expect((await holdAction(req({}), params(run.id))).status).toBe(202);
-    await runPipeline(run.id, deps(northwindSearch(), northwindLlm()));
-    expect(repo.getRun(run.id)?.status).toBe("awaiting_review");
+    // The endpoint queued the run itself; wait for that execution rather than starting a second one.
+    await vi.waitFor(() => expect(repo.getRun(run.id)?.status).toBe("awaiting_review"));
   });
 });
 
