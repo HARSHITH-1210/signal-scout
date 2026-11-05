@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
-import { logError } from "@/lib/config";
+import { getConfig, logError } from "@/lib/config";
 import { connectWithCode, GmailError } from "@/lib/gmail/client";
+
+/** The app's public origin: from GOOGLE_REDIRECT_URI, which must be public for Google to reach it. */
+function publicOrigin(request: Request): string {
+  try {
+    return new URL(getConfig().googleRedirectUri).origin;
+  } catch {
+    return new URL(request.url).origin;
+  }
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function back(request: Request, params: Record<string, string>) {
-  const url = new URL("/settings", request.url);
+  // Behind a proxy (Render), request.url is the server's internal address (0.0.0.0:10000). The
+  // configured redirect URI is the public origin Google just sent the browser to, so return there.
+  const url = new URL("/settings", publicOrigin(request));
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
   const res = NextResponse.redirect(url);
   res.cookies.delete({ name: "gmail_oauth_state", path: "/api/gmail" });

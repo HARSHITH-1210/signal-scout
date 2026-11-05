@@ -242,3 +242,15 @@ describe("concurrent sends", () => {
     expect(sends()).toHaveLength(1);
   });
 });
+
+describe("OAuth callback behind a proxy", () => {
+  it("returns to the public origin, not the server's internal address", async () => {
+    process.env.GOOGLE_REDIRECT_URI = "https://signal-scout-demo.onrender.com/api/gmail/callback";
+    try {
+      const res = await callback(new Request("http://0.0.0.0:10000/api/gmail/callback?code=c&state=good", { headers: { cookie: "gmail_oauth_state=good" } }));
+      expect(res.headers.get("location")).toMatch(/^https:\/\/signal-scout-demo\.onrender\.com\/settings\?gmail=connected/);
+    } finally {
+      delete process.env.GOOGLE_REDIRECT_URI;
+    }
+  });
+});
