@@ -1,7 +1,7 @@
 import type { CallRecorder } from "../providers/chain";
 import type { LlmProvider } from "../providers/llm";
 import type { SearchProvider, SearchResult } from "../providers/search";
-import type { Degradation, SenderProfile, Source, SourceCategory, StageName, StageStatus } from "../types";
+import type { Degradation, RunPitch, SenderProfile, Source, SourceCategory, StageName, StageStatus } from "../types";
 import { chunkText } from "../documents/parse";
 import { looksLikePromptInjection, sanitizeText } from "./sanitize";
 import { assessReliability, domainOf } from "./sourceReliability";
@@ -22,6 +22,8 @@ export interface StageContext {
   runId: string;
   deps: PipelineDeps;
   sender: SenderProfile;
+  /** The offerings this run pitches (empty: no offering set up, keep drafts general). */
+  pitch: RunPitch;
   emit: (stage: StageName, status: StageStatus, message: string, detail?: Record<string, unknown>) => void;
   /** Notes that this stage carried on with less (shown as a "Degraded" reason on the run). */
   degrade?: (code: Degradation["code"], message: string) => void;

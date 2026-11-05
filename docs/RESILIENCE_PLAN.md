@@ -1,6 +1,6 @@
 # Pipeline resilience plan: fallbacks, cross-verification, graceful failure
 
-Status: **built (v10)**, verified with fixture tests; not yet run against the live Gemini, Exa, GDELT and Jina APIs.
+Status: **built (v12)**, verified with fixture tests; not yet run against the live Gemini, Exa, GDELT and Jina APIs.
 
 **Differences from the original proposal:**
 - **"Couldn't search" with no documents** is a resumable *failure*, not a *Not enough signal*. That keeps "Not enough signal" for genuine "found nothing".

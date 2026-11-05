@@ -16,7 +16,7 @@ The repo started empty, and no project `README.md` existed. Requirements come fr
 | R4 | Source URLs and evidence kept with findings | `sources` + `signals` tables; signal → `source_id` + `evidence_quote` | pipeline tests |
 | R5 | Never fabricate facts or sources | deterministic evidence-quote verification (`verify.ts`); guard claim check | `verify.test.ts`, `guard.test.ts` |
 | R6 | Extract signals, assess relevance, select hook, explain why | `stages/extractSignals.ts`, `scoring.ts`, `stages/rank.ts` | `scoring.test.ts`, pipeline happy path |
-| R7 | Concise, natural draft: signal + role link + value prop + CTA, no flattery | `stages/draft.ts` + `guard.ts` | `guard.test.ts`, pipeline |
+| R7 | Concise, natural draft: signal + role link + value prop + CTA, no flattery | `stages/draft.ts` + `guard.ts`; the value comes from the run's chosen offerings ("what it does") (`pitch.ts`): best fit leads, others named | `guard.test.ts`, pipeline |
 | R8 | Editable draft; explicit human review before anything is sent | draft versions + `approve` endpoint; "Edit with AI" (`stages/revise.ts`, `reviseRunDraft`) rewrites from the rep's instruction as a new, fully re-guarded version; optional Gmail send only on a confirmed approval (`src/lib/gmail/`, `checkSendable` before approving) | `tests/unit/api.test.ts`, `tests/unit/revise.test.ts`, `tests/unit/gmail.test.ts`, UI check |
 | R9 | Live run view with per-stage status | `run_events` table + SSE `/api/runs/[id]/events` + `StageTimeline` | pipeline event assertions, manual UI check |
 | R10 | Dashboard: history, statuses, timestamps, outputs; survives refresh | SQLite persistence, `/` dashboard | manual + repo test |
@@ -185,15 +185,21 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - A changed email is saved as a new version (`author: "ai"`, `notes.revision` with the instruction and the AI's note) after the full guard, claim audit included; approval is reset. A question returns an answer and saves nothing. Finding ids the model wasn't shown are dropped.
   - Facts the rep states in the instruction count as the rep's own, like their notes, in the claim audit. Expiry stays with the research. A failed call leaves the draft unchanged; a version saved meanwhile in another tab wins (409).
   - Tests: `tests/unit/api.test.ts` (rewrite, question, unsupported claim flagged, stale version, model failure, empty instruction), `tests/unit/revise.test.ts` (no bad news, rejected findings or suspicious sources in the prompt; role-based drafts get no findings). Not live-tested: no API key was configured.
-- v10 (resilience, docs/RESILIENCE_PLAN.md):
+- v11 (Offerings by sector, user-requested):
+  - The sender profile is only about the seller: identity (name, role, company, website), a default CTA, and `sectors[]` of `offerings[]` (what it does, optional CTA, tagged seller documents; the separate value proposition was dropped at the user's request and old text is folded into "what it does"). Version-1 profiles upgrade on read into a "General" sector (`upgradeSenderProfile`). The contact list moved to its own `/contacts` page.
+  - New run: "What are you pitching?" with one dropdown per sector; 1-5 offerings, or "Let Signal Scout choose" (all). Required when offerings exist (`buildPitch`). The run stores a snapshot (`runs.pitch_json`, migration 5); runs from before use every current offering in auto mode.
+  - Pipeline: research adds one query for the pitched offering names; extraction lists the offerings with ids and returns `offeringId` per finding (ids not pitched are dropped; a sole offering is linked by default; unlinked findings stay capped). `pitchFocus` picks the lead: the hook's offering, else the most-linked, else the first. The draft prompt details only the lead and names the others for a new `alsoOffer` sentence after the value paragraph (chosen mode: every other chosen offering; auto mode: up to two other linked ones). The claim audit and Edit with AI see every pitched offering. Seller documents: company-wide plus those tagged to pitched offerings.
+  - Decision (user): one email leads with the best fit and only names the others. Defaults taken without an answer: "Let Signal Scout choose" exists, and the contact list has its own page.
+  - Tests: `tests/unit/pitch.test.ts`, pitch cases in `tests/unit/api.test.ts` and `tests/unit/validate.test.ts`, "offerings the run pitches" in `tests/pipeline/pipeline.test.ts`. A real run with chosen offerings was started against live Tavily/OpenRouter and stored its snapshot; a full live draft with offerings wasn't reviewed.
+- v12 (resilience, docs/RESILIENCE_PLAN.md):
   - Fallback chains: LLM (primary → Gemini → Anthropic), search (Tavily → Exa → GDELT) and page readers (Tavily → Exa → Jina → SSRF-guarded direct).
   - Every call is logged (`provider_calls`), with a persisted circuit breaker (`provider_health`), a 20-minute run deadline, preflight (503) and a queue pause.
   - Degrade-not-fail in identity (documents), research and verify review. Resume from the failed stage (`/api/runs/:id/resume`, `from_extract` mode). Unaudited drafts are gated for sending.
   - Cross-verification: an independent claim audit, deterministic hook corroboration, and an identity second opinion.
-  - System status panel with *Test connections*; a Degraded banner and "How this run was produced" on runs; the `FAULT_INJECT` demo switch. Migration 5.
+  - System status panel with *Test connections*; a Degraded banner and "How this run was produced" on runs; the `FAULT_INJECT` demo switch. Migration 6 (it also adds `pitch_json`, for databases that ran it as step 5 before offerings were merged).
   - Tests: `tests/pipeline/resilience.test.ts`, `tests/unit/providers.test.ts`.
   - Not live-verified: Gemini, Exa, GDELT, Jina.
-- v11 (stop a run):
+- v13 (stop a run):
   - *Stop run* on active runs (`POST /api/runs/:id/stop`). A queued run is dropped at once; a running one is aborted at once through an `AbortSignal` (the stage promise is abandoned, and late events are suppressed).
   - New `stopped` status, resumable like `failed`. A stopped regeneration keeps the previous draft.
   - Tests: `tests/pipeline/stop.test.ts`.

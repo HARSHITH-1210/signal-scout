@@ -57,6 +57,11 @@ export const NW = {
   ),
 };
 
+/** The research query aimed at the pitched offerings: the company followed by quoted offering names. */
+export function isOfferingQuery(text: string): boolean {
+  return /^[^"]+ "[^"]+"( or "[^"]+")*$/.test(text);
+}
+
 export function northwindSearch(overrides: Partial<Record<string, SearchResult[] | Error>> = {}): FakeSearch {
   return new FakeSearch(
     (q: SearchQuery) => {
@@ -68,6 +73,7 @@ export function northwindSearch(overrides: Partial<Record<string, SearchResult[]
       if (text.includes("raises funding")) return pick("funding", [NW.fundingWire]);
       if (text.includes("hiring")) return pick("hiring", [NW.hiring]);
       if (text.includes("strategy priorities")) return pick("priorities", [NW.injection]);
+      if (isOfferingQuery(text)) return pick("offerings", []);
       return [];
     },
     { [NW.site]: "Northwind Freight is a digital freight network connecting shippers with 12,000 vetted carriers across North America." },

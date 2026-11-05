@@ -63,14 +63,46 @@ export interface ProspectInput {
   notes?: string;
 }
 
+/** One thing the seller sells, kept as a reusable template under a sector. */
+export interface Offering {
+  id: string;
+  name: string;
+  whatItDoes: string;
+  /** Overrides the profile's default call to action when set. */
+  cta: string;
+  /** Seller documents about this offering. Documents not assigned to any offering are company-wide. */
+  documentIds: string[];
+}
+
+/** A group of offerings, e.g. "AI solutions". */
+export interface Sector {
+  id: string;
+  name: string;
+  offerings: Offering[];
+}
+
+/** Who the drafts come from and what the business sells. Only about the seller, never the recipient. */
 export interface SenderProfile {
   senderName: string;
   senderRole: string;
   companyName: string;
   companyWebsite: string;
-  offering: string;
-  valueProp: string;
-  callToAction: string;
+  defaultCta: string;
+  sectors: Sector[];
+}
+
+/** An offering as pitched in one run, copied from the profile so later template edits don't change past runs. */
+export interface PitchedOffering extends Offering {
+  sectorName: string;
+}
+
+/**
+ * What a run pitches. "chosen": the rep picked these offerings. "auto": the rep let research pick from
+ * every offering. Empty offerings means no offering was set up, so drafts stay general.
+ */
+export interface RunPitch {
+  mode: "chosen" | "auto";
+  offerings: PitchedOffering[];
 }
 
 export type SourceCategory = "identity" | "website" | "news" | "funding" | "hiring" | "person" | "priorities" | "document" | "corroboration";
@@ -138,6 +170,8 @@ export interface Signal {
   sensitive?: boolean;
   /** Model's link from this signal to a problem the seller's offering solves (inference); null when there is none. */
   offerLink?: string | null;
+  /** The pitched offering this finding links to; null when it links to none or the id wasn't pitched. */
+  offeringId?: string | null;
 }
 
 export interface IdentityCandidate {
@@ -233,6 +267,14 @@ export interface DraftNotes {
   expiresAt?: string;
   /** Set when this version was rewritten by the AI from the rep's instruction. */
   revision?: DraftRevision;
+  /** Which offering the draft leads with, and which it only mentions. Absent on drafts from before offerings. */
+  pitch?: DraftPitch;
+}
+
+/** Offering names as used in a draft: the best fit leads, the others are named in passing. */
+export interface DraftPitch {
+  lead: string | null;
+  others: string[];
 }
 
 /** The rep's instruction behind an AI revision, and the AI's note on what it changed. */
@@ -386,6 +428,7 @@ export interface ProviderHealth {
 }
 
 export interface RunDetail extends RunSummary {
+  pitch: RunPitch;
   sent: SentRecord | null;
   hold: ContactHold | null;
   degraded: Degradation[];

@@ -7,6 +7,7 @@ import { enqueueRun, resumeModeFor, runPipeline, setDepsFactory } from "@/lib/pi
 import type { PipelineDeps } from "@/lib/pipeline/context";
 import { resolveIdentity } from "@/lib/pipeline/stages/resolveIdentity";
 import { findCorroboration } from "@/lib/pipeline/corroborate";
+import { pitchOrDefault } from "@/lib/pipeline/pitch";
 import { CallRecorder, LlmChain, parseFaults, SearchChain } from "@/lib/providers/chain";
 import { isDown, quotaResetAt, recordFailure } from "@/lib/providers/health";
 import { preflight } from "@/lib/providers/preflight";
@@ -127,7 +128,7 @@ describe("search fallback chain and degrade-not-fail", () => {
         resolvedCompany: null, companyDomain: null, companyDescription: null, evidenceSourceIds: [], candidates: [],
       }),
     });
-    const ctx = { runId: "r", deps: deps(alwaysFail(down("tavily")), llm), sender: repo.getSenderProfile(), emit: () => undefined, degrade: (code: string) => degraded.push(code) };
+    const ctx = { runId: "r", deps: deps(alwaysFail(down("tavily")), llm), sender: repo.getSenderProfile(), pitch: pitchOrDefault(null, repo.getSenderProfile()), emit: () => undefined, degrade: (code: string) => degraded.push(code) };
     await expect(resolveIdentity(ctx, { company: "Northwind Freight" }, [{ name: "brief.pdf", text: "Northwind Freight account brief." }])).resolves.toBeDefined();
     expect(degraded).toContain("documents_only");
   });
@@ -221,7 +222,7 @@ describe("circuit breaker and preflight", () => {
     process.env.LLM_PROVIDER = "openrouter";
     recordFailure("openrouter", quota("openrouter"));
     expect(preflight()).toMatchObject({ ok: false });
-    const res = await createRunRoute(new Request("http://localhost/api/runs", { method: "POST", body: JSON.stringify(NORTHWIND), headers: { "content-type": "application/json" } }));
+    const res = await createRunRoute(new Request("http://localhost/api/runs", { method: "POST", body: JSON.stringify({ ...NORTHWIND, autoPitch: true }), headers: { "content-type": "application/json" } }));
     expect(res.status).toBe(503);
     expect((await res.json()).error).toMatch(/No AI provider is available/);
 

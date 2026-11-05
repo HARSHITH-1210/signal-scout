@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { badRequest, handle, json, readJson } from "@/lib/api/http";
-import { createRun, getDocument } from "@/lib/db/repo";
+import { createRun, getDocument, getSenderProfile } from "@/lib/db/repo";
+import { buildPitch } from "@/lib/pipeline/pitch";
 import { prospectFromCsvRow } from "@/lib/documents/parse";
 import { enqueueRun } from "@/lib/pipeline/runner";
 import { preflight } from "@/lib/providers/preflight";
-import { validateProspect } from "@/lib/pipeline/validate";
+import { PitchChoiceSchema, validateProspect } from "@/lib/pipeline/validate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 /** Batch runs are capped: each run spends search credits and model requests. */
 const MAX_BATCH = 10;
 
-const BatchSchema = z.object({
+const BatchSchema = PitchChoiceSchema.extend({
   documentId: z.string().uuid(),
   rowIndexes: z.array(z.number().int().min(0)).min(1).max(MAX_BATCH),
 });
@@ -23,6 +24,9 @@ export const POST = handle(async (request: Request) => {
   if (!parsed.success) return badRequest(`Choose between 1 and ${MAX_BATCH} rows.`);
   const doc = getDocument(parsed.data.documentId);
   if (!doc || doc.scope !== "prospect" || doc.kind !== "csv" || !doc.rows || !doc.csv) return badRequest("That CSV no longer exists. Upload it again.");
+  // One choice of offerings applies to every row in the batch.
+  const pitch = buildPitch(getSenderProfile(), { offeringIds: parsed.data.offeringIds, auto: parsed.data.autoPitch });
+  if (!pitch.ok) return badRequest(pitch.error);
 
   const ready = preflight();
   if (!ready.ok) return json({ error: ready.error, retryAt: ready.retryAt }, 503);
@@ -39,7 +43,7 @@ export const POST = handle(async (request: Request) => {
       skipped.push(rowIndex);
       continue;
     }
-    const run = createRun(prospect.value, [{ documentId: doc.id, name: doc.name, kind: "csv", rowIndex }]);
+    const run = createRun(prospect.value, [{ documentId: doc.id, name: doc.name, kind: "csv", rowIndex }], pitch.pitch);
     enqueueRun(run.id);
     created.push({ id: run.id, rowIndex });
   }

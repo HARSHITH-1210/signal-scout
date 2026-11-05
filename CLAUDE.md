@@ -10,7 +10,7 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 ## Key directories
 | Path | What lives there |
 |---|---|
-| `src/app/` | Pages (Outreach dashboard `/`, runs list `/runs`, `/runs/new`, `/runs/[id]`, `/settings`) and API routes under `src/app/api/` |
+| `src/app/` | Pages (Outreach dashboard `/`, runs list `/runs`, `/runs/new`, `/runs/[id]`, `/settings` (sender profile: our business only), `/contacts`) and API routes under `src/app/api/` |
 | `src/lib/pipeline/` | Stage orchestrator (`runner.ts`), stages (`stages/*`), and the deterministic logic: scoring, freshness, reliability, sanitisation, guard |
 | `src/lib/providers/` | `SearchProvider` (Tavily) and `LlmProvider` (Anthropic, OpenRouter) interfaces and real implementations |
 | `src/lib/db/` | SQLite schema and repository functions; the only place SQL is written |
@@ -44,6 +44,7 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 - **Never weaken validation, verification thresholds or error handling** to make a run look successful. Insufficient, ambiguous and conflicting outcomes are correct results, not failures to hide.
 - **Secrets:** API keys come only from server-side env vars. Never log, return, render or commit them. Use `redact()` from `src/lib/config.ts` in logs and error messages. `/api/health` reports only whether each key is present.
 - **Contact list and holds:** opt-outs are checked before research, after identity and before any send, and can never be overridden. Bad news is never a hook and holds approval; expired drafts can't be approved or sent. Don't weaken these to get a run through.
+- **Sender profile is only about the seller.** Offerings are templates grouped by sector; each run snapshots the ones it pitches (`runs.pitch_json`), and claims about the seller come only from those offerings and seller documents. Recipient-side data (contact list) lives under Contacts.
 - **Personal data:** store only what the run needs (public professional info). Do not scrape LinkedIn or other login-walled sources.
 
 ## Tool and API usage

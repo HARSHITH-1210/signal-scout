@@ -8,7 +8,7 @@ Two kinds of scenario:
 ## Before the demo
 
 1. Put `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` in `.env.local`. Check that the yellow banner is gone.
-2. Set a real sender profile under **Sender profile**.
+2. Set a real sender profile under **Sender profile**: your details, then your sectors and offerings. Put any do-not-contact entries under **Contacts**.
 3. Run `npm test` (all green), then `npm run smoke`. Read each outcome and pick the inputs you'll use live.
 4. Start the app with `npm run build && npm start` (or `npm run dev`). Leave the dry-run results on the dashboard; they show history and statuses.
 

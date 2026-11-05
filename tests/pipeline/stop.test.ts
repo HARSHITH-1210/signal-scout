@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as repo from "@/lib/db/repo";
 import { useInMemoryDbForTests } from "@/lib/db/schema";
-import { enqueueRun, resumeModeFor, runPipeline, setDepsFactory, stopRun } from "@/lib/pipeline/runner";
+import { enqueueRun, resumeModeFor, runPipeline, setDepsFactory } from "@/lib/pipeline/runner";
 import type { SearchProvider } from "@/lib/providers/search";
 import { POST as stopRoute } from "@/app/api/runs/[id]/stop/route";
 import { deps, FakeSearch } from "../fixtures/fakes";

@@ -9,6 +9,7 @@ const LINKS: { href: string; label: string; icon: IconName }[] = [
   { href: "/runs", label: "Runs", icon: "runs" },
   { href: "/runs/new", label: "New run", icon: "plus" },
   { href: "/settings", label: "Sender", icon: "sender" },
+  { href: "/contacts", label: "Contacts", icon: "contacts" },
 ];
 
 function isActive(pathname: string, href: string) {

@@ -4,6 +4,7 @@ import { useInMemoryDbForTests } from "@/lib/db/schema";
 import { ProviderError } from "@/lib/errors";
 import { applyClarification, createDefaultDeps, runPipeline } from "@/lib/pipeline/runner";
 import { UNTRUSTED_DATA_RULE } from "@/lib/pipeline/sanitize";
+import { buildPitch } from "@/lib/pipeline/pitch";
 import { deps, FakeSearch } from "../fixtures/fakes";
 import {
   AMBIGUOUS,
@@ -78,6 +79,38 @@ describe("happy path", () => {
       const block = call.user.split("<untrusted_source").find((b) => b.includes("IGNORE ALL PREVIOUS"));
       if (block) expect(block).toContain("</untrusted_source>");
     }
+  });
+});
+
+describe("offerings the run pitches", () => {
+  it("researches, links and drafts around the chosen offerings: best fit leads, the others are named", async () => {
+    const chosen = buildPitch(repo.DEFAULT_SENDER_PROFILE, { offeringIds: ["vendor-onboarding", "invoice-agents"] });
+    if (!chosen.ok) throw new Error(chosen.error);
+    const run = repo.createRun(NORTHWIND, [], chosen.pitch);
+    const search = northwindSearch();
+    const llm = northwindLlm();
+    await runPipeline(run.id, deps(search, llm));
+
+    expect(finalStatus(run.id).status).toBe("awaiting_review");
+    expect(search.calls.some((q) => q.query === 'Northwind Freight "Vendor onboarding checks" OR "Invoice-processing agents"')).toBe(true);
+    const extraction = llm.callsFor("extract_signals")[0].user;
+    expect(extraction).toContain("[vendor-onboarding] Vendor onboarding checks (AI solutions)");
+    expect(extraction).toContain("[invoice-agents] Invoice-processing agents");
+
+    // No finding names an offering here, so the first chosen one leads and the other is named in passing.
+    const draftPrompt = llm.callsFor("draft")[0].user;
+    expect(draftPrompt).toContain("LEAD OFFERING (the value paragraph is about this one only): Vendor onboarding checks:");
+    expect(draftPrompt).toContain("ALSO OFFERS (name these in passing in alsoOffer; no details, no claims): Invoice-processing agents");
+    expect(llm.callsFor("check_claims")[0].user).toContain("- Invoice-processing agents: AI agents that capture");
+    expect(repo.latestDraft(run.id)!.notes?.pitch).toEqual({ lead: "Vendor onboarding checks", others: ["Invoice-processing agents"] });
+  });
+
+  it("drafts generally when no offering is set up", async () => {
+    const run = repo.createRun(NORTHWIND, [], { mode: "auto", offerings: [] });
+    const llm = northwindLlm();
+    await runPipeline(run.id, deps(northwindSearch(), llm));
+    expect(llm.callsFor("draft")[0].user).toContain("ALSO OFFERS: (none: alsoOffer must be null)");
+    expect(repo.latestDraft(run.id)!.notes?.pitch).toEqual({ lead: null, others: [] });
   });
 });
 
@@ -195,7 +228,7 @@ describe("failures", () => {
   it("carries on from identity results, marked degraded, when every research query fails", async () => {
     const run = repo.createRun(NORTHWIND);
     const err = new ProviderError("tavily", "unavailable", "timeout");
-    const search = northwindSearch({ person: err, news: err, funding: err, hiring: err, priorities: err });
+    const search = northwindSearch({ person: err, news: err, funding: err, hiring: err, priorities: err, offerings: err });
     await runPipeline(run.id, deps(search, northwindLlm()));
     const d = finalStatus(run.id);
     expect(d.status).not.toBe("failed");
@@ -211,7 +244,7 @@ describe("failures", () => {
     const d = finalStatus(run.id);
     expect(d.status).toBe("awaiting_review");
     expect(d.stageStatuses.research).toBe("warning");
-    expect(d.limitations.join(" ")).toMatch(/2 of 5 research searches failed/);
+    expect(d.limitations.join(" ")).toMatch(/2 of 6 research searches failed/);
   });
 
   it("keeps research when drafting fails, and a retry succeeds", async () => {

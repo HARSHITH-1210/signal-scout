@@ -1,0 +1,143 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+import type { Sector } from "@/lib/types";
+import { Icon } from "./Icon";
+
+export interface PitchSelection {
+  auto: boolean;
+  offeringIds: string[];
+}
+
+/** Must match MAX_CHOSEN_OFFERINGS on the server (src/lib/pipeline/pitch.ts). */
+const MAX_CHOSEN = 5;
+const STORAGE_KEY = "signal-scout:pitch";
+
+/** The rep's last choice, kept per browser as a convenience; ids that no longer exist are dropped. */
+function loadSaved(sectors: Sector[]): PitchSelection | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as Partial<PitchSelection>;
+    const known = new Set(sectors.flatMap((s) => s.offerings.map((o) => o.id)));
+    return { auto: saved.auto === true, offeringIds: (saved.offeringIds ?? []).filter((id) => known.has(id)).slice(0, MAX_CHOSEN) };
+  } catch {
+    return null;
+  }
+}
+
+function save(selection: PitchSelection) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(selection));
+  } catch {
+    // Private windows can block storage; the choice just isn't remembered.
+  }
+}
+
+/** One dropdown per sector; tick one or more offerings across sectors, or let research choose. */
+export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sector[]; value: PitchSelection; onChange: (v: PitchSelection) => void; error?: string }) {
+  // Restored once after mount: the server render can't see this browser's storage.
+  const restored = useRef(false);
+  const offerings = sectors.flatMap((s) => s.offerings.map((o) => ({ ...o, sectorName: s.name })));
+
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    const saved = loadSaved(sectors);
+    if (saved && (saved.auto || saved.offeringIds.length)) onChange(saved);
+  }, [sectors, onChange]);
+
+  const update = (next: PitchSelection) => {
+    onChange(next);
+    save(next);
+  };
+  const toggle = (id: string) => {
+    const has = value.offeringIds.includes(id);
+    if (!has && value.offeringIds.length >= MAX_CHOSEN) return;
+    update({ auto: false, offeringIds: has ? value.offeringIds.filter((x) => x !== id) : [...value.offeringIds, id] });
+  };
+
+  if (offerings.length === 0)
+    return (
+      <p className="text-sm text-ochre">
+        No offerings set up, so drafts stay general.{" "}
+        <Link href="/settings" className="font-bold underline">
+          Add what you sell
+        </Link>
+      </p>
+    );
+
+  const chosen = offerings.filter((o) => value.offeringIds.includes(o.id));
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2">
+        {sectors
+          .filter((s) => s.offerings.length > 0)
+          .map((sector) => {
+            const picked = sector.offerings.filter((o) => value.offeringIds.includes(o.id)).length;
+            return (
+              <details key={sector.id} className="group relative">
+                <summary
+                  className={`flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border px-3 text-sm font-bold ${
+                    picked && !value.auto ? "border-rail bg-rail/10 text-rail" : "border-rule text-ink-soft hover:border-muted/60"
+                  } ${value.auto ? "opacity-45" : ""}`}
+                >
+                  {sector.name}
+                  {picked > 0 && !value.auto && <span className="acc rounded-full bg-rail px-1.5 text-[11px] text-white">{picked}</span>}
+                  <Icon name="chevron" className="h-3.5 w-3.5 rotate-90 transition-transform group-open:-rotate-90" />
+                </summary>
+                <fieldset disabled={value.auto} className="absolute left-0 z-20 mt-1 w-[min(320px,calc(100vw-48px))] rounded-lg border border-rule bg-paper p-2">
+                  <legend className="sr-only">{sector.name} offerings</legend>
+                  {sector.offerings.map((o) => {
+                    const checked = value.offeringIds.includes(o.id);
+                    const full = !checked && value.offeringIds.length >= MAX_CHOSEN;
+                    return (
+                      <label key={o.id} className={`flex min-h-11 cursor-pointer items-start gap-2.5 rounded-md px-2 py-2 hover:bg-board ${full ? "opacity-45" : ""}`}>
+                        <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0" checked={checked} disabled={full} onChange={() => toggle(o.id)} />
+                        <span className="text-sm">
+                          <span className="font-bold">{o.name}</span>
+                          {o.whatItDoes && <span className="mt-0.5 line-clamp-2 block text-[13px] text-muted">{o.whatItDoes}</span>}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </fieldset>
+              </details>
+            );
+          })}
+      </div>
+
+      <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-2.5 text-sm">
+        <input type="checkbox" className="mt-0.5 h-4 w-4" checked={value.auto} onChange={(e) => update({ auto: e.target.checked, offeringIds: value.offeringIds })} />
+        <span>
+          <span className="font-bold">Let Signal Scout choose</span>
+          <span className="block text-[13px] text-muted">Consider every offering and lead with whichever the research supports best.</span>
+        </span>
+      </label>
+
+      {!value.auto && chosen.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Chosen offerings">
+          {chosen.map((o) => (
+            <li key={o.id} className="inline-flex items-center gap-1 rounded-full border border-rule bg-board/60 py-0.5 pr-0.5 pl-2.5 text-[13px]">
+              <span className="text-muted">{o.sectorName} ·</span> {o.name}
+              <button type="button" onClick={() => toggle(o.id)} aria-label={`Remove ${o.name}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted hover:bg-board hover:text-specimen">
+                <Icon name="cross" className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className={`mt-2 text-[13px] ${error ? "text-specimen" : "text-muted"}`} role={error ? "alert" : undefined}>
+        {error ??
+          (value.auto
+            ? "Every offering is considered."
+            : chosen.length === 0
+              ? `Choose one or more (up to ${MAX_CHOSEN}).`
+              : chosen.length === 1
+                ? "The email pitches this one."
+                : "The email leads with the best fit for the research and names the others in passing.")}
+      </p>
+    </div>
+  );
+}

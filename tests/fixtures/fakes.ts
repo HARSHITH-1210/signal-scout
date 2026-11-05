@@ -43,6 +43,7 @@ export class FakeLlm implements LlmProvider {
     let output = handler(request as LlmRequest<unknown>);
     if (output instanceof Error) throw output;
     if (request.task === "draft") output = structuredDraft(output);
+    output = withPitchDefaults(request.task, output);
     // Validate against the real schema so fixtures can't drift from what Claude is constrained to return.
     return request.schema.parse(output);
   }
@@ -67,6 +68,19 @@ export function sourceIdFor(prompt: string, url: string): string {
   const match = new RegExp(`<untrusted_source id="(S\\d+)" url="${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`).exec(prompt);
   if (!match) throw new Error(`Source ${url} not present in prompt`);
   return match[1];
+}
+
+/**
+ * Fixtures written before offerings existed omit the new nullable fields; default them to null so the
+ * real schema (which requires every key) still validates everything else.
+ */
+function withPitchDefaults(task: LlmTask, output: unknown): unknown {
+  if (typeof output !== "object" || output === null) return output;
+  const o = output as Record<string, unknown>;
+  if (task === "draft" && !("alsoOffer" in o)) return { ...o, alsoOffer: null };
+  if (task === "extract_signals" && Array.isArray(o.signals))
+    return { ...o, signals: o.signals.map((s) => (typeof s === "object" && s !== null && !("offeringId" in s) ? { ...s, offeringId: null } : s)) };
+  return output;
 }
 
 /**

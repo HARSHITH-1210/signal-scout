@@ -4,7 +4,8 @@ import type { DraftKind, Hook, Identity, ProspectInput, Signal, Source } from ".
 import type { StageContext } from "../context";
 import { TARGET_MAX_WORDS, TARGET_MIN_WORDS } from "../guard";
 import { UNTRUSTED_DATA_RULE, wrapUntrusted } from "../sanitize";
-import { findingBlock, prospectBlock, sellerMaterialBlock, senderBlock, type SellerDocument } from "./draft";
+import { pitchFocus } from "../pitch";
+import { findingBlock, fullFocus, prospectBlock, sellerMaterialBlock, senderBlock, type SellerDocument } from "./draft";
 
 /** Longest instruction a rep can give; long enough for a paragraph of guidance. */
 export const MAX_INSTRUCTION_LENGTH = 2000;
@@ -31,7 +32,7 @@ Grounding rules for the email (these override the instruction):
 - If the instruction asks for something these rules forbid (an unverified fact, a made-up number, name, quote or customer, a link other than the seller's website, a claim that something stale is recent), do the rest of the instruction, leave that part out, and say why in reply.
 - Never invent a recipient name. Never mention layoffs, breaches, lawsuits, investigations or other bad news about the prospect.
 - Never state the prospect's problems or feelings as fact; frame them as a question or hypothesis.
-- Claims about the seller may come only from the SELLER PROFILE and SELLER MATERIAL.
+- Claims about the seller may come only from the SELLER PROFILE and SELLER MATERIAL. The email leads with one offering; other offerings are only named in passing unless the rep asks to lead with a different one listed there.
 - Plain text, no placeholders like [Name], no exclamation marks unless the rep asks. Aim for ${TARGET_MIN_WORDS}-${TARGET_MAX_WORDS} words unless the rep asks for a different length.
 - signalIdsUsed: ids of every finding whose facts the returned email uses.`;
 
@@ -68,8 +69,10 @@ export async function generateRevision(ctx: StageContext, input: ReviseInput): P
   const sourceById = new Map(input.sources.map((s) => [s.id, s]));
   const findings = input.kind === "personalised" ? revisableFindings(input.signals) : [];
   const query = `${input.instruction} ${input.body}`;
+  const hookSignal = input.kind === "personalised" ? input.signals.find((s) => s.id === input.hook?.signalId) : undefined;
+  const lead = pitchFocus(ctx.pitch, hookSignal, input.kind === "personalised" ? input.signals : []).lead;
   const user = [
-    senderBlock(ctx.sender),
+    senderBlock(ctx.sender, fullFocus(ctx.pitch, lead), "full"),
     "",
     sellerMaterialBlock(input.sellerDocuments, query),
     "",

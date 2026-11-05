@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import { validateProspect, type FieldErrors } from "@/lib/pipeline/validate";
-import type { ProspectInput, RunSummary, StoredDocument } from "@/lib/types";
+import type { ProspectInput, RunSummary, Sector, StoredDocument } from "@/lib/types";
 import { formatDateTime, RUN_STATUS_LABEL } from "@/lib/ui/format";
 import { DocumentChip, DropZone, type UploadResult } from "./DropZone";
 import { TextArea, TextField } from "./Field";
 import { Icon } from "./Icon";
+import { PitchPicker, type PitchSelection } from "./PitchPicker";
 
 const EMPTY = { name: "", email: "", role: "", linkedinUrl: "", company: "", companyWebsite: "", notes: "" };
 type Values = typeof EMPTY;
@@ -35,8 +36,17 @@ const fromProspect = (p: ProspectInput): Values => ({
 const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-action px-5 text-sm font-bold text-white transition-colors hover:bg-action-strong disabled:cursor-not-allowed disabled:opacity-45";
 const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45";
 
-export function NewRunForm() {
+export function NewRunForm({ sectors }: { sectors: Sector[] }) {
   const router = useRouter();
+  const [pitch, setPitchState] = useState<PitchSelection>({ auto: false, offeringIds: [] });
+  const [pitchError, setPitchError] = useState<string | null>(null);
+  const setPitch = useCallback((next: PitchSelection) => {
+    setPitchState(next);
+    setPitchError(null);
+  }, []);
+  const hasOfferings = sectors.some((s) => s.offerings.length > 0);
+  const pitchReady = !hasOfferings || pitch.auto || pitch.offeringIds.length > 0;
+  const pitchBody = { autoPitch: pitch.auto, offeringIds: pitch.auto ? [] : pitch.offeringIds };
   const [values, setValues] = useState<Values>(EMPTY);
   const [pdfs, setPdfs] = useState<StoredDocument[]>([]);
   const [csv, setCsv] = useState<CsvState | null>(null);
@@ -91,12 +101,17 @@ export function NewRunForm() {
       setErrors(local.errors);
       return;
     }
+    if (!pitchReady) {
+      setPitchError("Choose what you're pitching, or let Signal Scout choose.");
+      document.getElementById("pitch-title")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, documents: attachments, force }),
+        body: JSON.stringify({ ...values, documents: attachments, force, ...pitchBody }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 409 && data.duplicate) {
@@ -105,6 +120,7 @@ export function NewRunForm() {
         return;
       }
       if (!res.ok) {
+        if (data.fieldErrors?.pitch) setPitchError(data.fieldErrors.pitch);
         setErrors(data.fieldErrors ?? {});
         setFormError(data.error ?? `The run couldn't be started (HTTP ${res.status}).`);
         setSubmitting(false);
@@ -119,13 +135,17 @@ export function NewRunForm() {
 
   async function runBatch() {
     if (!csv || csv.selected.size === 0) return;
+    if (!pitchReady) {
+      setPitchError("Choose what you're pitching, or let Signal Scout choose.");
+      return;
+    }
     setSubmitting(true);
     setFormError(null);
     try {
       const res = await fetch("/api/runs/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: csv.doc.id, rowIndexes: [...csv.selected].sort((a, b) => a - b) }),
+        body: JSON.stringify({ documentId: csv.doc.id, rowIndexes: [...csv.selected].sort((a, b) => a - b), ...pitchBody }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -144,6 +164,14 @@ export function NewRunForm() {
 
   return (
     <div className="space-y-6">
+      <section aria-labelledby="pitch-title" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
+        <h2 id="pitch-title" className="text-[15px] font-bold">
+          What are you pitching?
+        </h2>
+        <p className="mt-1 mb-3 text-sm text-ink-soft">From your sender profile. Applies to this run, or to every row of a CSV batch.</p>
+        <PitchPicker sectors={sectors} value={pitch} onChange={setPitch} error={pitchError ?? undefined} />
+      </section>
+
       <section aria-labelledby="files-title" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
         <h2 id="files-title" className="text-[15px] font-bold">
           Start from a file <span className="font-normal text-muted">(optional)</span>

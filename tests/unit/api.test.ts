@@ -40,20 +40,45 @@ describe("POST /api/runs", () => {
   });
 
   it("flags a recent duplicate instead of paying for the same research twice, unless forced (S-04)", async () => {
-    expect((await createRunRoute(req(NORTHWIND))).status).toBe(202);
-    const dup = await createRunRoute(req(NORTHWIND));
+    expect((await createRunRoute(req({ ...NORTHWIND, autoPitch: true }))).status).toBe(202);
+    const dup = await createRunRoute(req({ ...NORTHWIND, autoPitch: true }));
     expect(dup.status).toBe(409);
     expect((await dup.json()).duplicate.prospect.name).toBe(NORTHWIND.name);
-    expect((await createRunRoute(req({ ...NORTHWIND, force: true }))).status).toBe(202);
+    expect((await createRunRoute(req({ ...NORTHWIND, force: true, autoPitch: true }))).status).toBe(202);
   });
 
   it("accepts valid input with 202 and queues the run", async () => {
-    const res = await createRunRoute(req(NORTHWIND));
+    const res = await createRunRoute(req({ ...NORTHWIND, autoPitch: true }));
     expect(res.status).toBe(202);
     const { id } = await res.json();
     expect(repo.getRun(id)).not.toBeNull();
     const list = await (await listRunsRoute(new Request("http://localhost/api/runs"))).json();
     expect(list.runs[0].id).toBe(id);
+  });
+});
+
+describe("choosing what a run pitches", () => {
+  it("requires a choice when offerings exist, and refuses unknown or too many offerings", async () => {
+    const none = await createRunRoute(req(NORTHWIND));
+    expect(none.status).toBe(400);
+    expect((await none.json()).fieldErrors.pitch).toMatch(/Choose what you're pitching/);
+    expect((await createRunRoute(req({ ...NORTHWIND, offeringIds: ["ghost"] }))).status).toBe(400);
+    expect(repo.listRuns()).toHaveLength(0);
+  });
+
+  it("snapshots the chosen offerings, so later profile edits don't change the run", async () => {
+    const res = await createRunRoute(req({ ...NORTHWIND, offeringIds: ["vendor-onboarding"] }));
+    expect(res.status).toBe(202);
+    const { id } = await res.json();
+    repo.saveSenderProfile({ ...repo.DEFAULT_SENDER_PROFILE, sectors: [] });
+    expect(repo.getRun(id)!.pitch).toMatchObject({ mode: "chosen", offerings: [{ id: "vendor-onboarding", sectorName: "AI solutions", name: "Vendor onboarding checks" }] });
+  });
+
+  it("needs no choice when no offerings are set up", async () => {
+    repo.saveSenderProfile({ ...repo.DEFAULT_SENDER_PROFILE, sectors: [] });
+    const res = await createRunRoute(req(NORTHWIND));
+    expect(res.status).toBe(202);
+    expect(repo.getRun((await res.json()).id)!.pitch).toEqual({ mode: "auto", offerings: [] });
   });
 });
 
@@ -211,7 +236,7 @@ describe("documents and batch runs", () => {
     const { document } = await (await upload("leads.csv", CSV)).json();
     const missingRow = await createRunRoute(req({ documents: [{ documentId: document.id }] }));
     expect(missingRow.status).toBe(400);
-    const ok = await createRunRoute(req({ name: "Priya Raman", documents: [{ documentId: document.id, rowIndex: 0 }] }));
+    const ok = await createRunRoute(req({ name: "Priya Raman", documents: [{ documentId: document.id, rowIndex: 0 }], autoPitch: true }));
     expect(ok.status).toBe(202);
     const run = repo.getRun((await ok.json()).id)!;
     expect(run.documents).toEqual([{ documentId: document.id, name: "leads.csv", kind: "csv", rowIndex: 0 }]);
@@ -219,12 +244,12 @@ describe("documents and batch runs", () => {
 
   it("allows a run with only a document attached", async () => {
     const { document } = await (await upload("leads.csv", CSV)).json();
-    expect((await createRunRoute(req({ documents: [{ documentId: document.id, rowIndex: 1 }] }))).status).toBe(202);
+    expect((await createRunRoute(req({ documents: [{ documentId: document.id, rowIndex: 1 }], autoPitch: true }))).status).toBe(202);
   });
 
   it("queues at most ten runs from selected rows", async () => {
     const { document } = await (await upload("leads.csv", CSV)).json();
-    const res = await batchRuns(req({ documentId: document.id, rowIndexes: [0, 1, 7] }));
+    const res = await batchRuns(req({ documentId: document.id, rowIndexes: [0, 1, 7], offeringIds: ["invoice-agents"] }));
     expect(res.status).toBe(202);
     const body = await res.json();
     expect(body.created.map((c: { rowIndex: number }) => c.rowIndex)).toEqual([0, 1]);

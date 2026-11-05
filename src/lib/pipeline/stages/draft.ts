@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { relevantChunks } from "../../documents/parse";
-import type { ClaimCheck, DraftKind, DraftNotes, GuardReport, Hook, Identity, ProspectInput, SenderProfile, Signal, Source } from "../../types";
+import type { ClaimCheck, DraftKind, DraftNotes, GuardReport, Hook, Identity, PitchedOffering, ProspectInput, RunPitch, SenderProfile, Signal, Source } from "../../types";
+import { pitchFocus } from "../pitch";
 import type { StageContext } from "../context";
 import { buildGuardReport, claimIssues, runDeterministicGuard, TARGET_MAX_WORDS, TARGET_MIN_WORDS } from "../guard";
 import { UNTRUSTED_DATA_RULE, wrapUntrusted } from "../sanitize";
@@ -19,6 +20,7 @@ const DraftOutput = z.object({
   opening: z.string(),
   insight: z.string(),
   value: z.string(),
+  alsoOffer: z.string().nullable(),
   cta: z.string(),
   postscript: z.string().nullable(),
   signoff: z.string(),
@@ -32,7 +34,8 @@ const STRUCTURE = `Structure (each part is its own short paragraph, ${TARGET_MIN
 - greeting: "Hi <first name>," or, if no name is given, "Hi there,". Never invent or guess a name.
 - opening (2-3 sentences): the hook, stated exactly as its QUOTE supports, with its timeframe when known. Make it obvious this was written for this company, not a template.
 - insight (2-3 sentences): what this likely means for someone in the prospect's role, framed as your hypothesis or a question ("teams expanding lanes usually…", "I'd guess…"), not as a fact about them. Use a supporting finding here if it sharpens the point.
-- value (2-3 sentences): the one capability of the seller that fits this situation, said concretely. Draw only on the SELLER PROFILE and SELLER MATERIAL. A proof point (customer, metric, result) may appear only if it is stated in the SELLER MATERIAL.
+- value (2-3 sentences): the LEAD OFFERING only, said concretely for this situation. Draw only on the SELLER PROFILE and SELLER MATERIAL. A proof point (customer, metric, result) may appear only if it is stated in the SELLER MATERIAL.
+- alsoOffer: when ALSO OFFERS lists anything, one short sentence that names those offerings in passing (e.g. "We also help teams with X and Y."), with no detail or claims; otherwise null.
 - cta (1 sentence): one low-friction ask, phrased as a question, based on the preferred call to action.
 - postscript: optional. A one-line P.S. using a second verified finding, or null.
 - signoff: e.g. "Best,\\n<sender first name>" (no name if none is set).`;
@@ -80,18 +83,41 @@ export function findingBlock(signal: Signal, source: Source | undefined, label: 
 
 const NOT_SET = "(not set: keep this general and make no specific claims)";
 
-/** The seller profile as prompt text. */
-export function senderBlock(sender: SenderProfile): string {
+/** Which pitched offering a draft leads with, and which it only names. */
+export interface PitchFocus {
+  lead: PitchedOffering | null;
+  others: PitchedOffering[];
+}
+
+/** Every pitched offering with its details: for the claim audit and for revisions that may switch the lead. */
+export function fullFocus(pitch: RunPitch, lead?: PitchedOffering | null): PitchFocus {
+  const first = lead ?? pitch.offerings[0] ?? null;
+  return { lead: first, others: pitch.offerings.filter((o) => o.id !== first?.id) };
+}
+
+const describeOffering = (o: PitchedOffering) => `${o.name}: ${o.whatItDoes || "(no description)"}`;
+
+/**
+ * The seller profile as prompt text. "draft" details only the lead offering and names the others;
+ * "full" details every pitched offering (claim audit, revisions).
+ */
+export function senderBlock(sender: SenderProfile, focus: PitchFocus, mode: "draft" | "full" = "draft"): string {
   const who = [sender.senderName, sender.senderRole && sender.companyName ? `${sender.senderRole} at ${sender.companyName}` : sender.senderRole || sender.companyName]
     .filter(Boolean)
     .join(", ");
-  return [
-    "SELLER PROFILE (written by the rep; authoritative for claims about the seller):",
-    `  Sender: ${who || "(not set: sign off without a name)"}`,
-    `  Offering: ${sender.offering || NOT_SET}`,
-    `  Value proposition: ${sender.valueProp || NOT_SET}`,
-    `  Preferred call to action: ${sender.callToAction || "a short call to compare notes"}`,
-  ].join("\n");
+  const lines = ["SELLER PROFILE (written by the rep; authoritative for claims about the seller):", `  Sender: ${who || "(not set: sign off without a name)"}`];
+  if (!focus.lead) lines.push(`  Offering: ${NOT_SET}`, "  ALSO OFFERS: (none: alsoOffer must be null)");
+  else if (mode === "full")
+    lines.push("  Offerings (the email currently leads with the first):", ...[focus.lead, ...focus.others].map((o) => `    - ${describeOffering(o)}`));
+  else
+    lines.push(
+      `  LEAD OFFERING (the value paragraph is about this one only): ${describeOffering(focus.lead)}`,
+      focus.others.length
+        ? `  ALSO OFFERS (name these in passing in alsoOffer; no details, no claims): ${focus.others.map((o) => o.name).join("; ")}`
+        : "  ALSO OFFERS: (none: alsoOffer must be null)",
+    );
+  lines.push(`  Preferred call to action: ${focus.lead?.cta || sender.defaultCta || "a short call to compare notes"}`);
+  return lines.join("\n");
 }
 
 /** The parts of the seller's documents most relevant to this prospect, wrapped as data. */
@@ -120,8 +146,8 @@ export function prospectBlock(prospect: ProspectInput, identity: Identity | null
 }
 
 /** Joins the structured parts into the email body the rep edits. */
-export function assembleBody(output: Pick<DraftOutput, "greeting" | "opening" | "insight" | "value" | "cta" | "postscript" | "signoff">): string {
-  return [output.greeting, output.opening, output.insight, output.value, output.cta, output.signoff, output.postscript ? `P.S. ${output.postscript.replace(/^P\.?S\.?\s*/i, "")}` : ""]
+export function assembleBody(output: Pick<DraftOutput, "greeting" | "opening" | "insight" | "value" | "cta" | "postscript" | "signoff"> & { alsoOffer?: string | null }): string {
+  return [output.greeting, output.opening, output.insight, [output.value, output.alsoOffer ?? ""].map((p) => p.trim()).filter(Boolean).join(" "), output.cta, output.signoff, output.postscript ? `P.S. ${output.postscript.replace(/^P\.?S\.?\s*/i, "")}` : ""]
     .map((p) => p.trim())
     .filter(Boolean)
     .join("\n\n");
@@ -191,6 +217,8 @@ export async function generateDraft(
 ): Promise<{ draft: GeneratedDraft; guardInput: GuardInput }> {
   const sourceById = new Map(input.sources.map((s) => [s.id, s]));
   const sellerDocs = input.sellerDocuments ?? [];
+  const hookSignalForPitch = input.kind === "personalised" ? input.signals.find((s) => s.id === input.hook?.signalId) : undefined;
+  const focus: PitchFocus = pitchFocus(ctx.pitch, hookSignalForPitch, input.kind === "personalised" ? input.signals : []);
   let user: string;
   let system: string;
 
@@ -201,7 +229,7 @@ export async function generateDraft(
     const supporting = supportingFindings(input.signals, input.hook);
     system = PERSONALISED_SYSTEM;
     user = [
-      senderBlock(ctx.sender),
+      senderBlock(ctx.sender, focus),
       "",
       sellerMaterialBlock(sellerDocs, `${hookSignal.evidenceQuote} ${hookSignal.whyItMatters} ${input.identity?.resolvedRole ?? input.prospect.role ?? ""}`),
       "",
@@ -216,7 +244,7 @@ export async function generateDraft(
   } else {
     system = ROLE_BASED_SYSTEM;
     user = [
-      senderBlock(ctx.sender),
+      senderBlock(ctx.sender, focus),
       "",
       sellerMaterialBlock(sellerDocs, `${input.identity?.resolvedRole ?? input.prospect.role ?? ""} ${input.prospect.notes ?? ""}`),
       "",
@@ -230,12 +258,13 @@ export async function generateDraft(
   const draft: GeneratedDraft = {
     kind: input.kind,
     subject: output.subject.trim(),
-    body: assembleBody(input.kind === "role_based" ? { ...output, postscript: null } : output),
+    body: assembleBody({ ...(input.kind === "role_based" ? { ...output, postscript: null } : output), alsoOffer: focus.others.length ? output.alsoOffer : null }),
     signalIdsUsed,
     recipientHint: output.recipientHint?.trim() || null,
     notes: {
       alternateSubjects: output.alternateSubjects.map((s) => s.trim()).filter(Boolean).slice(0, 3),
       rationale: output.rationale.map((s) => s.trim()).filter(Boolean).slice(0, 5),
+      pitch: { lead: focus.lead?.name ?? null, others: focus.others.map((o) => o.name) },
     },
   };
   return { draft, guardInput: buildGuardInput({ ...input, sellerDocuments: sellerDocs }, signalIdsUsed) };
@@ -307,7 +336,7 @@ export async function guardDraft(
       effort: "low",
       system: CLAIM_SYSTEM,
       user: [
-        senderBlock(ctx.sender),
+        senderBlock(ctx.sender, fullFocus(ctx.pitch), "full"),
         "",
         sellerMaterialBlock(input.sellerDocuments, draft.body),
         "",

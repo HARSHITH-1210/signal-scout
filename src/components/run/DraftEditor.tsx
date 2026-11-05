@@ -179,6 +179,14 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
         </div>
       )}
 
+      {draft.notes?.pitch?.lead && (
+        <div className="border-b border-rule px-5 py-2.5 text-[13px] text-ink-soft">
+          <span className="font-bold">Leads with {draft.notes.pitch.lead}</span>
+          {draft.notes.pitch.others.length > 0 ? `; also names ${draft.notes.pitch.others.join(", ")}.` : "."}
+          {detail.pitch.mode === "auto" && <span className="text-muted"> Chosen by Signal Scout from your offerings.</span>}
+        </div>
+      )}
+
       {expired && (
         <div className="border-b border-rule bg-ochre-soft px-5 py-3 text-sm text-ochre">
           <p className="font-bold">Expired on {formatDateTime(expiresAt!)}</p>

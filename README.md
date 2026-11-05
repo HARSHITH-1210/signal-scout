@@ -66,10 +66,13 @@ Keys are read only on the server. They are never sent to the browser or written 
 
 ## Using it
 
-1. **Sender profile.** Describe who you are and what you sell. Drafts tie the prospect's situation to this value proposition. A neutral example is seeded; replace it.
-   - **Drop your own documents** (one-pagers, decks, case studies as PDF or CSV). Drafts draw on them for claims about your product, and the claim audit checks those claims against them.
-   - *Fill profile from this* pre-fills the profile from a document (one model call). You review the result before saving.
-2. **New run.** Fill in whatever you know. **Any one field is enough**: a name, a company, a website, a LinkedIn profile, a role, a note, or a file. A name plus the company website gives the most accurate research.
+1. **Sender profile.** Only about your business. Your name, role, company, website and default call to action stay fixed. What you sell is a catalogue of **sectors** (e.g. "AI solutions"), each holding **offerings** with a name, what it does and an optional call to action of its own. A neutral example is seeded; replace it.
+   - **Drop your own documents** (one-pagers, decks, case studies as PDF or CSV) and tick which offering each is about. Untagged documents count for every run. Drafts draw on them for claims about your offerings, and the claim audit checks those claims against them.
+   - *Fill profile from this* suggests sectors and offerings from a document (one model call). It only adds; you review before saving.
+   - People you write to aren't part of the profile: the do-not-contact and relationship list is under **Contacts**.
+2. **New run.** First, **What are you pitching?**: one dropdown per sector; tick one or more offerings (up to 5, across sectors), or tick *Let Signal Scout choose* to consider every offering. Your last choice is remembered in this browser. The run keeps a copy of what it pitched, so editing the profile later doesn't change it.
+   - Research adds one search aimed at the chosen offerings. Each finding is linked to the offering it fits best. The email **leads with the best fit** (the offering the hook links to) and **names the others in passing** in one sentence. With *Let Signal Scout choose*, it names only other offerings the research linked to, at most two. The draft panel shows which offering led.
+   Then fill in whatever you know about the prospect. **Any one field is enough**: a name, a company, a website, a LinkedIn profile, a role, a note, or a file. A name plus the company website gives the most accurate research.
    - **Drop a PDF** (an account brief, call notes) and it becomes evidence. Its quotes are verified word for word like web pages and labelled "From your document". Scanned PDFs without text are refused with a clear message.
    - **Drop a CSV** of leads (CRM exports work: name, title, company, email, LinkedIn, notes columns are mapped automatically, and a work email's domain becomes the website). *Use* a row to fill the form, or tick up to 10 rows to research them all. Each run sees only its own row as evidence, never the other prospects in the file.
    - **Duplicate check.** If you researched the same prospect in the last 24 hours, you're offered that run instead of paying for the same research twice.
@@ -136,7 +139,7 @@ Next.js 16 (App Router, Node runtime), TypeScript (strict), Tailwind CSS 4, SQLi
 **About OpenRouter free models:** they work through the same pipeline and the same verification. A weaker model can't slip invented facts past the verbatim-quote check or the claim audit. In practice it produces more rejected findings and more "Not enough signal" results. The free tier allows 20 requests/minute and 50/day (1,000/day after a one-time $10 credit purchase). A full run uses about 5 requests, and a failed schema check can add one correction request.
 
 ```
-src/app/                 pages (/, /runs/new, /runs/[id], /settings) and API routes (src/app/api)
+src/app/                 pages (/, /runs, /runs/new, /runs/[id], /settings, /contacts) and API routes (src/app/api)
 src/lib/pipeline/        runner + stages; pure modules: validate, freshness, sourceReliability,
                          sanitize, evidence, scoring, guard
 src/lib/providers/       TavilyProvider (search), AnthropicProvider / OpenRouterProvider (LLM), behind interfaces
@@ -152,7 +155,7 @@ The pipeline runs in-process on the Node server, two runs at a time. Each stage 
 
 | Method | Path | Purpose |
 |---|---|---|
-| `POST` | `/api/runs` | Start a run (`202`); `400` with field errors; `409` with the earlier run if the same prospect was researched in the last 24 hours (send `force: true` to run anyway). Optional `documents: [{documentId, rowIndex}]` |
+| `POST` | `/api/runs` | Start a run (`202`); `400` with field errors; `409` with the earlier run if the same prospect was researched in the last 24 hours (send `force: true` to run anyway). Optional `documents: [{documentId, rowIndex}]`. Also `offeringIds` (1–5) or `autoPitch: true`, required when offerings exist. |
 | `GET` | `/api/runs?status=` | List runs |
 | `GET` | `/api/runs/:id` | Full run detail |
 | `GET` | `/api/runs/:id/events` | SSE stream of stage events (replays history) |
@@ -166,13 +169,13 @@ The pipeline runs in-process on the Node server, two runs at a time. Each stage 
 | `POST` | `/api/runs/:id/draft/revise` | `{instruction, subject, body, baseVersion}`: rewrite the draft from the rep's instruction (new version, full guard, approval reset) or answer a question (`changed: false`, nothing saved); 409 if the draft moved on, 502 if the model call failed (draft unchanged) |
 | `GET`/`PUT`/`DELETE` | `/api/gmail` | Connection status (address and setting only, never tokens); `{autoSendOnApprove}`; disconnect and revoke |
 | `GET` | `/api/gmail/connect`, `/api/gmail/callback` | Google OAuth sign-in and its redirect (state checked against an HttpOnly cookie) |
-| `GET`/`PUT` | `/api/settings` | Sender profile |
+| `GET`/`PUT` | `/api/settings` | Sender profile: identity, `defaultCta`, `sectors[{id, name, offerings[{id, name, whatItDoes, cta, documentIds}]}]` (ids unique; at most 12 sectors of 20 offerings) |
 | `GET`/`PUT` | `/api/settings/contacts` | Contact list: `{doNotContact: string[], relationships: [{match, note}]}` |
 | `POST` | `/api/runs/:id/hold` | Research a run held for an existing relationship anyway (opt-outs refuse) |
-| `POST` | `/api/settings/extract` | `{documentId}`: suggest profile fields from a sender document (one model call) |
+| `POST` | `/api/settings/extract` | `{documentId}`: suggest identity fields, sectors and offerings from a sender document (one model call) |
 | `POST` | `/api/documents` | Upload a PDF or CSV (multipart `file`, `scope` = `prospect` or `sender`); CSV rows come back mapped to prospect fields |
 | `GET` / `DELETE` | `/api/documents?scope=` / `/api/documents/:id` | List or remove uploaded documents |
-| `POST` | `/api/runs/batch` | `{documentId, rowIndexes}`: one run per CSV row, at most 10 |
+| `POST` | `/api/runs/batch` | `{documentId, rowIndexes}`: one run per CSV row, at most 10; takes the same `offeringIds` / `autoPitch` for every row |
 | `DELETE` | `/api/runs/:id` | Delete a finished run and everything it collected |
 | `GET` | `/api/outreach` | Outreach numbers from stored runs (no Gmail calls) |
 | `POST` | `/api/outreach/check` | `{force?}`: check sent threads for replies and bounces (headers only), then return the numbers |
@@ -211,6 +214,7 @@ The automated tests run the real pipeline code with fixture-backed providers. Th
 | Scoring, freshness, reliability, guard rules, identity guardrails, consistency, redaction | `tests/unit/*` |
 | Risk-assessment fixes: full-name and whole-word entity matching, quote stitching, claim-to-quote review and narrowing, grounded dates, syndication, former employees, grounded roles, stale supporting findings, request budget | `tests/unit/evidence.test.ts`, `tests/unit/stages.test.ts`, `tests/pipeline/hardening.test.ts` |
 | Documents: real PDF text extraction, scanned-PDF refusal, CSV parsing and CRM mapping, document-only runs, only the chosen CSV row as evidence, seller material in drafting and claim audit | `tests/unit/documents.test.ts`, `tests/pipeline/hardening.test.ts`, `tests/unit/api.test.ts` |
+| Offerings: profile upgrade, unique ids, pitch required when offerings exist, snapshot survives profile edits, best fit leads and others are named, auto mode names only linked offerings, only pitched offering ids kept, documents per offering, offering-focused search | `tests/unit/pitch.test.ts`, `tests/unit/api.test.ts`, `tests/unit/validate.test.ts`, `tests/pipeline/pipeline.test.ts` |
 | Edit with AI: rewrite saved as a new re-audited version, question answered without a version, unsupported claims flagged, stale version refused, model failure keeps the draft, no bad news or suspicious sources in the prompt | `tests/unit/api.test.ts`, `tests/unit/revise.test.ts` |
 | Security and integrity: cross-site and host-header guard, JSON-only bodies, versioned approve/edit, duplicate detection, run deletion, migrations, owner-aware restart recovery | `tests/unit/requestGuard.test.ts`, `tests/unit/api.test.ts`, `tests/unit/schema.test.ts` |
 
@@ -242,7 +246,7 @@ See [`docs/DEMO_SCENARIOS.md`](docs/DEMO_SCENARIOS.md) for the run order, inputs
 | Interesting but irrelevant | Each finding must name the problem it suggests that your offer solves. Without that link it can't be the hook. |
 | Job change | If sources call the person a former employee, the run pauses: "now at X" (research the new company; the move is the opening) or "still at Y". |
 | Bad news | Layoffs, breaches, lawsuits and similar are never the hook or mentioned in the draft. The draft is **on hold** until you confirm you still want to reach out. |
-| Existing relationship / opt-out | Your **contact list** (Sender profile) is checked before any research. Opt-outs stop the run and can't be sent to; customers, open deals and past contacts stop it with your note and a *Research anyway* option. |
+| Existing relationship / opt-out | Your **contact list** (Contacts) is checked before any research. Opt-outs stop the run and can't be sent to; customers, open deals and past contacts stop it with your note and a *Research anyway* option. |
 | Wrong person | A person finding needs their full name and the company in the same source; unclear matches pause for you. |
 | Stale signal | Recency limits per signal type (a job post goes stale in 4 months, a funding round in a year); undated findings are weighted down. |
 | Right company, wrong person | Relevance is scored against the prospect's role. |

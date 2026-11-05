@@ -21,7 +21,8 @@ function setup(output: unknown) {
   const ctx: StageContext = {
     runId: "r1",
     deps: deps(new FakeSearch(() => []), llm),
-    sender: { senderName: "Sam", senderRole: "AE", companyName: "Ledgerline", companyWebsite: "", offering: "o", valueProp: "v", callToAction: "c" },
+    sender: { senderName: "Sam", senderRole: "AE", companyName: "Ledgerline", companyWebsite: "", defaultCta: "c", sectors: [] },
+    pitch: { mode: "auto", offerings: [] },
     emit: () => {},
   };
   return { llm, ctx };

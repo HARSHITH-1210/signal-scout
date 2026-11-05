@@ -106,7 +106,10 @@ const MIGRATIONS: ((db: Database.Database) => void)[] = [
   (db) => addColumn(db, "runs", "sent_json", "TEXT"),
   // 4: contact-list hold (opt-out or existing relationship)
   (db) => addColumn(db, "runs", "hold_json", "TEXT"),
-  // 5: resilience: every external call, provider health (circuit breaker), and what a run had to fall back on
+  // 5: the offerings a run pitches (snapshot of the sender profile's templates)
+  (db) => addColumn(db, "runs", "pitch_json", "TEXT"),
+  // 6: resilience: every external call, provider health (circuit breaker), and what a run had to fall back on.
+  // Also adds pitch_json: databases from the resilience branch ran this as step 5 before offerings existed.
   (db) => {
     db.exec(`CREATE TABLE IF NOT EXISTS provider_calls (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -134,6 +137,7 @@ const MIGRATIONS: ((db: Database.Database) => void)[] = [
       updated_at TEXT NOT NULL
     );`);
     addColumn(db, "runs", "degraded_json", "TEXT");
+    addColumn(db, "runs", "pitch_json", "TEXT");
   },
 ];
 
