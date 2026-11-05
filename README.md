@@ -151,9 +151,9 @@ The pipeline runs in-process on the Node server, two runs at a time. Each stage 
 | `GET` | `/api/runs/:id` | Full run detail |
 | `GET` | `/api/runs/:id/events` | SSE stream of stage events (replays history) |
 | `POST` | `/api/runs/:id/clarify` | `{candidateIndex}` or extra details; resumes an ambiguous run |
-| `POST` | `/api/runs/:id/draft/revise` | `{instruction, subject, body, baseVersion}`: rewrite the draft from the rep's instruction (new version, full guard, approval reset) or answer a question (`changed: false`, nothing saved); 409 if the draft moved on, 502 if the model call failed (draft unchanged) |
 | `PUT` | `/api/runs/:id/draft` | Save a human edit as a new version (`baseVersion` required; 409 if the draft moved on) |
 | `POST` | `/api/runs/:id/draft` | `{action: "approve", version, send?, to?, acknowledgeBadNews?}` (409 if not the latest, expired, held for bad news without acknowledgement, or if `send` is set and sending isn't possible; 502 if approved but the send failed), `{action: "send", version, to?}` for an approved draft, `{action: "regenerate" \| "role_based"}` |
+| `POST` | `/api/runs/:id/draft/revise` | `{instruction, subject, body, baseVersion}`: rewrite the draft from the rep's instruction (new version, full guard, approval reset) or answer a question (`changed: false`, nothing saved); 409 if the draft moved on, 502 if the model call failed (draft unchanged) |
 | `GET`/`PUT`/`DELETE` | `/api/gmail` | Connection status (address and setting only, never tokens); `{autoSendOnApprove}`; disconnect and revoke |
 | `GET` | `/api/gmail/connect`, `/api/gmail/callback` | Google OAuth sign-in and its redirect (state checked against an HttpOnly cookie) |
 | `GET`/`PUT` | `/api/settings` | Sender profile |
