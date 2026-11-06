@@ -5,7 +5,7 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 ## Project context
 - **Purpose:** ASA Case Study, Problem Statement 3. A rep names a prospect. The app researches real public information, extracts and verifies signals, picks the strongest outreach hook, and drafts a short, personalised message for a human to review. **Nothing is sent without a rep's confirmed approval**, and only through their own connected Gmail.
 - **Source of requirements:** the PS-3 section of the ASA Case Study Candidate Guide (PDF, not in repo) and the build brief. Both are summarised in `IMPLEMENTATION_PLAN.md` § Requirements traceability.
-- **Stack:** Next.js (App Router, Node runtime) + TypeScript (strict) + Tailwind, SQLite via `better-sqlite3`, `zod`, LLM via `@anthropic-ai/sdk` (Claude), OpenRouter or Gemini (`fetch`), search via Tavily with Exa and GDELT as fallbacks, Vitest. Providers sit behind fallback chains (`src/lib/providers/chain.ts`); see `docs/RESILIENCE_PLAN.md`. Every LLM backend must implement `LlmProvider`, take no tools, and return output validated against the caller's zod schema.
+- **Stack:** Next.js (App Router, Node runtime) + TypeScript (strict) + Tailwind v4, Motion (`motion/react`) and `next-themes` for UI, SQLite via `better-sqlite3`, `zod`, LLM via `@anthropic-ai/sdk` (Claude), OpenRouter or Gemini (`fetch`), search via Tavily with Exa and GDELT as fallbacks, Vitest. Providers sit behind fallback chains (`src/lib/providers/chain.ts`); see `docs/RESILIENCE_PLAN.md`. Every LLM backend must implement `LlmProvider`, take no tools, and return output validated against the caller's zod schema.
 
 ## Key directories
 | Path | What lives there |

@@ -131,8 +131,9 @@ export function PipelineDiagram({
                 x2={CX}
                 y1={y1}
                 y2={y2}
-                stroke={filled ? "var(--color-obsidian)" : "var(--color-line)"}
-                strokeWidth={filled ? 2.5 : 2}
+                stroke={filled ? "var(--color-ok)" : "var(--color-line)"}
+                strokeOpacity={filled ? 0.55 : 1}
+                strokeWidth={2}
                 strokeDasharray={filled && !flowing ? undefined : "4 4"}
                 className={flowing ? "flow" : undefined}
               />
