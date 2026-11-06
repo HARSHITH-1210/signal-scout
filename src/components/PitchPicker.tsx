@@ -63,7 +63,7 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
 
   if (offerings.length === 0)
     return (
-      <p className="text-sm text-warn">
+      <p className="t-mono text-[12px] text-[var(--t-warn)]">
         No offerings set up, so drafts stay general.{" "}
         <Link href="/settings" className="font-medium underline">
           Add what you sell
@@ -88,15 +88,15 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
                 className="w-[min(340px,calc(100vw-48px))]"
                 triggerClassName={(open) =>
                   cn(
-                    "flex min-h-10 items-center gap-2 rounded-lg border px-3 text-[13px] font-medium transition-colors disabled:opacity-45",
-                    on ? "border-obsidian/60 bg-subtle text-fg" : "border-line bg-surface text-fg-soft hover:border-fg-muted/40",
-                    open && "border-accent ring-4 ring-accent/15",
+                    "flex min-h-10 items-center gap-2 rounded-full border px-4 text-[13px] font-medium transition-colors disabled:opacity-45",
+                    on ? "border-[var(--t-muted)] bg-[var(--t-pill-active)] text-[var(--t-fg)]" : "border-[var(--t-line)] bg-[var(--t-card)] text-[var(--t-soft)] hover:border-[var(--t-muted)]",
+                    open && "border-[var(--t-info)]",
                   )
                 }
                 trigger={(open) => (
                   <>
                     {sector.name}
-                    {on && <span className="acc rounded-full bg-obsidian px-1.5 text-[11px] text-obsidian-ink">{picked}</span>}
+                    {on && <span className="t-mono rounded-full bg-[var(--t-inv-bg)] px-1.5 text-[10px] text-[var(--t-inv-btn)]">{picked}</span>}
                     <Icon name="chevron" className={cn("h-3.5 w-3.5 transition-transform duration-200", open ? "-rotate-90" : "rotate-90")} />
                   </>
                 )}
@@ -107,11 +107,11 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
                     const checked = value.offeringIds.includes(o.id);
                     const full = !checked && value.offeringIds.length >= MAX_CHOSEN;
                     return (
-                      <label key={o.id} className={cn("flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-subtle", full && "opacity-45")}>
+                      <label key={o.id} className={cn("flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-[var(--t-pill-hover)]", full && "opacity-45")}>
                         <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0" checked={checked} disabled={full} onChange={() => toggle(o.id)} />
                         <span className="text-sm">
                           <span className="font-medium">{o.name}</span>
-                          {o.whatItDoes && <span className="mt-0.5 line-clamp-2 block text-[13px] text-fg-muted">{o.whatItDoes}</span>}
+                          {o.whatItDoes && <span className="mt-0.5 line-clamp-2 block text-[12px] text-[var(--t-muted)]">{o.whatItDoes}</span>}
                         </span>
                       </label>
                     );
@@ -125,12 +125,12 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
       <label className="mt-4 flex min-h-11 cursor-pointer items-start gap-3 text-sm">
         <span className="relative mt-0.5 inline-flex shrink-0">
           <input type="checkbox" role="switch" className="peer sr-only" checked={value.auto} onChange={(e) => update({ auto: e.target.checked, offeringIds: value.offeringIds })} />
-          <span className="h-5 w-9 rounded-full border border-line bg-subtle transition-colors peer-checked:border-transparent peer-checked:bg-obsidian peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2" />
-          <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] peer-checked:translate-x-4" />
+          <span className="h-5 w-9 rounded-full border border-[var(--t-line)] bg-[var(--t-pill-box)] transition-colors peer-checked:border-transparent peer-checked:bg-[image:var(--t-volt)] peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2" />
+          <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-[var(--t-fg)] shadow-sm peer-checked:bg-[var(--t-inv-btn)] transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] peer-checked:translate-x-4" />
         </span>
         <span>
           <span className="font-medium">Let Signal Scout choose</span>
-          <span className="block text-[13px] text-fg-muted">Consider every offering and lead with whichever the research supports best.</span>
+          <span className="block text-[12px] text-[var(--t-muted)]">Consider every offering and lead with whichever the research supports best.</span>
         </span>
       </label>
 
@@ -145,9 +145,9 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.12 } }}
                 transition={SPRING_SNAPPY}
-                className="inline-flex items-center gap-1 rounded-full border border-line bg-subtle/60 py-0.5 pr-0.5 pl-2.5 text-[13px]"
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--t-line)] bg-[var(--t-card)] py-0.5 pr-0.5 pl-3 text-[13px]"
               >
-                <span className="text-fg-muted">{o.sectorName} ·</span> {o.name}
+                <span className="t-mono text-[11px] uppercase tracking-[0.08em] text-[var(--t-muted)]">{o.sectorName} ·</span> {o.name}
                 <button type="button" onClick={() => toggle(o.id)} aria-label={`Remove ${o.name}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-muted hover:bg-surface hover:text-danger">
                   <Icon name="cross" className="h-3.5 w-3.5" />
                 </button>
@@ -155,7 +155,7 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
             ))}
         </AnimatePresence>
       </ul>
-      <p className={`mt-2 text-[13px] ${error ? "text-danger" : "text-fg-muted"}`} role={error ? "alert" : undefined}>
+      <p className={`t-mono mt-3 text-[11px] ${error ? "text-[var(--t-bad)]" : "text-[var(--t-muted)]"}`} role={error ? "alert" : undefined}>
         {error ??
           (value.auto
             ? "Every offering is considered."
