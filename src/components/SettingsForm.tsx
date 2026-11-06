@@ -1,16 +1,20 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { Offering, Sector, SenderProfile, StoredDocument } from "@/lib/types";
 import type { ReactNode } from "react";
 import { DocumentChip, DropZone } from "./DropZone";
 import { TextArea, TextField } from "./Field";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
+import { AnimatePresence, motion } from "motion/react";
+import { SPRING_SOFT } from "@/lib/ui/cn";
+import { Button, Kbd, buttonClass } from "./ui/Button";
+import { useConfirm } from "./ui/Dialog";
+import { useToast } from "./ui/Toast";
 
-const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-45";
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-medium text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
-const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-fg-soft hover:bg-canvas hover:text-danger";
+const secondary = buttonClass("secondary");
+const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-danger-soft hover:text-danger";
 
 type Identity = Pick<SenderProfile, "senderName" | "senderRole" | "companyName" | "companyWebsite" | "defaultCta">;
 
@@ -33,8 +37,28 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
   const [status, setStatus] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const confirm = useConfirm();
+  const toast = useToast();
   const dirty = JSON.stringify(values) !== JSON.stringify(saved);
   const touched = () => setStatus(null);
+
+  // Warn before leaving with unsaved edits; ⌘S saves.
+  useEffect(() => {
+    if (!dirty) return;
+    const onUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        (document.getElementById("sender-profile") as HTMLFormElement | null)?.requestSubmit();
+      }
+    };
+    window.addEventListener("beforeunload", onUnload);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [dirty]);
 
   const set = (key: keyof Identity) => (e: { target: { value: string } }) => {
     setValues((v) => ({ ...v, [key]: e.target.value }));
@@ -64,7 +88,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
     setSaved(profile);
     setValues(profile);
     setErrors({});
-    setStatus({ tone: "ok", text: "Saved. New runs can pitch these offerings." });
+    toast({ tone: "ok", title: "Profile saved", description: "New runs can pitch these offerings." });
   }
 
   /** Adds what the document states: empty identity fields are filled, offerings are merged into sectors by name. */
@@ -106,6 +130,8 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
   }
 
   async function removeDoc(doc: StoredDocument) {
+    const ok = await confirm({ title: `Remove ${doc.name}?`, description: "Drafts stop drawing on it, and offerings linked to it are unlinked.", confirmLabel: "Remove", tone: "danger" });
+    if (!ok) return;
     const result = await send(`/api/documents/${doc.id}`, "DELETE");
     if (!result.ok) return setStatus({ tone: "bad", text: result.error });
     setDocs((d) => d.filter((x) => x.id !== doc.id));
@@ -117,8 +143,8 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
   const offeringCount = values.sectors.reduce((n, s) => n + s.offerings.length, 0);
 
   return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <form onSubmit={submit} noValidate className="self-start rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6">
+    <div className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <form id="sender-profile" onSubmit={submit} noValidate className="self-start rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6">
         <fieldset>
           <legend className="text-[15px] font-semibold">You</legend>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -139,10 +165,10 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
           </p>
           <div className="mt-4 space-y-4">
             {values.sectors.map((sector, s) => (
-              <details key={sector.id} open className="rounded-lg border border-line">
+              <details key={sector.id} open className="group rounded-xl border border-line">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2">
                   <span className="flex items-center gap-2 font-medium">
-                    <Icon name="chevron" className="h-4 w-4 text-fg-muted" />
+                    <Icon name="chevron" className="h-4 w-4 text-fg-muted transition-transform duration-200 group-open:rotate-90" />
                     {sector.name.trim() || "Untitled sector"}
                   </span>
                   <span className="acc text-fg-muted">{sector.offerings.length === 1 ? "1 offering" : `${sector.offerings.length} offerings`}</span>
@@ -161,7 +187,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                   {sector.offerings.map((offering, o) => {
                     const key = `sectors.${s}.offerings.${o}`;
                     return (
-                      <div key={offering.id} className="rounded-lg bg-canvas/60 p-3">
+                      <div key={offering.id} className="rounded-xl border border-line-soft bg-subtle/50 p-4">
                         <div className="flex flex-wrap items-end gap-3">
                           <div className="min-w-0 flex-1">
                             <TextField label="Offering" name={`${key}.name`} value={offering.name} onChange={(e) => updateOffering(s, o, { name: e.target.value })} error={errors[`${key}.name`]} placeholder="Invoice-processing agents" />
@@ -216,22 +242,37 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
           </div>
         </fieldset>
 
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          <button type="submit" disabled={busy !== null || !dirty} className={primary}>
-            {busy === "save" ? "Saving…" : "Save profile"}
-          </button>
-          {dirty && busy === null && (
-            <button type="button" onClick={() => setValues(saved)} className="min-h-11 text-sm font-medium text-fg-soft hover:text-fg">
-              Discard changes
-            </button>
-          )}
-          <p role="status" className={`text-sm ${status?.tone === "bad" ? "text-danger" : "text-ok"}`}>
-            {status?.text ?? (!dirty ? <span className="text-fg-muted">All changes saved. {offeringCount === 1 ? "1 offering" : `${offeringCount} offerings`}.</span> : null)}
-          </p>
-        </div>
+        <p role="status" className={`mt-6 text-sm ${status?.tone === "bad" ? "text-danger" : "text-fg-muted"}`}>
+          {status?.text ?? (!dirty ? `All changes saved · ${offeringCount === 1 ? "1 offering" : `${offeringCount} offerings`}` : null)}
+        </p>
       </form>
 
-      <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+      {/* Save bar: slides up only while there are unsaved changes. */}
+      <AnimatePresence>
+        {dirty && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={SPRING_SOFT}
+            className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-[min(560px,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-line bg-surface/90 py-2.5 pl-4 pr-2.5 shadow-[var(--shadow-overlay)] backdrop-blur-md"
+          >
+            <span className="flex flex-1 items-center gap-2 text-sm text-fg-soft">
+              <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden />
+              Unsaved changes
+            </span>
+            <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => setValues(saved)}>
+              Discard
+            </Button>
+            <Button size="sm" variant="primary" type="submit" form="sender-profile" loading={busy === "save"} disabled={busy !== null && busy !== "save"}>
+              {busy === "save" ? "Saving…" : "Save profile"}
+              {busy !== "save" && <Kbd className="ml-1 border-white/20 bg-white/10 text-white/80 shadow-none">⌘S</Kbd>}
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
         <section aria-labelledby="seller-docs" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
           <h2 id="seller-docs" className="text-[15px] font-semibold">
             Your documents
@@ -251,7 +292,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                     type="button"
                     onClick={() => fillFrom(doc)}
                     disabled={busy !== null}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-info hover:bg-info-soft disabled:opacity-45"
+                    className={buttonClass("ghost", "sm")}
                   >
                     <Icon name="doc" className="h-3.5 w-3.5" />
                     {busy === `fill-${doc.id}` ? "Reading…" : "Fill profile from this"}

@@ -1,6 +1,7 @@
 import { getSenderProfile, listDocuments, toStoredDocument } from "@/lib/db/repo";
 import { GmailPanel } from "@/components/GmailPanel";
 import { SettingsForm } from "@/components/SettingsForm";
+import { PageHeader } from "@/components/ui/Card";
 import { gmailStatus } from "@/lib/gmail/send";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +18,15 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const params = await searchParams;
   return (
     <div>
-      <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.01em]">Sender profile</h1>
-      <p className="mt-1 max-w-[68ch] text-fg-soft">
+      <PageHeader
+        title="Sender profile"
+        description={
+          <>
         Your business only: who the drafts come from and what you sell. Every field is optional. Drafts only claim what you write here or what your documents
         say, and never invent customers or results. People you&apos;re writing to belong under Contacts.
-      </p>
+          </>
+        }
+      />
       <SettingsForm
         initial={getSenderProfile()}
         initialDocuments={listDocuments("sender").map(toStoredDocument)}
