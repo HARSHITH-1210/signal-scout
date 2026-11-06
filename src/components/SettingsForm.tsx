@@ -8,9 +8,9 @@ import { TextArea, TextField } from "./Field";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
 
-const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-action px-5 text-sm font-bold text-white transition-colors hover:bg-action-strong disabled:cursor-not-allowed disabled:opacity-45";
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45";
-const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-bold text-ink-soft hover:bg-board hover:text-specimen";
+const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-45";
+const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
+const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-bold text-fg-soft hover:bg-canvas hover:text-danger";
 
 type Identity = Pick<SenderProfile, "senderName" | "senderRole" | "companyName" | "companyWebsite" | "defaultCta">;
 
@@ -118,7 +118,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <form onSubmit={submit} noValidate className="self-start rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
+      <form onSubmit={submit} noValidate className="self-start rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6">
         <fieldset>
           <legend className="text-[15px] font-bold">You</legend>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -134,20 +134,20 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
 
         <fieldset className="mt-7">
           <legend className="text-[15px] font-bold">What you sell</legend>
-          <p className="mt-1 text-sm text-ink-soft">
+          <p className="mt-1 text-sm text-fg-soft">
             Group your offerings into sectors. Each new run picks one or more to pitch: the email leads with the best fit and names the others in passing.
           </p>
           <div className="mt-4 space-y-4">
             {values.sectors.map((sector, s) => (
-              <details key={sector.id} open className="rounded-lg border border-rule">
+              <details key={sector.id} open className="rounded-lg border border-line">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2">
                   <span className="flex items-center gap-2 font-bold">
-                    <Icon name="chevron" className="h-4 w-4 text-muted" />
+                    <Icon name="chevron" className="h-4 w-4 text-fg-muted" />
                     {sector.name.trim() || "Untitled sector"}
                   </span>
-                  <span className="acc text-muted">{sector.offerings.length === 1 ? "1 offering" : `${sector.offerings.length} offerings`}</span>
+                  <span className="acc text-fg-muted">{sector.offerings.length === 1 ? "1 offering" : `${sector.offerings.length} offerings`}</span>
                 </summary>
-                <div className="space-y-4 border-t border-rule px-4 pt-3 pb-4">
+                <div className="space-y-4 border-t border-line px-4 pt-3 pb-4">
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="min-w-0 flex-1">
                       <TextField label="Sector name" name={`sectors.${s}.name`} value={sector.name} onChange={(e) => updateSector(s, { name: e.target.value })} error={errors[`sectors.${s}.name`]} placeholder="AI solutions" />
@@ -161,7 +161,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                   {sector.offerings.map((offering, o) => {
                     const key = `sectors.${s}.offerings.${o}`;
                     return (
-                      <div key={offering.id} className="rounded-lg bg-board/60 p-3">
+                      <div key={offering.id} className="rounded-lg bg-canvas/60 p-3">
                         <div className="flex flex-wrap items-end gap-3">
                           <div className="min-w-0 flex-1">
                             <TextField label="Offering" name={`${key}.name`} value={offering.name} onChange={(e) => updateOffering(s, o, { name: e.target.value })} error={errors[`${key}.name`]} placeholder="Invoice-processing agents" />
@@ -179,7 +179,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                               <legend className="font-bold">Documents about this offering</legend>
                               <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
                                 {docs.map((doc) => (
-                                  <label key={doc.id} className="flex min-h-9 cursor-pointer items-center gap-2 text-ink-soft">
+                                  <label key={doc.id} className="flex min-h-9 cursor-pointer items-center gap-2 text-fg-soft">
                                     <input
                                       type="checkbox"
                                       className="h-4 w-4"
@@ -194,7 +194,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                                   </label>
                                 ))}
                               </div>
-                              <span className="mt-1 block text-[13px] text-muted">Documents not ticked under any offering are used for every run.</span>
+                              <span className="mt-1 block text-[13px] text-fg-muted">Documents not ticked under any offering are used for every run.</span>
                             </fieldset>
                           )}
                         </div>
@@ -208,7 +208,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                 </div>
               </details>
             ))}
-            {values.sectors.length === 0 && <p className="text-sm text-ochre">No offerings yet. Drafts stay general until you add what you sell.</p>}
+            {values.sectors.length === 0 && <p className="text-sm text-warn">No offerings yet. Drafts stay general until you add what you sell.</p>}
             <button type="button" onClick={() => updateSectors((all) => [...all, { id: newId("s"), name: "", offerings: [blankOffering()] }])} className={secondary}>
               <Icon name="plus" />
               Add sector
@@ -221,22 +221,22 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
             {busy === "save" ? "Saving…" : "Save profile"}
           </button>
           {dirty && busy === null && (
-            <button type="button" onClick={() => setValues(saved)} className="min-h-11 text-sm font-bold text-ink-soft hover:text-ink">
+            <button type="button" onClick={() => setValues(saved)} className="min-h-11 text-sm font-bold text-fg-soft hover:text-fg">
               Discard changes
             </button>
           )}
-          <p role="status" className={`text-sm ${status?.tone === "bad" ? "text-specimen" : "text-ok"}`}>
-            {status?.text ?? (!dirty ? <span className="text-muted">All changes saved. {offeringCount === 1 ? "1 offering" : `${offeringCount} offerings`}.</span> : null)}
+          <p role="status" className={`text-sm ${status?.tone === "bad" ? "text-danger" : "text-ok"}`}>
+            {status?.text ?? (!dirty ? <span className="text-fg-muted">All changes saved. {offeringCount === 1 ? "1 offering" : `${offeringCount} offerings`}.</span> : null)}
           </p>
         </div>
       </form>
 
       <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-        <section aria-labelledby="seller-docs" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5">
+        <section aria-labelledby="seller-docs" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
           <h2 id="seller-docs" className="text-[15px] font-bold">
             Your documents
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">
+          <p className="mt-1 text-sm text-fg-soft">
             One-pagers, decks or case studies. Drafts draw on them for claims about your offerings, and the claim audit checks those claims against them.
           </p>
           <div className="mt-4">
@@ -251,7 +251,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                     type="button"
                     onClick={() => fillFrom(doc)}
                     disabled={busy !== null}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-bold text-det hover:bg-det-soft disabled:opacity-45"
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-bold text-info hover:bg-info-soft disabled:opacity-45"
                   >
                     <Icon name="doc" className="h-3.5 w-3.5" />
                     {busy === `fill-${doc.id}` ? "Reading…" : "Fill profile from this"}

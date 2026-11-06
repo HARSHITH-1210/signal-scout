@@ -33,8 +33,8 @@ const fromProspect = (p: ProspectInput): Values => ({
   notes: p.notes ?? "",
 });
 
-const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-action px-5 text-sm font-bold text-white transition-colors hover:bg-action-strong disabled:cursor-not-allowed disabled:opacity-45";
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45";
+const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-45";
+const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
 
 export function NewRunForm({ sectors }: { sectors: Sector[] }) {
   const router = useRouter();
@@ -164,19 +164,19 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
 
   return (
     <div className="space-y-6">
-      <section aria-labelledby="pitch-title" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
+      <section aria-labelledby="pitch-title" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6">
         <h2 id="pitch-title" className="text-[15px] font-bold">
           What are you pitching?
         </h2>
-        <p className="mt-1 mb-3 text-sm text-ink-soft">From your sender profile. Applies to this run, or to every row of a CSV batch.</p>
+        <p className="mt-1 mb-3 text-sm text-fg-soft">From your sender profile. Applies to this run, or to every row of a CSV batch.</p>
         <PitchPicker sectors={sectors} value={pitch} onChange={setPitch} error={pitchError ?? undefined} />
       </section>
 
-      <section aria-labelledby="files-title" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
+      <section aria-labelledby="files-title" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6">
         <h2 id="files-title" className="text-[15px] font-bold">
-          Start from a file <span className="font-normal text-muted">(optional)</span>
+          Start from a file <span className="font-normal text-fg-muted">(optional)</span>
         </h2>
-        <p className="mt-1 text-sm text-ink-soft">
+        <p className="mt-1 text-sm text-fg-soft">
           An account brief or call notes (PDF) become evidence: their quotes are verified like web pages. A CSV of leads lets you pick a row, or queue several.
         </p>
         <div className="mt-4">
@@ -193,12 +193,12 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
 
         {csv && csv.rows.length > 1 && (
           <div className="mt-4">
-            <p className="text-sm text-ink-soft">
-              <span className="font-bold text-ink">Pick a row</span> to fill the form, or tick up to {MAX_BATCH} to research them all.
+            <p className="text-sm text-fg-soft">
+              <span className="font-bold text-fg">Pick a row</span> to fill the form, or tick up to {MAX_BATCH} to research them all.
             </p>
-            <div className="mt-2 max-h-80 overflow-auto rounded-lg border border-rule">
+            <div className="mt-2 max-h-80 overflow-auto rounded-lg border border-line">
               <table className="w-full min-w-[640px] text-left text-[13px]">
-                <thead className="sticky top-0 bg-board text-muted">
+                <thead className="sticky top-0 bg-canvas text-fg-muted">
                   <tr>
                     <th className="w-10 px-2 py-2">
                       <span className="sr-only">Queue</span>
@@ -218,7 +218,7 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
                     const p = row.prospect;
                     const empty = !Object.values(p).some(Boolean);
                     return (
-                      <tr key={row.index} className={`border-t border-rule-soft ${csv.chosen === row.index ? "bg-det-soft/50" : ""}`}>
+                      <tr key={row.index} className={`border-t border-line-soft ${csv.chosen === row.index ? "bg-info-soft/50" : ""}`}>
                         <td className="px-2 py-1.5">
                           <input
                             type="checkbox"
@@ -229,13 +229,13 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
                             onChange={() => toggleRow(row.index)}
                           />
                         </td>
-                        <td className="acc px-2 py-1.5 text-muted">{row.index + 1}</td>
-                        <td className="px-2 py-1.5 font-bold">{p.name ?? <span className="font-normal text-muted">none</span>}</td>
-                        <td className="px-2 py-1.5 text-ink-soft">{p.role}</td>
-                        <td className="px-2 py-1.5 text-ink-soft">{p.company}</td>
-                        <td className="acc px-2 py-1.5 text-muted">{p.companyWebsite}</td>
+                        <td className="acc px-2 py-1.5 text-fg-muted">{row.index + 1}</td>
+                        <td className="px-2 py-1.5 font-bold">{p.name ?? <span className="font-normal text-fg-muted">none</span>}</td>
+                        <td className="px-2 py-1.5 text-fg-soft">{p.role}</td>
+                        <td className="px-2 py-1.5 text-fg-soft">{p.company}</td>
+                        <td className="acc px-2 py-1.5 text-fg-muted">{p.companyWebsite}</td>
                         <td className="px-2 py-1.5 text-right">
-                          <button type="button" disabled={empty} onClick={() => chooseRow(row.index)} className="min-h-8 rounded-md px-2 font-bold text-det hover:bg-det-soft disabled:opacity-40">
+                          <button type="button" disabled={empty} onClick={() => chooseRow(row.index)} className="min-h-8 rounded-md px-2 font-bold text-info hover:bg-info-soft disabled:opacity-40">
                             {csv.chosen === row.index ? "In form" : "Use"}
                           </button>
                         </td>
@@ -251,14 +251,14 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
                   <Icon name="table" />
                   Research {csv.selected.size} selected {csv.selected.size === 1 ? "row" : "rows"}
                 </button>
-                <span className="text-[13px] text-muted">Each row is its own run and uses its own search and model quota.</span>
+                <span className="text-[13px] text-fg-muted">Each row is its own run and uses its own search and model quota.</span>
               </div>
             )}
           </div>
         )}
       </section>
 
-      <form onSubmit={(e) => submit(e)} noValidate className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
+      <form onSubmit={(e) => submit(e)} noValidate className="rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6">
         <fieldset>
           <legend className="text-[15px] font-bold">The person</legend>
           <div className="mt-3 space-y-4">
@@ -296,7 +296,7 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
         </div>
 
         {duplicate && (
-          <div role="alert" className="mt-6 rounded-lg border border-ochre/40 bg-ochre-soft px-4 py-3 text-sm text-ochre">
+          <div role="alert" className="mt-6 rounded-lg border border-warn/40 bg-warn-soft px-4 py-3 text-sm text-warn">
             <p>
               You researched this prospect {formatDateTime(duplicate.createdAt)} ({RUN_STATUS_LABEL[duplicate.status].toLowerCase()}). Re-running costs another search and draft.
             </p>
@@ -311,7 +311,7 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
           </div>
         )}
         {message && (
-          <p role="alert" className="mt-6 rounded-lg bg-specimen-soft px-3 py-2 text-sm text-specimen">
+          <p role="alert" className="mt-6 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
             {message}
           </p>
         )}
@@ -320,7 +320,7 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
           <button type="submit" disabled={submitting || !filled} className={primary}>
             {submitting ? "Starting…" : "Start research"}
           </button>
-          {!filled && <span className="text-sm text-muted">Fill in any one field or attach a file to start.</span>}
+          {!filled && <span className="text-sm text-fg-muted">Fill in any one field or attach a file to start.</span>}
         </div>
       </form>
     </div>

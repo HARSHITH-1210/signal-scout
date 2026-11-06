@@ -18,7 +18,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   return (
     <div>
       <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em]">Sender profile</h1>
-      <p className="mt-1 max-w-[68ch] text-ink-soft">
+      <p className="mt-1 max-w-[68ch] text-fg-soft">
         Your business only: who the drafts come from and what you sell. Every field is optional. Drafts only claim what you write here or what your documents
         say, and never invent customers or results. People you&apos;re writing to belong under Contacts.
       </p>

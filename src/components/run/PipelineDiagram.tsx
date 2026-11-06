@@ -113,7 +113,7 @@ export function PipelineDiagram({
 
   return (
     <div>
-      <p role="status" aria-atomic="true" className="mb-4 rounded-lg bg-board px-3 py-2 text-sm text-ink-soft">
+      <p role="status" aria-atomic="true" className="mb-4 rounded-lg bg-canvas px-3 py-2 text-sm text-fg-soft">
         {summary}
       </p>
       <div className="relative" style={{ minHeight: height }}>
@@ -168,19 +168,19 @@ export function PipelineDiagram({
                 style={{ height: ROW }}
               >
                 <div className="flex items-baseline justify-between gap-2 pt-[11px]">
-                  <span className={`text-[14px] font-bold leading-tight ${muted ? "text-muted" : "text-ink"}`}>
+                  <span className={`text-[14px] font-bold leading-tight ${muted ? "text-fg-muted" : "text-fg"}`}>
                     {STAGE_LABELS[stage]}
                     <span className="sr-only">: {STATUS_WORD[status]}</span>
                   </span>
-                  {time && <span className="acc shrink-0 text-muted">{time}</span>}
+                  {time && <span className="acc shrink-0 text-fg-muted">{time}</span>}
                 </div>
-                <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${status === "failed" ? "text-specimen" : "text-muted"}`} title={last?.message}>
+                <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${status === "failed" ? "text-danger" : "text-fg-muted"}`} title={last?.message}>
                   {preview || !last ? STAGE_HINTS[stage] : last.message}
                 </p>
                 {showExit && (preview || exitTaken) && (
                   <span
                     className={`mt-1 inline-flex w-fit items-center gap-1.5 rounded px-1.5 py-px text-[11px] font-bold ${
-                      exitTaken ? "bg-ochre-soft text-ochre" : "border border-dashed border-rule text-muted"
+                      exitTaken ? "bg-warn-soft text-warn" : "border border-dashed border-line text-fg-muted"
                     }`}
                   >
                     <svg aria-hidden="true" width="14" height="10" viewBox="0 0 14 10">

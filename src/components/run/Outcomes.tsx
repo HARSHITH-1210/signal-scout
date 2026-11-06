@@ -7,14 +7,14 @@ import { TextField } from "../Field";
 import { Icon } from "../Icon";
 import { send } from "./api";
 
-const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-action px-4 text-sm font-bold text-white transition-colors hover:bg-action-strong disabled:cursor-not-allowed disabled:opacity-45";
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45";
+const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-45";
+const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
 
 function Shell({ tone, title, children }: { tone: "info" | "warn" | "bad"; title: string; children: React.ReactNode }) {
-  const ring = tone === "info" ? "border-det/30" : tone === "warn" ? "border-ochre/40" : "border-specimen/40";
-  const head = tone === "info" ? "text-det" : tone === "warn" ? "text-ochre" : "text-specimen";
+  const ring = tone === "info" ? "border-info/30" : tone === "warn" ? "border-warn/40" : "border-danger/40";
+  const head = tone === "info" ? "text-info" : tone === "warn" ? "text-warn" : "text-danger";
   return (
-    <section className={`rounded-[var(--radius-panel)] border ${ring} bg-paper p-5 sm:p-6`}>
+    <section className={`rounded-[var(--radius-panel)] border ${ring} bg-surface p-5 sm:p-6`}>
       <h2 className={`text-[17px] font-bold ${head}`}>{title}</h2>
       {children}
     </section>
@@ -25,8 +25,8 @@ export function InProgress({ detail }: { detail: RunDetail }) {
   const last = detail.events[detail.events.length - 1];
   return (
     <Shell tone="info" title={detail.status === "queued" ? "Waiting to start" : "Researching"}>
-      <p className="mt-1 text-sm text-ink-soft">{last ? last.message : "Starting up."}</p>
-      <p className="mt-2 text-[13px] text-muted">A full run usually takes one to three minutes. You can leave this page; progress is saved and the ledger catches up when you return.</p>
+      <p className="mt-1 text-sm text-fg-soft">{last ? last.message : "Starting up."}</p>
+      <p className="mt-2 text-[13px] text-fg-muted">A full run usually takes one to three minutes. You can leave this page; progress is saved and the ledger catches up when you return.</p>
     </Shell>
   );
 }
@@ -55,14 +55,14 @@ export function Clarify({ detail, onResumed }: { detail: RunDetail; onResumed: (
 
   return (
     <Shell tone="warn" title={jobChange ? `Has ${detail.prospect.name ?? "this person"} changed jobs?` : detail.prospect.name ? `Which ${detail.prospect.name} do you mean?` : "Which one do you mean?"}>
-      <p className="mt-1 text-sm text-ink-soft">
+      <p className="mt-1 text-sm text-fg-soft">
         {jobChange ? "" : "Public sources describe more than one match. Research is paused so nothing is written about the wrong one. "}
         {detail.identity?.reasoning}
       </p>
       <fieldset className="mt-4 space-y-2">
         <legend className="sr-only">Candidates</legend>
         {candidates.map((c, i) => (
-          <label key={i} className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm transition-colors ${choice === i ? "border-det bg-det-soft/60" : "border-rule hover:border-muted/60"}`}>
+          <label key={i} className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm transition-colors ${choice === i ? "border-info bg-info-soft/60" : "border-line hover:border-fg-muted/60"}`}>
             <input type="radio" name="candidate" className="mt-1 h-4 w-4" checked={choice === i} onChange={() => setChoice(i)} />
             <span className="min-w-0">
               <span className="font-bold">
@@ -70,8 +70,8 @@ export function Clarify({ detail, onResumed }: { detail: RunDetail; onResumed: (
                 {c.role ? `, ${c.role}` : ""}
                 {c.company && c.company !== c.name ? ` at ${c.company}` : ""}
               </span>
-              <span className="block text-ink-soft">{c.description}</span>
-              {c.evidenceUrl && <span className="acc block truncate text-[12px] text-det">{c.evidenceUrl}</span>}
+              <span className="block text-fg-soft">{c.description}</span>
+              {c.evidenceUrl && <span className="acc block truncate text-[12px] text-info">{c.evidenceUrl}</span>}
             </span>
           </label>
         ))}
@@ -80,7 +80,7 @@ export function Clarify({ detail, onResumed }: { detail: RunDetail; onResumed: (
         Research this one
       </button>
 
-      <div className="mt-6 border-t border-rule pt-4">
+      <div className="mt-6 border-t border-line pt-4">
         <p className="text-sm font-bold">None of these? Add one more detail and search again.</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <TextField label="Company website" name="companyWebsite" value={extra.companyWebsite} error={fieldErrors.companyWebsite} onChange={(e) => setExtra({ ...extra, companyWebsite: e.target.value })} placeholder="atlasrobotics.io" />
@@ -94,7 +94,7 @@ export function Clarify({ detail, onResumed }: { detail: RunDetail; onResumed: (
         </button>
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-sm text-specimen">
+        <p role="alert" className="mt-3 text-sm text-danger">
           {error}
         </p>
       )}
@@ -117,11 +117,11 @@ export function Insufficient({ detail, onResumed }: { detail: RunDetail; onResum
 
   return (
     <Shell tone="warn" title={identityFailed ? "Couldn't confirm who this is" : "No finding strong enough to personalise on"}>
-      <p className="mt-1 text-sm text-ink-soft">Rather than invent a reason to reach out, Signal Scout stopped here. This is what it found and why it wasn&apos;t enough:</p>
+      <p className="mt-1 text-sm text-fg-soft">Rather than invent a reason to reach out, Signal Scout stopped here. This is what it found and why it wasn&apos;t enough:</p>
       <ul className="mt-3 space-y-1.5 text-sm">
         {detail.limitations.map((l, i) => (
-          <li key={i} className="flex gap-2 text-ink-soft">
-            <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0 text-ochre" />
+          <li key={i} className="flex gap-2 text-fg-soft">
+            <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0 text-warn" />
             {l}
           </li>
         ))}
@@ -132,12 +132,12 @@ export function Insufficient({ detail, onResumed }: { detail: RunDetail; onResum
             Write a role-based draft instead
           </button>
         )}
-        <span className="text-[13px] text-muted">
+        <span className="text-[13px] text-fg-muted">
           {identityFailed ? "Try again with the company website, a LinkedIn profile or an account brief." : "A role-based draft speaks to their role in general and makes no claims about them. It's labelled as such."}
         </span>
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-sm text-specimen">
+        <p role="alert" className="mt-3 text-sm text-danger">
           {error}
         </p>
       )}
@@ -182,7 +182,7 @@ export function Failed({ detail, onResumed }: { detail: RunDetail; onResumed: ()
   return (
     <Shell tone={detail.status === "stopped" ? "info" : "bad"} title={detail.status === "stopped" ? "You stopped this run" : "This run stopped with an error"}>
       <p className="mt-1 text-sm">{detail.error}</p>
-      <p className="mt-1 text-[13px] text-muted">
+      <p className="mt-1 text-[13px] text-fg-muted">
         Everything found before the error is kept below. Resuming continues from {stageLabel(detail.currentStage)} and reuses it, so searches that already ran
         aren&apos;t paid for again.
       </p>
@@ -196,7 +196,7 @@ export function Failed({ detail, onResumed }: { detail: RunDetail; onResumed: ()
         </button>
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-sm text-specimen">
+        <p role="alert" className="mt-3 text-sm text-danger">
           {error}
         </p>
       )}
@@ -221,7 +221,7 @@ export function Held({ detail, onResumed }: { detail: RunDetail; onResumed: () =
 
   return (
     <Shell tone={optOut ? "bad" : "warn"} title={optOut ? "Do not contact" : "Existing relationship"}>
-      <p className="mt-1 text-sm text-ink-soft">
+      <p className="mt-1 text-sm text-fg-soft">
         {optOut ? (
           <>
             This prospect matches <span className="acc">{hold.match}</span> on your do-not-contact list. Nothing more was researched, and nothing can be sent to them.
@@ -239,10 +239,10 @@ export function Held({ detail, onResumed }: { detail: RunDetail; onResumed: () =
             {busy ? "Starting…" : "Research anyway"}
           </button>
         )}
-        <span className="text-[13px] text-muted">Edit the list under Contacts.</span>
+        <span className="text-[13px] text-fg-muted">Edit the list under Contacts.</span>
       </div>
       {error && (
-        <p role="alert" className="mt-3 text-sm text-specimen">
+        <p role="alert" className="mt-3 text-sm text-danger">
           {error}
         </p>
       )}

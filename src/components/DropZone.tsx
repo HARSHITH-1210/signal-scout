@@ -71,15 +71,15 @@ export function DropZone({
         onDragLeave={() => setOver(false)}
         onDrop={onDrop}
         className={`group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-panel)] border-2 border-dashed px-5 py-7 text-center transition-colors ${
-          over ? "border-det bg-det-soft" : "border-rule bg-paper hover:border-muted/60"
+          over ? "border-info bg-info-soft" : "border-line bg-surface hover:border-fg-muted/60"
         }`}
       >
-        <span className={`flex h-10 w-10 items-center justify-center rounded-full ${over ? "bg-det text-white" : "bg-board text-rail"}`}>
+        <span className={`flex h-10 w-10 items-center justify-center rounded-full ${over ? "bg-info text-white" : "bg-canvas text-obsidian"}`}>
           <Icon name="upload" className="h-5 w-5" />
         </span>
         <span className="font-bold">{busy ?? title}</span>
-        <span className="max-w-sm text-sm text-muted">{hint}</span>
-        <span className="mt-1 inline-flex min-h-11 items-center rounded-lg border border-rail px-4 text-sm font-bold text-rail group-hover:bg-board">
+        <span className="max-w-sm text-sm text-fg-muted">{hint}</span>
+        <span className="mt-1 inline-flex min-h-11 items-center rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian group-hover:bg-canvas">
           Choose file
         </span>
         <input
@@ -92,7 +92,7 @@ export function DropZone({
           onChange={(e) => void upload(e.target.files)}
         />
       </label>
-      <p role="status" aria-live="polite" className="mt-2 min-h-5 text-sm text-specimen">
+      <p role="status" aria-live="polite" className="mt-2 min-h-5 text-sm text-danger">
         {error}
       </p>
     </div>
@@ -102,14 +102,14 @@ export function DropZone({
 /** A compact chip for an attached document, with a remove control. */
 export function DocumentChip({ doc, detail, onRemove }: { doc: StoredDocument; detail?: string; onRemove?: () => void }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-rule bg-paper py-1.5 pr-1.5 pl-3 text-sm">
-      <Icon name={doc.kind === "csv" ? "table" : "file"} className="h-4 w-4 shrink-0 text-rail" />
+    <span className="inline-flex max-w-full items-center gap-2 rounded-lg border border-line bg-surface py-1.5 pr-1.5 pl-3 text-sm">
+      <Icon name={doc.kind === "csv" ? "table" : "file"} className="h-4 w-4 shrink-0 text-obsidian" />
       <span className="truncate font-bold">{doc.name}</span>
-      <span className="acc shrink-0 text-muted">
+      <span className="acc shrink-0 text-fg-muted">
         {detail ?? (doc.kind === "pdf" ? `${doc.pages ?? "?"} ${doc.pages === 1 ? "page" : "pages"}` : `${doc.csv?.rowCount ?? 0} rows`)}
       </span>
       {onRemove && (
-        <button type="button" onClick={onRemove} className="ml-1 flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-board hover:text-ink" aria-label={`Remove ${doc.name}`}>
+        <button type="button" onClick={onRemove} className="ml-1 flex h-8 w-8 items-center justify-center rounded-md text-fg-muted hover:bg-canvas hover:text-fg" aria-label={`Remove ${doc.name}`}>
           <Icon name="cross" className="h-3.5 w-3.5" />
         </button>
       )}

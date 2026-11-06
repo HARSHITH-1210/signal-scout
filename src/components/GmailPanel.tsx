@@ -5,7 +5,7 @@ import type { GmailStatus } from "@/lib/types";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
 
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45";
+const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
 
 /** Gmail connection for sending approved drafts. Tokens never reach the browser; only the address and the setting do. */
 export function GmailPanel({ initial, result }: { initial: GmailStatus; result: { tone: "ok" | "bad"; text: string } | null }) {
@@ -24,18 +24,18 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
   }
 
   return (
-    <section id="gmail" aria-labelledby="gmail-title" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5">
+    <section id="gmail" aria-labelledby="gmail-title" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
       <h2 id="gmail-title" className="text-[15px] font-bold">
         Send with Gmail
       </h2>
       {!status.configured ? (
-        <p className="mt-1 text-sm text-ink-soft">
+        <p className="mt-1 text-sm text-fg-soft">
           Not set up. Add <span className="acc">GOOGLE_CLIENT_ID</span> and <span className="acc">GOOGLE_CLIENT_SECRET</span> to <span className="acc">.env.local</span> and restart. The
           README explains how to create them. Until then, approving only records the review.
         </p>
       ) : !status.connected ? (
         <>
-          <p className="mt-1 text-sm text-ink-soft">Connect a Gmail account to send an approved draft from the run page. Signal Scout asks to send, and to read message headers (sender, time) of threads it sent, to track replies and bounces. It never reads email bodies.</p>
+          <p className="mt-1 text-sm text-fg-soft">Connect a Gmail account to send an approved draft from the run page. Signal Scout asks to send, and to read message headers (sender, time) of threads it sent, to track replies and bounces. It never reads email bodies.</p>
           <a href="/api/gmail/connect" className={`${secondary} mt-4`}>
             Connect Gmail
           </a>
@@ -44,10 +44,10 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
         <>
           <p className="mt-1 flex items-center gap-2 text-sm text-ok">
             <Icon name="check" />
-            Connected as <span className="acc text-ink">{status.email}</span>
+            Connected as <span className="acc text-fg">{status.email}</span>
           </p>
           {!status.canTrack && (
-            <p className="mt-3 text-sm text-ochre">
+            <p className="mt-3 text-sm text-warn">
               Reply and bounce tracking is off for this connection.{" "}
               <a href="/api/gmail/connect" className="font-bold underline">
                 Reconnect Gmail
@@ -65,18 +65,18 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
             />
             <span>
               <span className="font-bold">Send when I approve</span>
-              <span className="block text-[13px] text-muted">
+              <span className="block text-[13px] text-fg-muted">
                 Approve &amp; send emails the exact approved version after a confirmation. Drafts with blocking issues, or without a recipient address, are never sent.
               </span>
             </span>
           </label>
-          <button type="button" onClick={() => update("DELETE", undefined, "Disconnected. Google access was revoked.")} disabled={busy} className="mt-4 min-h-11 text-sm font-bold text-ink-soft hover:text-specimen disabled:opacity-45">
+          <button type="button" onClick={() => update("DELETE", undefined, "Disconnected. Google access was revoked.")} disabled={busy} className="mt-4 min-h-11 text-sm font-bold text-fg-soft hover:text-danger disabled:opacity-45">
             Disconnect Gmail
           </button>
         </>
       )}
       {message && (
-        <p role="status" className={`mt-3 text-sm ${message.tone === "bad" ? "text-specimen" : "text-ok"}`}>
+        <p role="status" className={`mt-3 text-sm ${message.tone === "bad" ? "text-danger" : "text-ok"}`}>
           {message.text}
         </p>
       )}

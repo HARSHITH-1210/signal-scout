@@ -2,10 +2,10 @@ import type { Tone } from "@/lib/ui/format";
 
 const TONE_CLASSES: Record<Tone, string> = {
   ok: "bg-ok-soft text-ok",
-  warn: "bg-ochre-soft text-ochre",
-  bad: "bg-specimen-soft text-specimen",
-  info: "bg-det-soft text-det",
-  neutral: "bg-board-deep text-ink-soft",
+  warn: "bg-warn-soft text-warn",
+  bad: "bg-danger-soft text-danger",
+  info: "bg-info-soft text-info",
+  neutral: "bg-subtle text-fg-soft",
 };
 
 export function Badge({ tone, children, live = false }: { tone: Tone; children: React.ReactNode; live?: boolean }) {

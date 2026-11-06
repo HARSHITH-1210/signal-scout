@@ -59,21 +59,21 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em]">Runs</h1>
-          <p className="mt-1 text-ink-soft">Every prospect researched, what was verified, and where each draft stands.</p>
+          <p className="mt-1 text-fg-soft">Every prospect researched, what was verified, and where each draft stands.</p>
         </div>
-        <Link href="/runs/new" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-action px-5 text-sm font-bold text-white hover:bg-action-strong">
+        <Link href="/runs/new" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-white hover:bg-primary-strong">
           <Icon name="plus" />
           Research a prospect
         </Link>
       </div>
 
       {runs.length === 0 ? (
-        <div className="mt-8 rounded-[var(--radius-panel)] border border-dashed border-rule bg-paper px-6 py-16 text-center">
+        <div className="mt-8 rounded-[var(--radius-panel)] border border-dashed border-line bg-surface px-6 py-16 text-center">
           <p className="text-lg font-bold">No prospects researched yet</p>
-          <p className="mx-auto mt-2 max-w-md text-ink-soft">
+          <p className="mx-auto mt-2 max-w-md text-fg-soft">
             Start with whatever you know: a name, a company, a website, a LinkedIn profile, or drop in an account brief or a CSV of leads.
           </p>
-          <Link href="/runs/new" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-action px-5 text-sm font-bold text-white hover:bg-action-strong">
+          <Link href="/runs/new" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-white hover:bg-primary-strong">
             <Icon name="plus" />
             Research your first prospect
           </Link>
@@ -89,7 +89,7 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
                   aria-pressed={filter === f}
                   onClick={() => setFilter(f)}
                   className={`min-h-9 rounded-full border px-3 text-[13px] transition-colors ${
-                    filter === f ? "border-rail bg-rail font-bold text-white" : "border-rule bg-paper text-ink-soft hover:border-muted/60"
+                    filter === f ? "border-obsidian bg-obsidian font-bold text-white" : "border-line bg-surface text-fg-soft hover:border-fg-muted/60"
                   }`}
                 >
                   {f === "all" ? "All" : RUN_STATUS_LABEL[f]} <span className="acc opacity-80">{f === "all" ? runs.length : counts[f]}</span>
@@ -102,15 +102,15 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search name or company"
-                className="w-full rounded-lg border border-rule bg-paper px-3 py-2 text-sm focus:border-det focus:outline-none focus:ring-2 focus:ring-det/30"
+                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
               />
             </label>
           </div>
-          {loadError && <p className="mt-3 text-sm text-ochre">{loadError}</p>}
+          {loadError && <p className="mt-3 text-sm text-warn">{loadError}</p>}
 
-          <div className="mt-4 overflow-x-auto rounded-[var(--radius-panel)] border border-rule bg-paper">
+          <div className="mt-4 overflow-x-auto rounded-[var(--radius-panel)] border border-line bg-surface">
             <table className="w-full min-w-[860px] text-left text-sm">
-              <thead className="border-b border-rule text-[13px] text-muted">
+              <thead className="border-b border-line text-[13px] text-fg-muted">
                 <tr>
                   <th className="px-4 py-3 font-bold">Prospect</th>
                   <th className="px-4 py-3 font-bold">Status</th>
@@ -128,16 +128,16 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
                     <tr
                       key={run.id}
                       onClick={() => router.push(`/runs/${run.id}`)}
-                      className={`cursor-pointer border-b border-rule-soft last:border-0 hover:bg-board/50 ${changed.has(run.id) ? "just-changed" : ""}`}
+                      className={`cursor-pointer border-b border-line-soft last:border-0 hover:bg-canvas/50 ${changed.has(run.id) ? "just-changed" : ""}`}
                     >
                       <td className="px-4 py-3">
-                        <Link href={`/runs/${run.id}`} onClick={(e) => e.stopPropagation()} className="font-bold text-ink hover:underline">
+                        <Link href={`/runs/${run.id}`} onClick={(e) => e.stopPropagation()} className="font-bold text-fg hover:underline">
                           {prospectLabel(run.prospect, run.resolvedLabel)}
                         </Link>
-                        <div className="flex items-center gap-2 text-[13px] text-ink-soft">
+                        <div className="flex items-center gap-2 text-[13px] text-fg-soft">
                           {detail}
                           {run.documentCount > 0 && (
-                            <span className="inline-flex items-center gap-1 text-muted" title={`${run.documentCount} document(s) attached`}>
+                            <span className="inline-flex items-center gap-1 text-fg-muted" title={`${run.documentCount} document(s) attached`}>
                               <Icon name="file" className="h-3.5 w-3.5" />
                               {run.documentCount}
                             </span>
@@ -148,28 +148,28 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
                         <Badge tone={RUN_STATUS_TONE[run.status]} live={running}>
                           {RUN_STATUS_LABEL[run.status]}
                         </Badge>
-                        {running && run.currentStage && <div className="mt-1 text-[12px] text-muted">{STAGE_LABELS[run.currentStage]}</div>}
+                        {running && run.currentStage && <div className="mt-1 text-[12px] text-fg-muted">{STAGE_LABELS[run.currentStage]}</div>}
                         {run.status === "failed" && run.error && (
-                          <div className="mt-1 max-w-[240px] truncate text-[12px] text-specimen" title={run.error}>
+                          <div className="mt-1 max-w-[240px] truncate text-[12px] text-danger" title={run.error}>
                             {run.error}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-ink-soft">
-                        {run.hookType ? signalTypeLabel(run.hookType) : run.draftKind === "role_based" ? "Role-based draft" : <span className="text-muted">None</span>}
+                      <td className="px-4 py-3 text-fg-soft">
+                        {run.hookType ? signalTypeLabel(run.hookType) : run.draftKind === "role_based" ? "Role-based draft" : <span className="text-fg-muted">None</span>}
                       </td>
-                      <td className="acc px-4 py-3 text-right text-ink-soft">
+                      <td className="acc px-4 py-3 text-right text-fg-soft">
                         {run.verifiedCount} / {run.sourceCount}
                       </td>
-                      <td className="acc px-4 py-3 text-right text-ink-soft">{running ? "running" : run.activeMs > 0 ? formatMs(run.activeMs) : "n/a"}</td>
-                      <td className="acc px-4 py-3 text-muted">{formatDateTime(run.createdAt)}</td>
+                      <td className="acc px-4 py-3 text-right text-fg-soft">{running ? "running" : run.activeMs > 0 ? formatMs(run.activeMs) : "n/a"}</td>
+                      <td className="acc px-4 py-3 text-fg-muted">{formatDateTime(run.createdAt)}</td>
                     </tr>
                   );
                 })}
                 {visible.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-ink-soft">
-                      No runs match. <button className="font-bold text-det hover:underline" onClick={() => { setFilter("all"); setQuery(""); }}>Clear filters</button>
+                    <td colSpan={6} className="px-4 py-10 text-center text-fg-soft">
+                      No runs match. <button className="font-bold text-info hover:underline" onClick={() => { setFilter("all"); setQuery(""); }}>Clear filters</button>
                     </td>
                   </tr>
                 )}

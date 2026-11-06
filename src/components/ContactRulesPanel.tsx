@@ -6,7 +6,7 @@ import type { ContactRules } from "@/lib/types";
 import { TextArea } from "./Field";
 import { send } from "./run/api";
 
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45";
+const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
 
 const toText = (rules: ContactRules) => ({
   doNotContact: rules.doNotContact.join("\n"),
@@ -38,11 +38,11 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
   }
 
   return (
-    <section aria-labelledby="contacts-title" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5">
+    <section aria-labelledby="contacts-title" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
       <h2 id="contacts-title" className="text-[15px] font-bold">
         Contact list
       </h2>
-      <p className="mt-1 text-sm text-ink-soft">Checked before researching anyone. One email, domain or company per line.</p>
+      <p className="mt-1 text-sm text-fg-soft">Checked before researching anyone. One email, domain or company per line.</p>
       <div className="mt-4 space-y-4">
         <TextArea
           label="Do not contact"
@@ -68,7 +68,7 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
           {busy ? "Saving…" : "Save list"}
         </button>
         {status && (
-          <p role="status" className={`text-sm ${status.tone === "bad" ? "text-specimen" : "text-ok"}`}>
+          <p role="status" className={`text-sm ${status.tone === "bad" ? "text-danger" : "text-ok"}`}>
             {status.text}
           </p>
         )}

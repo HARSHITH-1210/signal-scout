@@ -12,8 +12,8 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     return (
       <div className="py-16 text-center">
         <h1 className="text-xl font-semibold">Run not found</h1>
-        <p className="mt-2 text-sm text-ink-soft">It may have been created on a different database.</p>
-        <Link href="/runs" className="mt-4 inline-block font-medium text-action hover:underline">Back to runs</Link>
+        <p className="mt-2 text-sm text-fg-soft">It may have been created on a different database.</p>
+        <Link href="/runs" className="mt-4 inline-block font-medium text-primary hover:underline">Back to runs</Link>
       </div>
     );
   }

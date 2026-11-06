@@ -1,64 +1,147 @@
 @import "tailwindcss";
 
-/* Herbarium Accession: botanical rail, sage mounting board, label-paper panels, determination slips. */
-@theme {
-  --color-rail: #1f3b2d;
-  --color-rail-strong: #16291f;
-  --color-rail-ink: #dfe8dc;
-  --color-rail-muted: #9fb5a5;
-  --color-board: #e8eee6;
-  --color-board-deep: #dde5da;
-  --color-paper: #fbfbf7;
-  --color-ink: #1c2420;
-  --color-ink-soft: #46544b;
-  --color-muted: #56645b;
-  --color-rule: #cfd9cc;
-  --color-rule-soft: #e1e8de;
-  --color-action: #1f3b2d;
-  --color-action-strong: #142a1f;
+/* Obsidian: cool neutral grounds, hairline borders, one obsidian gradient for brand and primary action.
+   Tokens are semantic and switch with the `.dark` class (next-themes). See DESIGN.md. */
+@custom-variant dark (&:where(.dark, .dark *));
 
-  /* Determination states */
-  --color-det: #2c3e66; /* verified */
-  --color-det-soft: #e4e9f3;
-  --color-specimen: #b3362b; /* rejected / failed */
-  --color-specimen-soft: #f7e6e3;
-  --color-ochre: #7d5410; /* stale / needs attention (darkened from #b8862b for AA text) */
-  --color-ochre-soft: #f5ecd8;
-  --color-ok: #2e6b43;
-  --color-ok-soft: #e3efe5;
-  --color-quote: #eef2ea;
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-fg: var(--fg);
+  --color-fg-soft: var(--fg-soft);
+  --color-fg-muted: var(--fg-muted);
 
-  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-spline-mono), ui-monospace, monospace;
+  /* Brand ink: reads on the current ground in both themes. */
+  --color-obsidian: var(--obsidian);
+  --color-obsidian-strong: var(--obsidian-strong);
+  --color-obsidian-ink: var(--obsidian-ink);
+  --color-obsidian-muted: var(--obsidian-muted);
+  /* The obsidian slab: constant in both themes; text on it is always white. */
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  /* State colours encode meaning and never decorate. */
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-quote: var(--quote);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --radius-panel: 12px;
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :root {
   color-scheme: light;
+  --canvas: #f7f7f9;
+  --surface: #ffffff;
+  --subtle: #f1f1f4;
+  --line: #e5e5ea;
+  --line-soft: #efeff3;
+  --fg: #15141b;
+  --fg-soft: #3c3b45;
+  --fg-muted: #66656f;
+
+  --obsidian: #15131d;
+  --obsidian-strong: #0a0910;
+  --obsidian-ink: #ffffff;
+  --obsidian-muted: #9c9aa8;
+  --primary: #15131d;
+  --primary-strong: #0a0910;
+  --accent: oklch(0.52 0.2 285);
+  --accent-soft: oklch(0.95 0.03 285);
+
+  --info: #2f55c8;
+  --info-soft: #ebf0fc;
+  --danger: #c2372d;
+  --danger-soft: #fcecea;
+  --warn: #8f5600;
+  --warn-soft: #fbf2df;
+  --ok: #1d7347;
+  --ok-soft: #e5f3eb;
+  --quote: #f5f5f8;
+
+  --obsidian-gradient: radial-gradient(120% 90% at 50% 0%, oklch(0.36 0.1 285 / 0.6), transparent 62%),
+    linear-gradient(180deg, oklch(0.2 0.02 280) 0%, oklch(0.13 0.014 272) 55%, oklch(0.08 0.006 265) 100%);
+  --page-wash: radial-gradient(80% 420px at 50% -120px, oklch(0.93 0.035 285 / 0.9), transparent 70%);
+  --shadow-overlay: 0 1px 2px rgb(16 16 24 / 0.06), 0 12px 32px -8px rgb(16 16 24 / 0.18);
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas: #08080b;
+  --surface: #111114;
+  --subtle: #18181c;
+  --line: #26262c;
+  --line-soft: #1d1d22;
+  --fg: #ededf1;
+  --fg-soft: #c6c5ce;
+  --fg-muted: #908f9b;
+
+  --obsidian: #ecebf3;
+  --obsidian-strong: #ffffff;
+  --obsidian-ink: #0a0910;
+  --obsidian-muted: #5d5c68;
+  --primary: #1b1926;
+  --primary-strong: #24212f;
+  --accent: oklch(0.74 0.15 285);
+  --accent-soft: oklch(0.3 0.07 285 / 0.45);
+
+  --info: #86a8ff;
+  --info-soft: rgb(134 168 255 / 0.12);
+  --danger: #ff8a80;
+  --danger-soft: rgb(255 138 128 / 0.12);
+  --warn: #f1b85c;
+  --warn-soft: rgb(241 184 92 / 0.12);
+  --ok: #5fd39a;
+  --ok-soft: rgb(95 211 154 / 0.12);
+  --quote: #16161b;
+
+  --page-wash: radial-gradient(80% 420px at 50% -120px, oklch(0.32 0.09 285 / 0.45), transparent 70%);
+  --shadow-overlay: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 16px 40px -8px rgb(0 0 0 / 0.6);
 }
 
 body {
-  background: var(--color-board);
-  color: var(--color-ink);
+  background-color: var(--canvas);
+  background-image: var(--page-wash);
+  background-repeat: no-repeat;
+  color: var(--fg);
   font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.55;
+  font-feature-settings: "ss01", "cv11";
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--color-det) 22%, white);
-  color: var(--color-ink);
+  background: color-mix(in oklab, var(--accent) 28%, transparent);
 }
 
 input,
 textarea {
-  caret-color: var(--color-rail);
+  caret-color: var(--accent);
 }
 
 html {
-  accent-color: var(--color-rail);
-  scrollbar-color: var(--color-rule) transparent;
+  accent-color: var(--obsidian);
+  scrollbar-color: var(--line) transparent;
 }
 
 a {
@@ -66,12 +149,12 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-det);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 8px;
 }
 
-/* Accession data: ids, dates, scores, domains. Tabular figures so columns line up. */
+/* Data: ids, dates, scores, domains, quotes. Tabular figures so columns line up. */
 .acc {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -79,18 +162,77 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
-/* The determination slip: a small pinned label stating the verdict on a finding. */
+/* The verdict label on a finding. */
 .slip {
   font-family: var(--font-mono);
-  background: var(--color-paper);
+  background: var(--surface);
   border: 1px solid currentColor;
-  box-shadow: 0 6px 14px -6px rgb(31 59 45 / 0.28);
+  box-shadow: 0 6px 14px -8px rgb(16 16 24 / 0.35);
 }
 
-/* A changed row or stage holds its state colour briefly so a watcher notices it. */
+/* The obsidian slab: brand mark, primary action, hero band. */
+.bg-obsidian-gradient {
+  background: var(--obsidian-gradient);
+  color: #fff;
+}
+.dark .bg-obsidian-gradient {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+}
+
+/* Primary button: obsidian with an inset top highlight and a sheen that sweeps on hover. */
+.btn-obsidian {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--obsidian-gradient);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 1px 2px rgb(10 9 16 / 0.3), 0 4px 12px -4px rgb(40 30 90 / 0.35);
+}
+.dark .btn-obsidian {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 1px rgb(255 255 255 / 0.12), 0 4px 18px -6px oklch(0.5 0.2 285 / 0.55);
+}
+.btn-obsidian::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.14) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 700ms var(--ease-out-expo);
+}
+.btn-obsidian:hover::after {
+  transform: translateX(120%);
+}
+
+/* A gradient hairline border for the featured card (the hook). */
+.glow-border {
+  position: relative;
+}
+.glow-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, oklch(0.6 0.2 285 / 0.75), transparent 40%, transparent 65%, oklch(0.6 0.15 250 / 0.5));
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/* Cursor spotlight for cards; --x/--y are set by SpotlightCard. */
+.spotlight {
+  background-image: radial-gradient(360px circle at var(--x, -999px) var(--y, -999px), color-mix(in oklab, var(--accent) 9%, transparent), transparent 60%);
+}
+
+.glass {
+  background: color-mix(in oklab, var(--canvas) 78%, transparent);
+  backdrop-filter: saturate(1.6) blur(14px);
+}
+
+/* A changed row or stage holds a tint briefly so a watcher notices it. */
 @keyframes settle {
   from {
-    background-color: color-mix(in oklab, var(--color-det) 14%, transparent);
+    background-color: color-mix(in oklab, var(--accent) 14%, transparent);
   }
   to {
     background-color: transparent;
@@ -139,11 +281,26 @@ a {
   animation: flow 0.9s linear infinite;
 }
 
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--subtle) 25%, var(--line-soft) 50%, var(--subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .just-changed,
   .stamp-in,
   .pulse-ring,
-  .flow {
+  .flow,
+  .skeleton {
     animation: none;
+  }
+  .btn-obsidian::after {
+    transition: none;
   }
 }

@@ -48,7 +48,7 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/runs" className="inline-flex min-h-11 items-center gap-1 text-sm text-ink-soft hover:text-ink">
+        <Link href="/runs" className="inline-flex min-h-11 items-center gap-1 text-sm text-fg-soft hover:text-fg">
           <Icon name="arrowLeft" className="h-3.5 w-3.5" />
           All runs
         </Link>
@@ -56,34 +56,34 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
           <button
             onClick={stop}
             disabled={stopping}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-rule px-3 text-sm font-bold text-ink-soft hover:border-specimen hover:text-specimen disabled:opacity-45"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-bold text-fg-soft hover:border-danger hover:text-danger disabled:opacity-45"
           >
             <Icon name="cross" />
             {stopping ? "Stopping…" : "Stop run"}
           </button>
         )}
         {!isActive && (
-          <button onClick={remove} disabled={deleting} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-muted hover:bg-specimen-soft hover:text-specimen">
+          <button onClick={remove} disabled={deleting} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-fg-muted hover:bg-danger-soft hover:text-danger">
             <Icon name="trash" />
             {deleting ? "Deleting…" : "Delete run"}
           </button>
         )}
       </div>
 
-      <header className="mt-2 flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-5">
+      <header className="mt-2 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
         <div className="min-w-0">
 
           <h1 className="text-[32px] font-bold leading-tight tracking-[-0.01em] text-balance">{prospectLabel(p, detail.resolvedLabel)}</h1>
-          {subtitle && <p className="mt-0.5 text-[16px] text-ink-soft">{subtitle}</p>}
-          <p className="acc mt-1.5 text-muted">
+          {subtitle && <p className="mt-0.5 text-[16px] text-fg-soft">{subtitle}</p>}
+          <p className="acc mt-1.5 text-fg-muted">
             Run {detail.id.slice(0, 8)}, accessioned {formatDateTime(detail.createdAt)}
             {detail.activeMs >= 1000 && !isActive ? `, ${formatMs(detail.activeMs)} active` : ""}
           </p>
           {detail.documents.length > 0 && (
             <ul className="mt-2 flex flex-wrap gap-2">
               {detail.documents.map((d) => (
-                <li key={`${d.documentId}-${d.rowIndex}`} className="inline-flex items-center gap-1.5 rounded-md bg-paper px-2 py-1 text-[13px] text-ink-soft">
-                  <Icon name={d.kind === "csv" ? "table" : "file"} className="h-3.5 w-3.5 text-rail" />
+                <li key={`${d.documentId}-${d.rowIndex}`} className="inline-flex items-center gap-1.5 rounded-md bg-surface px-2 py-1 text-[13px] text-fg-soft">
+                  <Icon name={d.kind === "csv" ? "table" : "file"} className="h-3.5 w-3.5 text-obsidian" />
                   {d.name}
                   {d.rowIndex !== null ? `, row ${d.rowIndex + 1}` : ""}
                 </li>
@@ -98,22 +98,22 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
             </Badge>
             {(detail.degraded?.length ?? 0) > 0 && <Badge tone="warn">Degraded</Badge>}
           </span>
-          {isActive && connection === "reconnecting" && <span className="text-[13px] text-muted">Reconnecting to live updates…</span>}
+          {isActive && connection === "reconnecting" && <span className="text-[13px] text-fg-muted">Reconnecting to live updates…</span>}
         </div>
       </header>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[290px_minmax(0,1fr)] xl:grid-cols-[290px_minmax(0,1fr)_420px]">
         <aside className="lg:sticky lg:top-6 lg:self-start" aria-label="Pipeline progress">
-          <div className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5">
+          <div className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
             <h2 className="mb-3 text-[15px] font-bold">Accession ledger</h2>
             <PipelineDiagram statuses={detail.stageStatuses} events={detail.events} runStatus={detail.status} />
             {detail.events.length > 0 && (
               <details className="mt-4 text-[13px]">
-                <summary className="cursor-pointer text-ink-soft hover:text-ink">Full activity log ({detail.events.length})</summary>
+                <summary className="cursor-pointer text-fg-soft hover:text-fg">Full activity log ({detail.events.length})</summary>
                 <ol className="mt-2 max-h-72 space-y-1 overflow-y-auto pr-1">
                   {detail.events.map((e) => (
-                    <li key={e.id} className="text-ink-soft">
-                      <span className="acc text-muted">{new Date(e.createdAt).toLocaleTimeString()}</span> {e.message}
+                    <li key={e.id} className="text-fg-soft">
+                      <span className="acc text-fg-muted">{new Date(e.createdAt).toLocaleTimeString()}</span> {e.message}
                     </li>
                   ))}
                 </ol>
@@ -148,8 +148,8 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
             {latestDraft && !isActive ? (
               <DraftEditor key={latestDraft.id} detail={detail} gmail={gmail} onChanged={refresh} onResumed={resume} />
             ) : (
-              <div className="rounded-[var(--radius-panel)] border border-dashed border-rule p-6 text-sm text-muted">
-                <p className="font-bold text-ink-soft">The draft appears here</p>
+              <div className="rounded-[var(--radius-panel)] border border-dashed border-line p-6 text-sm text-fg-muted">
+                <p className="font-bold text-fg-soft">The draft appears here</p>
                 <p className="mt-1">Once a hook is verified, Signal Scout writes a structured draft built on it, then audits every claim.</p>
               </div>
             )}

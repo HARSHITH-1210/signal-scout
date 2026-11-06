@@ -32,15 +32,15 @@ const ACTION: Record<ActionKind, { label: string; tone: Tone }> = {
   expired: { label: "Expired", tone: "warn" },
 };
 
-const panel = "rounded-[var(--radius-panel)] border border-rule bg-paper";
+const panel = "rounded-[var(--radius-panel)] border border-line bg-surface";
 
 function Tile({ label, value, sub, tone }: { label: string; value: string; sub: React.ReactNode; tone?: "ok" | "warn" | "bad" }) {
-  const color = tone === "ok" ? "text-ok" : tone === "warn" ? "text-ochre" : tone === "bad" ? "text-specimen" : "text-ink";
+  const color = tone === "ok" ? "text-ok" : tone === "warn" ? "text-warn" : tone === "bad" ? "text-danger" : "text-fg";
   return (
     <div className={`${panel} p-4`}>
-      <p className="text-[13px] font-bold text-muted">{label}</p>
+      <p className="text-[13px] font-bold text-fg-muted">{label}</p>
       <p className={`mt-1 font-mono text-[28px] leading-tight tabular-nums ${color}`}>{value}</p>
-      <p className="mt-1 text-[13px] text-ink-soft">{sub}</p>
+      <p className="mt-1 text-[13px] text-fg-soft">{sub}</p>
     </div>
   );
 }
@@ -105,15 +105,15 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em]">Outreach</h1>
-          <p className="mt-1 max-w-[68ch] text-ink-soft">What happened after approval: what&apos;s waiting on you, what was sent, and what came back.</p>
+          <p className="mt-1 max-w-[68ch] text-fg-soft">What happened after approval: what&apos;s waiting on you, what was sent, and what came back.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {gmail.canTrack && <span className="acc text-muted">checked {since(stats.lastCheckedAt, now)}</span>}
+          {gmail.canTrack && <span className="acc text-fg-muted">checked {since(stats.lastCheckedAt, now)}</span>}
           <button
             type="button"
             onClick={check}
             disabled={busy || !gmail.canTrack || t.sent === 0}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Icon name="refresh" />
             {busy ? "Checking…" : "Check replies"}
@@ -122,14 +122,14 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
       </div>
 
       {trackingNote && (
-        <p className="mt-4 rounded-lg border border-ochre/40 bg-ochre-soft px-4 py-2.5 text-sm text-ochre">
+        <p className="mt-4 rounded-lg border border-warn/40 bg-warn-soft px-4 py-2.5 text-sm text-warn">
           {trackingNote}{" "}
           <Link href="/settings#gmail" className="font-bold underline">
             Sender profile
           </Link>
         </p>
       )}
-      <p role="status" className={`mt-2 min-h-5 text-sm ${notice?.tone === "bad" ? "text-specimen" : "text-ok"}`}>
+      <p role="status" className={`mt-2 min-h-5 text-sm ${notice?.tone === "bad" ? "text-danger" : "text-ok"}`}>
         {notice?.text}
       </p>
 
@@ -164,10 +164,10 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
             const untracked = (step.key === "delivered" || step.key === "replied") && !gmail.canTrack;
             return (
               <li key={step.key} className="grid grid-cols-[110px_minmax(0,1fr)_48px] items-center gap-3 text-sm">
-                <span className="text-ink-soft">{step.label}</span>
-                <span className="h-3 overflow-hidden rounded-sm bg-board-deep" aria-hidden>
+                <span className="text-fg-soft">{step.label}</span>
+                <span className="h-3 overflow-hidden rounded-sm bg-subtle" aria-hidden>
                   <span
-                    className={`block h-full rounded-sm ${step.key === "replied" ? "bg-ok" : "bg-rail"}`}
+                    className={`block h-full rounded-sm ${step.key === "replied" ? "bg-ok" : "bg-obsidian"}`}
                     style={{ width: untracked ? 0 : `${(step.count / top) * 100}%` }}
                   />
                 </span>
@@ -180,20 +180,20 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
 
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
         <section aria-labelledby="actions-title" className={panel}>
-          <h2 id="actions-title" className="border-b border-rule px-5 py-3 text-[15px] font-bold">
-            Needs your action <span className="acc font-normal text-muted">{stats.actions.length}</span>
+          <h2 id="actions-title" className="border-b border-line px-5 py-3 text-[15px] font-bold">
+            Needs your action <span className="acc font-normal text-fg-muted">{stats.actions.length}</span>
           </h2>
           {stats.actions.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-muted">Nothing waiting on you.</p>
+            <p className="px-5 py-6 text-sm text-fg-muted">Nothing waiting on you.</p>
           ) : (
             <ul>
               {stats.actions.slice(0, 12).map((a) => (
-                <li key={a.runId} className="border-b border-rule-soft last:border-0">
-                  <Link href={`/runs/${a.runId}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 hover:bg-board/50">
+                <li key={a.runId} className="border-b border-line-soft last:border-0">
+                  <Link href={`/runs/${a.runId}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 hover:bg-canvas/50">
                     <Badge tone={ACTION[a.kind].tone}>{ACTION[a.kind].label}</Badge>
                     <span className="min-w-0 flex-1 truncate font-bold">{a.label}</span>
-                    <span className="acc text-[12px] text-muted">{a.dueAt ? `use by ${formatDate(a.dueAt.slice(0, 10))}` : ""}</span>
-                    {a.note && <span className="basis-full text-[13px] text-ink-soft">{a.note}</span>}
+                    <span className="acc text-[12px] text-fg-muted">{a.dueAt ? `use by ${formatDate(a.dueAt.slice(0, 10))}` : ""}</span>
+                    {a.note && <span className="basis-full text-[13px] text-fg-soft">{a.note}</span>}
                   </Link>
                 </li>
               ))}
@@ -202,15 +202,15 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
         </section>
 
         <section aria-labelledby="sent-title" className={panel}>
-          <h2 id="sent-title" className="border-b border-rule px-5 py-3 text-[15px] font-bold">
-            Sent emails <span className="acc font-normal text-muted">{stats.sentLog.length}</span>
+          <h2 id="sent-title" className="border-b border-line px-5 py-3 text-[15px] font-bold">
+            Sent emails <span className="acc font-normal text-fg-muted">{stats.sentLog.length}</span>
           </h2>
           {stats.sentLog.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-muted">Nothing sent yet. Approve & send a draft to see it here.</p>
+            <p className="px-5 py-6 text-sm text-fg-muted">Nothing sent yet. Approve & send a draft to see it here.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[620px] text-left text-sm">
-                <thead className="border-b border-rule text-[13px] text-muted">
+                <thead className="border-b border-line text-[13px] text-fg-muted">
                   <tr>
                     <th className="px-5 py-2.5 font-bold">Prospect</th>
                     <th className="px-3 py-2.5 font-bold">Sent</th>
@@ -222,20 +222,20 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
                 </thead>
                 <tbody>
                   {stats.sentLog.map((s) => (
-                    <tr key={s.runId} className="border-b border-rule-soft last:border-0">
+                    <tr key={s.runId} className="border-b border-line-soft last:border-0">
                       <td className="px-5 py-3">
                         <Link href={`/runs/${s.runId}`} className="font-bold hover:underline">
                           {s.label}
                         </Link>
-                        <div className="truncate text-[13px] text-ink-soft" title={s.subject ?? undefined}>
+                        <div className="truncate text-[13px] text-fg-soft" title={s.subject ?? undefined}>
                           {s.subject ?? "(subject unavailable)"}
                         </div>
-                        <div className="acc text-[12px] text-muted">{s.to}</div>
+                        <div className="acc text-[12px] text-fg-muted">{s.to}</div>
                       </td>
                       <td className="acc whitespace-nowrap px-3 py-3 text-[13px]">{formatDateTime(s.sentAt)}</td>
                       <td className="px-3 py-3">
                         <Badge tone={STATE[s.state].tone}>{STATE[s.state].label}</Badge>
-                        {s.eventAt && <div className="acc mt-1 text-[12px] text-muted">{formatDateTime(s.eventAt)}</div>}
+                        {s.eventAt && <div className="acc mt-1 text-[12px] text-fg-muted">{formatDateTime(s.eventAt)}</div>}
                       </td>
                       <td className="px-5 py-3 text-right">
                         {s.threadId && gmail.email && (
@@ -243,7 +243,7 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
                             href={`https://mail.google.com/mail/u/${encodeURIComponent(gmail.email)}/#all/${s.threadId}`}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="inline-flex min-h-9 items-center gap-1 text-[13px] font-bold text-det hover:underline"
+                            className="inline-flex min-h-9 items-center gap-1 text-[13px] font-bold text-info hover:underline"
                           >
                             Gmail
                             <Icon name="external" className="h-3.5 w-3.5" />
@@ -262,16 +262,16 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
       <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <section aria-labelledby="days-title" className={`${panel} p-5`}>
           <h2 id="days-title" className="text-[15px] font-bold">
-            Sends per day <span className="font-normal text-muted">last 14 days</span>
+            Sends per day <span className="font-normal text-fg-muted">last 14 days</span>
           </h2>
           <div className="mt-4 flex h-28 items-end gap-1.5" role="img" aria-label={stats.perDay.map((d) => `${d.date}: ${d.count}`).join(", ")}>
             {stats.perDay.map((d) => (
               <div key={d.date} className="flex h-full flex-1 flex-col justify-end" title={`${formatDate(d.date)}: ${d.count}`}>
-                <div className={`rounded-sm ${d.count ? "bg-rail" : "bg-board-deep"}`} style={{ height: d.count ? `${(d.count / maxDay) * 100}%` : "3px" }} />
+                <div className={`rounded-sm ${d.count ? "bg-obsidian" : "bg-subtle"}`} style={{ height: d.count ? `${(d.count / maxDay) * 100}%` : "3px" }} />
               </div>
             ))}
           </div>
-          <div className="acc mt-2 flex justify-between text-[12px] text-muted">
+          <div className="acc mt-2 flex justify-between text-[12px] text-fg-muted">
             <span>{formatDate(stats.perDay[0].date)}</span>
             <span>today</span>
           </div>
@@ -279,17 +279,17 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
 
         <section aria-labelledby="hooks-title" className={`${panel} p-5`}>
           <h2 id="hooks-title" className="text-[15px] font-bold">
-            What gets replies <span className="font-normal text-muted">by hook type</span>
+            What gets replies <span className="font-normal text-fg-muted">by hook type</span>
           </h2>
           {stats.byHook.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">Appears once emails are sent.</p>
+            <p className="mt-3 text-sm text-fg-muted">Appears once emails are sent.</p>
           ) : (
             <>
               <ul className="mt-3 space-y-2">
                 {stats.byHook.map((h) => (
                   <li key={h.hookType} className="grid grid-cols-[130px_minmax(0,1fr)_64px] items-center gap-3 text-sm">
-                    <span className="truncate text-ink-soft">{h.hookType === "role_based" ? "Role-based" : signalTypeLabel(h.hookType)}</span>
-                    <span className="h-3 overflow-hidden rounded-sm bg-board-deep" aria-hidden>
+                    <span className="truncate text-fg-soft">{h.hookType === "role_based" ? "Role-based" : signalTypeLabel(h.hookType)}</span>
+                    <span className="h-3 overflow-hidden rounded-sm bg-subtle" aria-hidden>
                       <span className="block h-full rounded-sm bg-ok" style={{ width: `${(h.replied / h.sent) * 100}%` }} />
                     </span>
                     <span className="acc text-right">
@@ -298,7 +298,7 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-[13px] text-muted">Replies over sent. With only a handful of emails, treat this as a hint, not a result.</p>
+              <p className="mt-3 text-[13px] text-fg-muted">Replies over sent. With only a handful of emails, treat this as a hint, not a result.</p>
             </>
           )}
         </section>
@@ -308,7 +308,7 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
         <SystemStatus initial={providers} />
       </div>
 
-      <p className="mt-6 text-[13px] text-muted">
+      <p className="mt-6 text-[13px] text-fg-muted">
         Delivered means sent with no bounce seen: Gmail has no delivery receipts. Replies and bounces come from the headers of threads Signal Scout sent; email bodies
         are never read. Opens aren&apos;t tracked.
       </p>

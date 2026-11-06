@@ -134,8 +134,8 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
   }
 
   return (
-    <section aria-labelledby={titleId} className="rounded-[var(--radius-panel)] border border-rule bg-paper">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule px-5 py-3">
+    <section aria-labelledby={titleId} className="rounded-[var(--radius-panel)] border border-line bg-surface">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <h2 id={titleId} className="text-[15px] font-bold">
             Draft
@@ -149,17 +149,17 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
             </Badge>
           )}
         </div>
-        <span className="acc text-muted">
+        <span className="acc text-fg-muted">
           v{draft.version} by {draft.notes?.revision ? "AI, from your instruction" : draft.author === "ai" ? "Signal Scout" : "you"}, {formatDateTime(draft.createdAt)}
           {expiresAt && !sent && !expired ? `, use by ${formatDateTime(expiresAt).split(",")[0]}` : ""}
         </span>
       </div>
 
       {draft.kind === "role_based" && (
-        <p className="border-b border-rule bg-ochre-soft px-5 py-2.5 text-sm text-ochre">No verified hook was found, so this draft deliberately makes no claims about the prospect or their company.</p>
+        <p className="border-b border-line bg-warn-soft px-5 py-2.5 text-sm text-warn">No verified hook was found, so this draft deliberately makes no claims about the prospect or their company.</p>
       )}
       {noName && (
-        <p className="border-b border-rule bg-det-soft px-5 py-2.5 text-sm text-det">
+        <p className="border-b border-line bg-info-soft px-5 py-2.5 text-sm text-info">
           No person was named, so it opens with “Hi there”.{" "}
           {draft.recipientHint ? (
             <>
@@ -173,32 +173,32 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
       )}
 
       {confidence && confidence.reasons.length > 0 && (
-        <div className="border-b border-rule px-5 py-2.5 text-[13px] text-ink-soft">
+        <div className="border-b border-line px-5 py-2.5 text-[13px] text-fg-soft">
           <span className="font-bold">Based on {confidence.basis === "person" ? "the person" : confidence.basis === "company" ? "their company" : "their role only"}.</span>{" "}
           {confidence.reasons.join(" ")}
         </div>
       )}
 
       {draft.notes?.pitch?.lead && (
-        <div className="border-b border-rule px-5 py-2.5 text-[13px] text-ink-soft">
+        <div className="border-b border-line px-5 py-2.5 text-[13px] text-fg-soft">
           <span className="font-bold">Leads with {draft.notes.pitch.lead}</span>
           {draft.notes.pitch.others.length > 0 ? `; also names ${draft.notes.pitch.others.join(", ")}.` : "."}
-          {detail.pitch.mode === "auto" && <span className="text-muted"> Chosen by Signal Scout from your offerings.</span>}
+          {detail.pitch.mode === "auto" && <span className="text-fg-muted"> Chosen by Signal Scout from your offerings.</span>}
         </div>
       )}
 
       {expired && (
-        <div className="border-b border-rule bg-ochre-soft px-5 py-3 text-sm text-ochre">
+        <div className="border-b border-line bg-warn-soft px-5 py-3 text-sm text-warn">
           <p className="font-bold">Expired on {formatDateTime(expiresAt!)}</p>
           <p className="mt-0.5">The role may be filled or the news may have changed since this was researched. Research again before sending.</p>
-          <button onClick={researchAgain} disabled={busy !== null} className={`${btn} mt-2 border border-rail bg-paper text-rail hover:bg-board`}>
+          <button onClick={researchAgain} disabled={busy !== null} className={`${btn} mt-2 border border-obsidian bg-surface text-obsidian hover:bg-canvas`}>
             {busy === "rerun" ? "Starting…" : "Research again"}
           </button>
         </div>
       )}
 
       {badNews.length > 0 && !sent && (
-        <div className="border-b border-rule bg-ochre-soft px-5 py-3 text-sm text-ochre">
+        <div className="border-b border-line bg-warn-soft px-5 py-3 text-sm text-warn">
           <p className="font-bold">On hold: recent bad news</p>
           <ul className="mt-1 space-y-0.5">
             {badNews.slice(0, 3).map((s) => (
@@ -216,7 +216,7 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
       )}
 
       {sent && (
-        <div className="border-b border-rule bg-ok-soft px-5 py-3 text-sm text-ok">
+        <div className="border-b border-line bg-ok-soft px-5 py-3 text-sm text-ok">
           <p className="flex items-center gap-2 font-bold">
             <Icon name="check" />
             Sent version {sent.version} to {sent.to}
@@ -237,7 +237,7 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
       )}
 
       {draft.notes?.revision && !sent && (
-        <div className="border-b border-rule bg-det-soft px-5 py-3 text-sm text-det">
+        <div className="border-b border-line bg-info-soft px-5 py-3 text-sm text-info">
           <p className="font-bold">Rewritten from your instruction on v{draft.notes.revision.fromVersion}</p>
           <p className="acc mt-0.5 text-[12px]">“{draft.notes.revision.instruction}”</p>
           <p className="mt-1.5">
@@ -257,20 +257,20 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
               onChange={(e) => setTo(e.target.value)}
               placeholder="name@company.com"
               aria-describedby={`${titleId}-to`}
-              className="mt-1.5 w-full rounded-lg border border-rule bg-white px-3 py-2.5 focus:border-det focus:outline-none focus:ring-2 focus:ring-det/30"
+              className="mt-1.5 w-full rounded-lg border border-line bg-white px-3 py-2.5 focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
             />
-            <span id={`${titleId}-to`} className="mt-1 block text-[13px] text-muted">
+            <span id={`${titleId}-to`} className="mt-1 block text-[13px] text-fg-muted">
               {!to.trim() ? (
-                <span className="text-ochre">Add the recipient&apos;s address to send. </span>
+                <span className="text-warn">Add the recipient&apos;s address to send. </span>
               ) : !toValid ? (
-                <span className="text-specimen">This isn&apos;t a valid address. </span>
+                <span className="text-danger">This isn&apos;t a valid address. </span>
               ) : null}
               Sends from {gmail.email}.
             </span>
           </label>
         )}
         {gmail.connected && !sent && unaudited && (
-          <label className="mb-4 flex cursor-pointer items-start gap-2 rounded-lg border border-ochre/40 bg-ochre-soft px-3 py-2.5 text-sm text-ochre">
+          <label className="mb-4 flex cursor-pointer items-start gap-2 rounded-lg border border-warn/40 bg-warn-soft px-3 py-2.5 text-sm text-warn">
             <input type="checkbox" className="mt-0.5 h-4 w-4" checked={factsChecked} onChange={(e) => setFactsChecked(e.target.checked)} />
             <span>
               <span className="font-bold">The automatic claim audit didn&apos;t run.</span> I&apos;ve checked every fact in this email against the findings myself.
@@ -283,18 +283,18 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
             readOnly={Boolean(sent)}
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-rule bg-white px-3 py-2.5 font-bold focus:border-det focus:outline-none focus:ring-2 focus:ring-det/30"
+            className="mt-1.5 w-full rounded-lg border border-line bg-white px-3 py-2.5 font-bold focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
           />
         </label>
         {!sent && (draft.notes?.alternateSubjects.length ?? 0) > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[13px]">
-            <span className="text-muted">Try:</span>
+            <span className="text-fg-muted">Try:</span>
             {draft.notes!.alternateSubjects.map((alt) => (
               <button
                 key={alt}
                 type="button"
                 onClick={() => setSubject(alt)}
-                className="min-h-8 rounded-full border border-rule px-2.5 text-ink-soft hover:border-det hover:text-det"
+                className="min-h-8 rounded-full border border-line px-2.5 text-fg-soft hover:border-info hover:text-info"
               >
                 {alt}
               </button>
@@ -304,14 +304,14 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
         <label className="mt-4 block text-sm">
           <span className="flex items-baseline justify-between">
             <span className="font-bold">Message</span>
-            <span className={`acc ${words > 200 || words < 90 ? "text-ochre" : "text-muted"}`}>{words} words</span>
+            <span className={`acc ${words > 200 || words < 90 ? "text-warn" : "text-fg-muted"}`}>{words} words</span>
           </span>
           <textarea
             readOnly={Boolean(sent)}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={Math.min(24, Math.max(14, body.split("\n").length + 4))}
-            className="mt-1.5 w-full rounded-lg border border-rule bg-white px-4 py-3 text-[16px] leading-[1.65] focus:border-det focus:outline-none focus:ring-2 focus:ring-det/30"
+            className="mt-1.5 w-full rounded-lg border border-line bg-white px-4 py-3 text-[16px] leading-[1.65] focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
           />
         </label>
 
@@ -322,24 +322,24 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
                 onClick={approveAndSend}
                 disabled={dirty || !toValid || onHold || sendBlocked || busy !== null}
                 title={dirty ? "Save your edits before approving" : !toValid ? "Add the recipient's email address" : undefined}
-                className={`${btn} bg-action text-white hover:bg-action-strong`}
+                className={`${btn} bg-primary text-white hover:bg-primary-strong`}
               >
                 <Icon name="check" />
                 {busy === "approve" ? "Sending…" : "Approve & send"}
               </button>
-              <button onClick={approve} disabled={dirty || onHold || busy !== null} className={`${btn} border border-rail text-rail hover:bg-board`}>
+              <button onClick={approve} disabled={dirty || onHold || busy !== null} className={`${btn} border border-obsidian text-obsidian hover:bg-canvas`}>
                 Approve only
               </button>
             </>
           )}
           {!sent && !approved && !autoSend && (
-            <button onClick={approve} disabled={dirty || onHold || busy !== null} title={dirty ? "Save your edits before approving" : undefined} className={`${btn} bg-action text-white hover:bg-action-strong`}>
+            <button onClick={approve} disabled={dirty || onHold || busy !== null} title={dirty ? "Save your edits before approving" : undefined} className={`${btn} bg-primary text-white hover:bg-primary-strong`}>
               <Icon name="check" />
               {busy === "approve" ? "Approving…" : `Approve v${draft.version}`}
             </button>
           )}
           {approved && gmail.connected && (
-            <button onClick={sendNow} disabled={dirty || !toValid || expired || sendBlocked || busy !== null} title={dirty ? "Save and re-approve your edits before sending" : undefined} className={`${btn} bg-action text-white hover:bg-action-strong`}>
+            <button onClick={sendNow} disabled={dirty || !toValid || expired || sendBlocked || busy !== null} title={dirty ? "Save and re-approve your edits before sending" : undefined} className={`${btn} bg-primary text-white hover:bg-primary-strong`}>
               {busy === "send" ? "Sending…" : "Send now"}
             </button>
           )}
@@ -350,30 +350,30 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
               aria-expanded={aiOpen}
               aria-controls={`${titleId}-ai`}
               disabled={busy !== null && busy !== "revise"}
-              className={`${btn} border border-rail text-rail hover:bg-board`}
+              className={`${btn} border border-obsidian text-obsidian hover:bg-canvas`}
             >
               <Icon name="edit" />
               Edit with AI
             </button>
           )}
           {!sent && (
-            <button onClick={save} disabled={!dirty || busy !== null} className={`${btn} border border-rail text-rail hover:bg-board`}>
+            <button onClick={save} disabled={!dirty || busy !== null} className={`${btn} border border-obsidian text-obsidian hover:bg-canvas`}>
               {busy === "save" ? "Saving…" : "Save edits"}
             </button>
           )}
-          <button onClick={copy} className={`${btn} border border-rule text-ink-soft hover:bg-board`}>
+          <button onClick={copy} className={`${btn} border border-line text-fg-soft hover:bg-canvas`}>
             <Icon name={copied ? "check" : "copy"} />
             {copied ? "Copied" : "Copy"}
           </button>
           {!sent && (
-            <button onClick={regenerate} disabled={busy !== null} className={`${btn} ml-auto px-2 text-det hover:underline`}>
+            <button onClick={regenerate} disabled={busy !== null} className={`${btn} ml-auto px-2 text-info hover:underline`}>
               <Icon name="refresh" />
               New version
             </button>
           )}
         </div>
         {aiOpen && !sent && (
-          <div id={`${titleId}-ai`} className="mt-3 rounded-lg border border-rule bg-board/60 p-3">
+          <div id={`${titleId}-ai`} className="mt-3 rounded-lg border border-line bg-canvas/60 p-3">
             <label className="block text-sm">
               <span className="font-bold">What should change?</span>
               <textarea
@@ -389,34 +389,34 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
                 maxLength={2000}
                 placeholder="e.g. Make it shorter and warmer. Lead with the hiring news instead. Fix the grammar. Or ask: what did the source say about their expansion?"
                 aria-describedby={`${titleId}-ai-help`}
-                className="mt-1.5 w-full rounded-lg border border-rule bg-white px-3 py-2.5 text-[15px] focus:border-det focus:outline-none focus:ring-2 focus:ring-det/30"
+                className="mt-1.5 w-full rounded-lg border border-line bg-white px-3 py-2.5 text-[15px] focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
               />
             </label>
-            <p id={`${titleId}-ai-help`} className="mt-1 text-[13px] text-muted">
+            <p id={`${titleId}-ai-help`} className="mt-1 text-[13px] text-fg-muted">
               Ask for a rewrite or ask a question. Your unsaved edits are included. New facts can only come from verified findings or from what you state yourself, and the result is checked again before you can approve it.
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
-              <button onClick={reviseWithAi} disabled={!instruction.trim() || busy !== null} className={`${btn} bg-action text-white hover:bg-action-strong`}>
+              <button onClick={reviseWithAi} disabled={!instruction.trim() || busy !== null} className={`${btn} bg-primary text-white hover:bg-primary-strong`}>
                 {busy === "revise" ? "Working…" : "Apply"}
               </button>
-              <button type="button" onClick={() => setAiOpen(false)} disabled={busy === "revise"} className={`${btn} border border-rule text-ink-soft hover:bg-board`}>
+              <button type="button" onClick={() => setAiOpen(false)} disabled={busy === "revise"} className={`${btn} border border-line text-fg-soft hover:bg-canvas`}>
                 Close
               </button>
             </div>
             {aiAnswer && (
-              <div className="mt-3 rounded-lg border border-rule bg-paper p-3 text-sm">
+              <div className="mt-3 rounded-lg border border-line bg-surface p-3 text-sm">
                 <p className="font-bold">AI answer (the draft is unchanged)</p>
-                <p className="mt-1 whitespace-pre-line text-ink-soft">{aiAnswer}</p>
-                <p className="mt-1 text-[12px] text-muted">Written by the AI from the research. Check it against the cited source before relying on it.</p>
+                <p className="mt-1 whitespace-pre-line text-fg-soft">{aiAnswer}</p>
+                <p className="mt-1 text-[12px] text-fg-muted">Written by the AI from the research. Check it against the cited source before relying on it.</p>
               </div>
             )}
           </div>
         )}
-        <p role="status" className={`mt-2 min-h-5 text-sm ${message?.tone === "bad" ? "text-specimen" : "text-ok"}`}>
+        <p role="status" className={`mt-2 min-h-5 text-sm ${message?.tone === "bad" ? "text-danger" : "text-ok"}`}>
           {message?.text}
         </p>
-        {detail.error && (detail.status === "awaiting_review" || detail.status === "approved") && <p className="text-sm text-specimen">{detail.error}</p>}
-        <p className="mt-1 text-[13px] text-muted">
+        {detail.error && (detail.status === "awaiting_review" || detail.status === "approved") && <p className="text-sm text-danger">{detail.error}</p>}
+        <p className="mt-1 text-[13px] text-fg-muted">
           {sent
             ? "This version was sent and can no longer be edited."
             : autoSend
@@ -427,7 +427,7 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
                     <>
                       Approving records that a person reviewed this exact version. Nothing is sent.{" "}
                       {gmail.configured && (
-                        <Link href="/settings#gmail" className="font-bold text-det hover:underline">
+                        <Link href="/settings#gmail" className="font-bold text-info hover:underline">
                           Connect Gmail to send from here
                         </Link>
                       )}
@@ -437,12 +437,12 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
       </div>
 
       {(draft.notes?.rationale.length ?? 0) > 0 && (
-        <div className="border-t border-rule px-5 py-4">
+        <div className="border-t border-line px-5 py-4">
           <h3 className="text-sm font-bold">Why this draft</h3>
-          <ul className="mt-2 space-y-1.5 text-[13px] text-ink-soft">
+          <ul className="mt-2 space-y-1.5 text-[13px] text-fg-soft">
             {draft.notes!.rationale.map((r, i) => (
               <li key={i} className="flex gap-2">
-                <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-rail" />
+                <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-obsidian" />
                 {r}
               </li>
             ))}
@@ -450,7 +450,7 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
         </div>
       )}
 
-      <div className="border-t border-rule px-5 py-4">
+      <div className="border-t border-line px-5 py-4">
         <h3 className="text-sm font-bold">Checks on v{draft.version}</h3>
         {draft.guard.issues.length === 0 ? (
           <p className="mt-1.5 flex items-center gap-2 text-sm text-ok">
@@ -463,25 +463,25 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
                 <span className="shrink-0 pt-0.5">
                   <Badge tone={issue.severity === "error" ? "bad" : "warn"}>{issue.severity === "error" ? "Fix" : "Check"}</Badge>
                 </span>
-                <span className="text-ink-soft">
+                <span className="text-fg-soft">
                   {issue.message}
-                  {issue.excerpt && <span className="acc mt-0.5 block text-[12px] text-muted">“{issue.excerpt}”</span>}
+                  {issue.excerpt && <span className="acc mt-0.5 block text-[12px] text-fg-muted">“{issue.excerpt}”</span>}
                 </span>
               </li>
             ))}
           </ul>
         )}
         {draft.guard.claimCheckNote && !draft.guard.issues.some((i) => i.code === "claim_check_unavailable") && (
-          <p className="mt-2 text-[13px] text-muted">{draft.guard.claimCheckNote}</p>
+          <p className="mt-2 text-[13px] text-fg-muted">{draft.guard.claimCheckNote}</p>
         )}
         {draft.guard.claims && draft.guard.claims.length > 0 && (
           <details className="mt-3 text-sm">
-            <summary className="cursor-pointer text-ink-soft hover:text-ink">Claim audit ({draft.guard.claims.length} statements)</summary>
+            <summary className="cursor-pointer text-fg-soft hover:text-fg">Claim audit ({draft.guard.claims.length} statements)</summary>
             <ul className="mt-2 space-y-1.5">
               {draft.guard.claims.map((c, i) => (
                 <li key={i} className="text-[13px]">
                   <span>“{c.text}”</span>{" "}
-                  <span className="acc text-[12px] text-muted">
+                  <span className="acc text-[12px] text-fg-muted">
                     {c.kind === "prospect_fact" ? (c.supportedBy ? `fact, backed by ${c.supportedBy}` : "fact, unsupported") : c.kind === "sender_claim" ? (c.supportedBy ? `about you, from ${c.supportedBy.replace("_", " ")}` : "about you, unsupported") : "question or opinion"}
                   </span>
                 </li>
@@ -491,20 +491,20 @@ export function DraftEditor({ detail, gmail, onChanged, onResumed }: { detail: R
         )}
         {detail.drafts.length > 1 && (
           <details className="mt-3 text-sm">
-            <summary className="cursor-pointer text-ink-soft hover:text-ink">Earlier versions ({detail.drafts.length - 1})</summary>
+            <summary className="cursor-pointer text-fg-soft hover:text-fg">Earlier versions ({detail.drafts.length - 1})</summary>
             <ul className="mt-2 space-y-3">
               {detail.drafts
                 .slice(0, -1)
                 .reverse()
                 .map((d) => (
-                  <li key={d.id} className="rounded-lg bg-board/60 p-3">
-                    <p className="acc text-muted">
+                  <li key={d.id} className="rounded-lg bg-canvas/60 p-3">
+                    <p className="acc text-fg-muted">
                       v{d.version} by {d.notes?.revision ? "AI, from your instruction" : d.author === "ai" ? "Signal Scout" : "you"}, {formatDateTime(d.createdAt)}
                       {detail.approvedVersion === d.version ? ", approved" : ""}
                     </p>
-                    {d.notes?.revision && <p className="acc mt-0.5 text-[12px] text-muted">“{d.notes.revision.instruction}”</p>}
+                    {d.notes?.revision && <p className="acc mt-0.5 text-[12px] text-fg-muted">“{d.notes.revision.instruction}”</p>}
                     <p className="mt-1 font-bold">{d.subject}</p>
-                    <p className="mt-1 whitespace-pre-line text-ink-soft">{d.body}</p>
+                    <p className="mt-1 whitespace-pre-line text-fg-soft">{d.body}</p>
                   </li>
                 ))}
             </ul>
