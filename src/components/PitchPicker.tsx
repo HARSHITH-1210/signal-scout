@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { Sector } from "@/lib/types";
+import { AnimatePresence, motion } from "motion/react";
+import { SPRING_SNAPPY, cn } from "@/lib/ui/cn";
 import { Icon } from "./Icon";
+import { Popover } from "./ui/Popover";
 
 export interface PitchSelection {
   auto: boolean;
@@ -35,7 +38,7 @@ function save(selection: PitchSelection) {
   }
 }
 
-/** One dropdown per sector; tick one or more offerings across sectors, or let research choose. */
+/** One popover per sector; tick one or more offerings across sectors, or let research choose. */
 export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sector[]; value: PitchSelection; onChange: (v: PitchSelection) => void; error?: string }) {
   // Restored once after mount: the server render can't see this browser's storage.
   const restored = useRef(false);
@@ -62,7 +65,7 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
     return (
       <p className="text-sm text-warn">
         No offerings set up, so drafts stay general.{" "}
-        <Link href="/settings" className="font-bold underline">
+        <Link href="/settings" className="font-medium underline">
           Add what you sell
         </Link>
       </p>
@@ -76,58 +79,82 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
           .filter((s) => s.offerings.length > 0)
           .map((sector) => {
             const picked = sector.offerings.filter((o) => value.offeringIds.includes(o.id)).length;
+            const on = picked > 0 && !value.auto;
             return (
-              <details key={sector.id} className="group relative">
-                <summary
-                  className={`flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border px-3 text-sm font-bold ${
-                    picked && !value.auto ? "border-obsidian bg-obsidian/10 text-obsidian" : "border-line text-fg-soft hover:border-fg-muted/60"
-                  } ${value.auto ? "opacity-45" : ""}`}
-                >
-                  {sector.name}
-                  {picked > 0 && !value.auto && <span className="acc rounded-full bg-obsidian px-1.5 text-[11px] text-white">{picked}</span>}
-                  <Icon name="chevron" className="h-3.5 w-3.5 rotate-90 transition-transform group-open:-rotate-90" />
-                </summary>
-                <fieldset disabled={value.auto} className="absolute left-0 z-20 mt-1 w-[min(320px,calc(100vw-48px))] rounded-lg border border-line bg-surface p-2">
+              <Popover
+                key={sector.id}
+                label={`${sector.name} offerings`}
+                disabled={value.auto}
+                className="w-[min(340px,calc(100vw-48px))]"
+                triggerClassName={(open) =>
+                  cn(
+                    "flex min-h-10 items-center gap-2 rounded-lg border px-3 text-[13px] font-medium transition-colors disabled:opacity-45",
+                    on ? "border-obsidian/60 bg-subtle text-fg" : "border-line bg-surface text-fg-soft hover:border-fg-muted/40",
+                    open && "border-accent ring-4 ring-accent/15",
+                  )
+                }
+                trigger={(open) => (
+                  <>
+                    {sector.name}
+                    {on && <span className="acc rounded-full bg-obsidian px-1.5 text-[11px] text-obsidian-ink">{picked}</span>}
+                    <Icon name="chevron" className={cn("h-3.5 w-3.5 transition-transform duration-200", open ? "-rotate-90" : "rotate-90")} />
+                  </>
+                )}
+              >
+                <fieldset disabled={value.auto}>
                   <legend className="sr-only">{sector.name} offerings</legend>
                   {sector.offerings.map((o) => {
                     const checked = value.offeringIds.includes(o.id);
                     const full = !checked && value.offeringIds.length >= MAX_CHOSEN;
                     return (
-                      <label key={o.id} className={`flex min-h-11 cursor-pointer items-start gap-2.5 rounded-md px-2 py-2 hover:bg-canvas ${full ? "opacity-45" : ""}`}>
+                      <label key={o.id} className={cn("flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg px-2.5 py-2 transition-colors hover:bg-subtle", full && "opacity-45")}>
                         <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0" checked={checked} disabled={full} onChange={() => toggle(o.id)} />
                         <span className="text-sm">
-                          <span className="font-bold">{o.name}</span>
+                          <span className="font-medium">{o.name}</span>
                           {o.whatItDoes && <span className="mt-0.5 line-clamp-2 block text-[13px] text-fg-muted">{o.whatItDoes}</span>}
                         </span>
                       </label>
                     );
                   })}
                 </fieldset>
-              </details>
+              </Popover>
             );
           })}
       </div>
 
-      <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-2.5 text-sm">
-        <input type="checkbox" className="mt-0.5 h-4 w-4" checked={value.auto} onChange={(e) => update({ auto: e.target.checked, offeringIds: value.offeringIds })} />
+      <label className="mt-4 flex min-h-11 cursor-pointer items-start gap-3 text-sm">
+        <span className="relative mt-0.5 inline-flex shrink-0">
+          <input type="checkbox" role="switch" className="peer sr-only" checked={value.auto} onChange={(e) => update({ auto: e.target.checked, offeringIds: value.offeringIds })} />
+          <span className="h-5 w-9 rounded-full border border-line bg-subtle transition-colors peer-checked:border-transparent peer-checked:bg-obsidian peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2" />
+          <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] peer-checked:translate-x-4" />
+        </span>
         <span>
-          <span className="font-bold">Let Signal Scout choose</span>
+          <span className="font-medium">Let Signal Scout choose</span>
           <span className="block text-[13px] text-fg-muted">Consider every offering and lead with whichever the research supports best.</span>
         </span>
       </label>
 
-      {!value.auto && chosen.length > 0 && (
-        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Chosen offerings">
-          {chosen.map((o) => (
-            <li key={o.id} className="inline-flex items-center gap-1 rounded-full border border-line bg-canvas/60 py-0.5 pr-0.5 pl-2.5 text-[13px]">
-              <span className="text-fg-muted">{o.sectorName} ·</span> {o.name}
-              <button type="button" onClick={() => toggle(o.id)} aria-label={`Remove ${o.name}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-muted hover:bg-canvas hover:text-danger">
-                <Icon name="cross" className="h-3.5 w-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Chosen offerings">
+        <AnimatePresence initial={false}>
+          {!value.auto &&
+            chosen.map((o) => (
+              <motion.li
+                key={o.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.12 } }}
+                transition={SPRING_SNAPPY}
+                className="inline-flex items-center gap-1 rounded-full border border-line bg-subtle/60 py-0.5 pr-0.5 pl-2.5 text-[13px]"
+              >
+                <span className="text-fg-muted">{o.sectorName} ·</span> {o.name}
+                <button type="button" onClick={() => toggle(o.id)} aria-label={`Remove ${o.name}`} className="inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-muted hover:bg-surface hover:text-danger">
+                  <Icon name="cross" className="h-3.5 w-3.5" />
+                </button>
+              </motion.li>
+            ))}
+        </AnimatePresence>
+      </ul>
       <p className={`mt-2 text-[13px] ${error ? "text-danger" : "text-fg-muted"}`} role={error ? "alert" : undefined}>
         {error ??
           (value.auto

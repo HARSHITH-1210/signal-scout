@@ -1,22 +1,55 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { RUN_STATUSES, STAGE_LABELS, TERMINAL_STATUSES, type RunStatus, type RunSummary } from "@/lib/types";
-import { formatDateTime, formatMs, prospectDetail, prospectLabel, RUN_STATUS_LABEL, RUN_STATUS_TONE, signalTypeLabel } from "@/lib/ui/format";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { STAGE_LABELS, TERMINAL_STATUSES, type RunStatus, type RunSummary } from "@/lib/types";
+import { formatMs, prospectDetail, prospectLabel, RUN_STATUS_LABEL, RUN_STATUS_TONE, signalTypeLabel } from "@/lib/ui/format";
+import { EASE_OUT, cn } from "@/lib/ui/cn";
 import { Badge } from "./Badge";
 import { Icon } from "./Icon";
+import { Kbd, buttonClass } from "./ui/Button";
+import { EmptyState, PageHeader } from "./ui/Card";
+import { RelativeTime } from "./ui/Motion";
+import { Tabs } from "./ui/Tabs";
 
-type Filter = RunStatus | "all";
+type View = "all" | "review" | "active" | "approved" | "sent" | "stopped";
+
+const VIEWS: { value: View; label: string; statuses: RunStatus[] | null }[] = [
+  { value: "all", label: "All", statuses: null },
+  { value: "review", label: "Needs you", statuses: ["awaiting_review", "needs_clarification", "held"] },
+  { value: "active", label: "In progress", statuses: ["queued", "running"] },
+  { value: "approved", label: "Approved", statuses: ["approved"] },
+  { value: "sent", label: "Sent", statuses: ["sent"] },
+  { value: "stopped", label: "Didn't finish", statuses: ["failed", "insufficient_research", "stopped"] },
+];
+
+function inView(view: View, status: RunStatus): boolean {
+  const statuses = VIEWS.find((v) => v.value === view)?.statuses;
+  return !statuses || statuses.includes(status);
+}
+
+const COLS = "md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(150px,1fr)_minmax(0,1fr)_90px_80px_100px] md:items-center md:gap-4";
 
 export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
   const [runs, setRuns] = useState(initialRuns);
   const [changed, setChanged] = useState<Set<string>>(new Set());
-  const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [loadError, setLoadError] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const view = (VIEWS.some((v) => v.value === params.get("view")) ? params.get("view") : "all") as View;
+  const search = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+
+  const setView = (next: View) => {
+    const q = new URLSearchParams(params);
+    if (next === "all") q.delete("view");
+    else q.set("view", next);
+    router.replace(`${pathname}${q.size ? `?${q}` : ""}`, { scroll: false });
+  };
 
   const active = runs.some((r) => !TERMINAL_STATUSES.includes(r.status));
   useEffect(() => {
@@ -40,141 +73,165 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
     return () => clearInterval(timer);
   }, [active]);
 
-  const counts = useMemo(() => {
-    const c = Object.fromEntries(RUN_STATUSES.map((s) => [s, 0])) as Record<RunStatus, number>;
-    for (const r of runs) c[r.status]++;
-    return c;
-  }, [runs]);
+  // "/" jumps to search, like most list views.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && (e.target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName));
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        search.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const counts = useMemo(() => Object.fromEntries(VIEWS.map((v) => [v.value, runs.filter((r) => inView(v.value, r.status)).length])) as Record<View, number>, [runs]);
 
   const visible = runs.filter((r) => {
-    if (filter !== "all" && r.status !== filter) return false;
+    if (!inView(view, r.status)) return false;
     if (!query.trim()) return true;
     const hay = `${prospectLabel(r.prospect, r.resolvedLabel)} ${prospectDetail(r.prospect, r.resolvedLabel)}`.toLowerCase();
     return hay.includes(query.trim().toLowerCase());
   });
-  const filters: Filter[] = ["all", ...RUN_STATUSES.filter((s) => counts[s] > 0)];
+
+  // Arrow keys move between rows; Enter follows the focused row's link.
+  const onRowKey = (e: React.KeyboardEvent<HTMLAnchorElement>) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const rows = [...(list.current?.querySelectorAll<HTMLAnchorElement>("a[data-row]") ?? [])];
+    const i = rows.indexOf(e.currentTarget);
+    rows[Math.max(0, Math.min(rows.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))]?.focus();
+  };
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em]">Runs</h1>
-          <p className="mt-1 text-fg-soft">Every prospect researched, what was verified, and where each draft stands.</p>
-        </div>
-        <Link href="/runs/new" className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-white hover:bg-primary-strong">
-          <Icon name="plus" />
-          Research a prospect
-        </Link>
-      </div>
+      <PageHeader
+        title="Runs"
+        description="Every prospect researched, what was verified, and where each draft stands."
+        actions={
+          <Link href="/runs/new" className={buttonClass("primary")}>
+            <Icon name="plus" />
+            Research a prospect
+          </Link>
+        }
+      />
 
       {runs.length === 0 ? (
-        <div className="mt-8 rounded-[var(--radius-panel)] border border-dashed border-line bg-surface px-6 py-16 text-center">
-          <p className="text-lg font-bold">No prospects researched yet</p>
-          <p className="mx-auto mt-2 max-w-md text-fg-soft">
-            Start with whatever you know: a name, a company, a website, a LinkedIn profile, or drop in an account brief or a CSV of leads.
-          </p>
-          <Link href="/runs/new" className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-white hover:bg-primary-strong">
-            <Icon name="plus" />
-            Research your first prospect
-          </Link>
+        <div className="rounded-[var(--radius-panel)] border border-dashed border-line bg-surface">
+          <EmptyState
+            icon="search"
+            title="No prospects researched yet"
+            className="py-16"
+            action={
+              <Link href="/runs/new" className={buttonClass("primary")}>
+                <Icon name="plus" />
+                Research your first prospect
+              </Link>
+            }
+          >
+            Start with whatever you know: a name, a company, a website, or drop in an account brief or a CSV of leads.
+          </EmptyState>
         </div>
       ) : (
         <>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-1.5">
-              {filters.map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  aria-pressed={filter === f}
-                  onClick={() => setFilter(f)}
-                  className={`min-h-9 rounded-full border px-3 text-[13px] transition-colors ${
-                    filter === f ? "border-obsidian bg-obsidian font-bold text-white" : "border-line bg-surface text-fg-soft hover:border-fg-muted/60"
-                  }`}
-                >
-                  {f === "all" ? "All" : RUN_STATUS_LABEL[f]} <span className="acc opacity-80">{f === "all" ? runs.length : counts[f]}</span>
-                </button>
-              ))}
-            </div>
-            <label className="ml-auto min-w-[220px] flex-1 sm:max-w-xs">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <Tabs label="Filter runs" items={VIEWS.filter((v) => v.value === "all" || counts[v.value] > 0).map((v) => ({ value: v.value, label: v.label, count: counts[v.value] }))} value={view} onChange={setView} className="min-w-0 flex-1 border-b-0" />
+            <label className="relative w-full sm:w-72">
               <span className="sr-only">Search runs</span>
+              <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
               <input
+                ref={search}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search name or company"
-                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-info focus:outline-none focus:ring-2 focus:ring-info/30"
+                className="h-9 w-full rounded-lg border border-line bg-surface pl-8 pr-9 text-[13px] transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
               />
+              <Kbd className="absolute right-2 top-1/2 -translate-y-1/2">/</Kbd>
             </label>
           </div>
-          {loadError && <p className="mt-3 text-sm text-warn">{loadError}</p>}
+          {loadError && (
+            <p role="status" className="mt-3 text-sm text-warn">
+              {loadError}
+            </p>
+          )}
 
-          <div className="mt-4 overflow-x-auto rounded-[var(--radius-panel)] border border-line bg-surface">
-            <table className="w-full min-w-[860px] text-left text-sm">
-              <thead className="border-b border-line text-[13px] text-fg-muted">
-                <tr>
-                  <th className="px-4 py-3 font-bold">Prospect</th>
-                  <th className="px-4 py-3 font-bold">Status</th>
-                  <th className="px-4 py-3 font-bold">Hook</th>
-                  <th className="px-4 py-3 text-right font-bold">Verified / sources</th>
-                  <th className="px-4 py-3 text-right font-bold">Active</th>
-                  <th className="px-4 py-3 font-bold">Started</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="mt-3 overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface">
+            <div aria-hidden className={cn("hidden border-b border-line bg-subtle/50 px-5 py-2.5 text-[12px] font-medium text-fg-muted", COLS)}>
+              <span>Prospect</span>
+              <span>Status</span>
+              <span>Hook</span>
+              <span className="text-right">Verified</span>
+              <span className="text-right">Active</span>
+              <span className="text-right">Started</span>
+            </div>
+            <ul ref={list} aria-label="Runs" className="divide-y divide-line-soft">
+              <AnimatePresence initial={false} mode="popLayout">
                 {visible.map((run) => {
                   const running = !TERMINAL_STATUSES.includes(run.status);
                   const detail = prospectDetail(run.prospect, run.resolvedLabel);
                   return (
-                    <tr
-                      key={run.id}
-                      onClick={() => router.push(`/runs/${run.id}`)}
-                      className={`cursor-pointer border-b border-line-soft last:border-0 hover:bg-canvas/50 ${changed.has(run.id) ? "just-changed" : ""}`}
-                    >
-                      <td className="px-4 py-3">
-                        <Link href={`/runs/${run.id}`} onClick={(e) => e.stopPropagation()} className="font-bold text-fg hover:underline">
-                          {prospectLabel(run.prospect, run.resolvedLabel)}
-                        </Link>
-                        <div className="flex items-center gap-2 text-[13px] text-fg-soft">
-                          {detail}
-                          {run.documentCount > 0 && (
-                            <span className="inline-flex items-center gap-1 text-fg-muted" title={`${run.documentCount} document(s) attached`}>
-                              <Icon name="file" className="h-3.5 w-3.5" />
-                              {run.documentCount}
+                    <motion.li key={run.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2, ease: EASE_OUT }}>
+                      <Link
+                        href={`/runs/${run.id}`}
+                        data-row
+                        onKeyDown={onRowKey}
+                        className={cn("group relative grid gap-2 px-5 py-3.5 transition-colors hover:bg-subtle/60 focus-visible:rounded-none focus-visible:bg-subtle/60", COLS, changed.has(run.id) && "just-changed")}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-fg">{prospectLabel(run.prospect, run.resolvedLabel)}</span>
+                          <span className="flex items-center gap-2 truncate text-[13px] text-fg-muted">
+                            {detail}
+                            {run.documentCount > 0 && (
+                              <span className="inline-flex items-center gap-1" title={`${run.documentCount} document(s) attached`}>
+                                <Icon name="file" className="h-3.5 w-3.5" />
+                                {run.documentCount}
+                              </span>
+                            )}
+                          </span>
+                        </span>
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <Badge tone={RUN_STATUS_TONE[run.status]} live={running}>
+                            {RUN_STATUS_LABEL[run.status]}
+                          </Badge>
+                          {running && run.currentStage && <span className="text-[12px] text-fg-muted">{STAGE_LABELS[run.currentStage]}</span>}
+                          {run.status === "failed" && run.error && (
+                            <span className="block max-w-[240px] truncate text-[12px] text-danger" title={run.error}>
+                              {run.error}
                             </span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge tone={RUN_STATUS_TONE[run.status]} live={running}>
-                          {RUN_STATUS_LABEL[run.status]}
-                        </Badge>
-                        {running && run.currentStage && <div className="mt-1 text-[12px] text-fg-muted">{STAGE_LABELS[run.currentStage]}</div>}
-                        {run.status === "failed" && run.error && (
-                          <div className="mt-1 max-w-[240px] truncate text-[12px] text-danger" title={run.error}>
-                            {run.error}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-fg-soft">
-                        {run.hookType ? signalTypeLabel(run.hookType) : run.draftKind === "role_based" ? "Role-based draft" : <span className="text-fg-muted">None</span>}
-                      </td>
-                      <td className="acc px-4 py-3 text-right text-fg-soft">
-                        {run.verifiedCount} / {run.sourceCount}
-                      </td>
-                      <td className="acc px-4 py-3 text-right text-fg-soft">{running ? "running" : run.activeMs > 0 ? formatMs(run.activeMs) : "n/a"}</td>
-                      <td className="acc px-4 py-3 text-fg-muted">{formatDateTime(run.createdAt)}</td>
-                    </tr>
+                        </span>
+                        <span className="truncate text-[13px] text-fg-soft">
+                          <span className="text-fg-muted md:hidden">Hook: </span>
+                          {run.hookType ? signalTypeLabel(run.hookType) : run.draftKind === "role_based" ? "Role-based draft" : <span className="text-fg-muted">None</span>}
+                        </span>
+                        <span className="acc text-fg-soft md:text-right">
+                          {run.verifiedCount}/{run.sourceCount}
+                          <span className="font-sans text-fg-muted md:hidden"> verified / sources</span>
+                        </span>
+                        <span className="acc hidden text-right text-fg-soft md:block">{running ? "running" : run.activeMs > 0 ? formatMs(run.activeMs) : "n/a"}</span>
+                        <RelativeTime iso={run.createdAt} className="acc text-fg-muted md:text-right" />
+                      </Link>
+                    </motion.li>
                   );
                 })}
-                {visible.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-fg-soft">
-                      No runs match. <button className="font-bold text-info hover:underline" onClick={() => { setFilter("all"); setQuery(""); }}>Clear filters</button>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              </AnimatePresence>
+            </ul>
+            {visible.length === 0 && (
+              <div className="px-5 py-12 text-center text-sm text-fg-muted">
+                No runs match.{" "}
+                <button
+                  type="button"
+                  className="font-medium text-fg underline"
+                  onClick={() => {
+                    setView("all");
+                    setQuery("");
+                  }}
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}
