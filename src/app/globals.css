@@ -229,6 +229,129 @@ a {
   backdrop-filter: saturate(1.6) blur(14px);
 }
 
+/* ── Telemetry direction (navbar + Outreach) ───────────────────────────────
+   Dark is the reference design; light is its inversion. Scoped under .telemetry. */
+:root {
+  --t-volt: linear-gradient(90deg, #0090b0 0%, #3d5bff 45%, #4f8a00 100%);
+  --t-card: #ffffff;
+  --t-line: #e3e3e6;
+  --t-fg: #0d0d0f;
+  --t-soft: #3a3a40;
+  --t-muted: #66666d;
+  --t-dim: #c9c9ce;
+  --t-quote: #f2f2ef;
+  --t-inv-bg: #0d0d0f;
+  --t-inv-fg: #f2f2ef;
+  --t-inv-muted: #a0a0a8;
+  --t-inv-line: #2a2a2e;
+  --t-ok: #3f7a00;
+  --t-info: #007f9e;
+  --t-warn: #9a5b00;
+  --t-bad: #c2372d;
+  --t-pill-box: rgb(0 0 0 / 0.04);
+  --t-pill-line: rgb(0 0 0 / 0.08);
+  --t-pill-active: rgb(0 0 0 / 0.08);
+  --t-pill-hover: rgb(0 0 0 / 0.04);
+  --t-inv-btn: #c6ff3d;
+}
+.dark {
+  --t-volt: linear-gradient(90deg, #00e0ff 0%, #5b8cff 45%, #c6ff3d 100%);
+  --t-card: #111113;
+  --t-line: #232327;
+  --t-fg: #f2f2ef;
+  --t-soft: #d6d6da;
+  --t-muted: #8d8d93;
+  --t-dim: #56565c;
+  --t-quote: #18181b;
+  --t-inv-bg: #f2f2ef;
+  --t-inv-fg: #0d0d0f;
+  --t-inv-muted: #55555b;
+  --t-inv-line: #cfcfd3;
+  --t-ok: #c6ff3d;
+  --t-info: #00e0ff;
+  --t-warn: #ffb547;
+  --t-bad: #ff7a6b;
+  --t-pill-box: rgb(255 255 255 / 0.06);
+  --t-pill-line: rgb(255 255 255 / 0.1);
+  --t-pill-active: rgb(255 255 255 / 0.12);
+  --t-pill-hover: rgb(255 255 255 / 0.06);
+  --t-inv-btn: #0d0d0f;
+  --canvas: #09090a;
+  --page-wash: none;
+}
+.telemetry {
+  font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  color: var(--t-fg);
+}
+.t-mono {
+  font-family: var(--font-martian), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.t-label {
+  font-family: var(--font-martian), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-muted);
+}
+.t-card {
+  border: 1px solid var(--t-line);
+  border-radius: 20px;
+  background: var(--t-card);
+}
+.t-card-inv {
+  border-radius: 20px;
+  background: var(--t-inv-bg);
+  color: var(--t-inv-fg);
+}
+/* The inverted card flips the palette: dark card in light mode, light card in dark mode. */
+.t-card-inv {
+  --t-line: #2a2a2e;
+  --t-muted: #a0a0a8;
+  --t-soft: #d6d6da;
+  --t-ok: #c6ff3d;
+  --t-info: #00e0ff;
+  --t-warn: #ffb547;
+  --t-bad: #ff7a6b;
+  --t-btn-fg: #3f7a00;
+}
+.dark .t-card-inv {
+  --t-line: #d4d4d8;
+  --t-muted: #55555b;
+  --t-soft: #26262a;
+  --t-ok: #3f7a00;
+  --t-info: #007f9e;
+  --t-warn: #9a5b00;
+  --t-bad: #c2372d;
+  --t-btn-fg: #c6ff3d;
+}
+.t-volt-bg {
+  background: var(--t-volt);
+}
+.t-volt-text {
+  background: var(--t-volt);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* One gradient spread across a row of segments: each segment shows its slice. */
+.t-seg {
+  background: var(--t-volt);
+  background-size: 800% 100%;
+}
+.t-rail {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+.t-rail > * {
+  flex: 0 0 300px;
+  scroll-snap-align: start;
+}
+
 /* A changed row or stage holds a tint briefly so a watcher notices it. */
 @keyframes settle {
   from {
