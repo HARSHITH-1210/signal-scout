@@ -20,12 +20,12 @@ const STAGE_HINTS: Record<StageName, string> = {
 };
 
 const NODE: Record<StageStatus, { fill: string; stroke: string; glyph: "num" | "check" | "alert" | "cross" | "dash" | "dot" }> = {
-  pending: { fill: "var(--color-paper)", stroke: "var(--color-rule)", glyph: "num" },
-  running: { fill: "var(--color-paper)", stroke: "var(--color-det)", glyph: "dot" },
+  pending: { fill: "var(--color-surface)", stroke: "var(--color-line)", glyph: "num" },
+  running: { fill: "var(--color-surface)", stroke: "var(--color-info)", glyph: "dot" },
   succeeded: { fill: "var(--color-ok)", stroke: "var(--color-ok)", glyph: "check" },
-  warning: { fill: "var(--color-ochre)", stroke: "var(--color-ochre)", glyph: "alert" },
-  failed: { fill: "var(--color-specimen)", stroke: "var(--color-specimen)", glyph: "cross" },
-  skipped: { fill: "var(--color-board)", stroke: "var(--color-rule)", glyph: "dash" },
+  warning: { fill: "var(--color-warn)", stroke: "var(--color-warn)", glyph: "alert" },
+  failed: { fill: "var(--color-danger)", stroke: "var(--color-danger)", glyph: "cross" },
+  skipped: { fill: "var(--color-subtle)", stroke: "var(--color-line)", glyph: "dash" },
 };
 
 const STATUS_WORD: Record<StageStatus, string> = {
@@ -38,7 +38,7 @@ const STATUS_WORD: Record<StageStatus, string> = {
 };
 
 function Glyph({ kind, x, y, n }: { kind: (typeof NODE)[StageStatus]["glyph"]; x: number; y: number; n: number }) {
-  const stroke = { stroke: "white", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
+  const stroke = { stroke: "var(--color-surface)", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
   switch (kind) {
     case "check":
       return <path d={`M${x - 4.5} ${y + 0.5}l3 3 6-6.5`} {...stroke} />;
@@ -47,12 +47,12 @@ function Glyph({ kind, x, y, n }: { kind: (typeof NODE)[StageStatus]["glyph"]; x
     case "cross":
       return <path d={`M${x - 3.5} ${y - 3.5}l7 7M${x + 3.5} ${y - 3.5}l-7 7`} {...stroke} />;
     case "dash":
-      return <path d={`M${x - 4} ${y}h8`} stroke="var(--color-muted)" strokeWidth={2} strokeLinecap="round" />;
+      return <path d={`M${x - 4} ${y}h8`} stroke="var(--color-fg-muted)" strokeWidth={2} strokeLinecap="round" />;
     case "dot":
-      return <circle cx={x} cy={y} r={4} fill="var(--color-det)" />;
+      return <circle cx={x} cy={y} r={4} fill="var(--color-info)" />;
     default:
       return (
-        <text x={x} y={y + 4} textAnchor="middle" className="acc" fontSize={11} fill="var(--color-muted)">
+        <text x={x} y={y + 4} textAnchor="middle" className="acc" fontSize={11} fill="var(--color-fg-muted)">
           {n}
         </text>
       );
@@ -131,7 +131,7 @@ export function PipelineDiagram({
                 x2={CX}
                 y1={y1}
                 y2={y2}
-                stroke={filled ? "var(--color-rail)" : "var(--color-rule)"}
+                stroke={filled ? "var(--color-obsidian)" : "var(--color-line)"}
                 strokeWidth={filled ? 2.5 : 2}
                 strokeDasharray={filled && !flowing ? undefined : "4 4"}
                 className={flowing ? "flow" : undefined}
@@ -145,7 +145,7 @@ export function PipelineDiagram({
             const isCurrent = i === current && !preview;
             return (
               <g key={stage} className={changed.has(stage) && !preview ? "stamp-in" : undefined}>
-                {status === "running" && <circle cx={CX} cy={y} r={13} fill="none" stroke="var(--color-det)" strokeWidth={2} className="pulse-ring" />}
+                {status === "running" && <circle cx={CX} cy={y} r={13} fill="none" stroke="var(--color-info)" strokeWidth={2} className="pulse-ring" />}
                 <circle cx={CX} cy={y} r={R} fill={node.fill} stroke={node.stroke} strokeWidth={isCurrent ? 2.5 : 1.5} strokeDasharray={status === "skipped" ? "3 3" : undefined} />
                 <Glyph kind={node.glyph} x={CX} y={y} n={i + 1} />
               </g>
@@ -168,7 +168,7 @@ export function PipelineDiagram({
                 style={{ height: ROW }}
               >
                 <div className="flex items-baseline justify-between gap-2 pt-[11px]">
-                  <span className={`text-[14px] font-bold leading-tight ${muted ? "text-fg-muted" : "text-fg"}`}>
+                  <span className={`text-[14px] font-medium leading-tight ${muted ? "text-fg-muted" : "text-fg"}`}>
                     {STAGE_LABELS[stage]}
                     <span className="sr-only">: {STATUS_WORD[status]}</span>
                   </span>
@@ -179,7 +179,7 @@ export function PipelineDiagram({
                 </p>
                 {showExit && (preview || exitTaken) && (
                   <span
-                    className={`mt-1 inline-flex w-fit items-center gap-1.5 rounded px-1.5 py-px text-[11px] font-bold ${
+                    className={`mt-1 inline-flex w-fit items-center gap-1.5 rounded px-1.5 py-px text-[11px] font-medium ${
                       exitTaken ? "bg-warn-soft text-warn" : "border border-dashed border-line text-fg-muted"
                     }`}
                   >

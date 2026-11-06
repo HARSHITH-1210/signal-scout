@@ -6,7 +6,7 @@ import type { ContactRules } from "@/lib/types";
 import { TextArea } from "./Field";
 import { send } from "./run/api";
 
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
+const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-medium text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
 
 const toText = (rules: ContactRules) => ({
   doNotContact: rules.doNotContact.join("\n"),
@@ -39,7 +39,7 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
 
   return (
     <section aria-labelledby="contacts-title" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
-      <h2 id="contacts-title" className="text-[15px] font-bold">
+      <h2 id="contacts-title" className="text-[15px] font-semibold">
         Contact list
       </h2>
       <p className="mt-1 text-sm text-fg-soft">Checked before researching anyone. One email, domain or company per line.</p>

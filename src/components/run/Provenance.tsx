@@ -16,7 +16,7 @@ export function DegradedBanner({ degraded }: { degraded: Degradation[] }) {
   if (degraded.length === 0) return null;
   return (
     <section aria-labelledby="degraded-title" className="rounded-[var(--radius-panel)] border border-warn/40 bg-warn-soft p-4 text-sm text-warn">
-      <h2 id="degraded-title" className="flex items-center gap-2 font-bold">
+      <h2 id="degraded-title" className="flex items-center gap-2 font-medium">
         <Icon name="alert" />
         Degraded run
       </h2>
@@ -35,7 +35,7 @@ export function ProvenancePanel({ calls }: { calls: ProviderCall[] }) {
   const failures = calls.filter((c) => c.outcome === "error").length;
   return (
     <details className="rounded-[var(--radius-panel)] border border-line bg-surface">
-      <summary className="cursor-pointer px-5 py-3 text-[15px] font-bold">
+      <summary className="cursor-pointer px-5 py-3 text-[15px] font-semibold">
         How this run was produced{" "}
         <span className="acc font-normal text-fg-muted">
           {calls.length} calls{failures ? `, ${failures} failed` : ""}
@@ -45,11 +45,11 @@ export function ProvenancePanel({ calls }: { calls: ProviderCall[] }) {
         <table className="w-full min-w-[560px] text-left text-[13px]">
           <thead className="text-fg-muted">
             <tr>
-              <th className="px-5 py-2 font-bold">Stage</th>
-              <th className="px-3 py-2 font-bold">Step</th>
-              <th className="px-3 py-2 font-bold">Provider</th>
-              <th className="px-3 py-2 font-bold">Result</th>
-              <th className="px-5 py-2 text-right font-bold">Time</th>
+              <th className="px-5 py-2 font-medium">Stage</th>
+              <th className="px-3 py-2 font-medium">Step</th>
+              <th className="px-3 py-2 font-medium">Provider</th>
+              <th className="px-3 py-2 font-medium">Result</th>
+              <th className="px-5 py-2 text-right font-medium">Time</th>
             </tr>
           </thead>
           <tbody>
@@ -58,7 +58,7 @@ export function ProvenancePanel({ calls }: { calls: ProviderCall[] }) {
                 <td className="px-5 py-2 text-fg-soft">{c.stage?.replace(/_/g, " ") ?? "–"}</td>
                 <td className="px-3 py-2 text-fg-soft">{c.task.replace(/_/g, " ")}</td>
                 <td className="px-3 py-2">
-                  <span className="font-bold">{c.provider}</span>
+                  <span className="font-medium">{c.provider}</span>
                   {c.model && <span className="acc block text-[12px] text-fg-muted">{c.model}</span>}
                   {c.fallbackFrom && <span className="block text-[12px] text-warn">fallback after {c.fallbackFrom}</span>}
                 </td>

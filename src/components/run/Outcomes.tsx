@@ -5,17 +5,29 @@ import { useState } from "react";
 import type { RunDetail } from "@/lib/types";
 import { TextField } from "../Field";
 import { Icon } from "../Icon";
+import { AnimatePresence, motion } from "motion/react";
+import { buttonClass } from "../ui/Button";
 import { send } from "./api";
 
-const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-45";
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
+const primary = buttonClass("primary");
+const secondary = buttonClass("secondary");
+
+const SHELL_TONE = {
+  info: { ring: "border-info/25", head: "text-info", chip: "bg-info-soft text-info", icon: "spark" },
+  warn: { ring: "border-warn/30", head: "text-warn", chip: "bg-warn-soft text-warn", icon: "alert" },
+  bad: { ring: "border-danger/30", head: "text-danger", chip: "bg-danger-soft text-danger", icon: "cross" },
+} as const;
 
 function Shell({ tone, title, children }: { tone: "info" | "warn" | "bad"; title: string; children: React.ReactNode }) {
-  const ring = tone === "info" ? "border-info/30" : tone === "warn" ? "border-warn/40" : "border-danger/40";
-  const head = tone === "info" ? "text-info" : tone === "warn" ? "text-warn" : "text-danger";
+  const t = SHELL_TONE[tone];
   return (
-    <section className={`rounded-[var(--radius-panel)] border ${ring} bg-surface p-5 sm:p-6`}>
-      <h2 className={`text-[17px] font-bold ${head}`}>{title}</h2>
+    <section className={`rounded-[var(--radius-panel)] border ${t.ring} bg-surface p-5 sm:p-6`}>
+      <h2 className={`flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.01em] ${t.head}`}>
+        <span className={`grid h-7 w-7 place-items-center rounded-lg ${t.chip}`}>
+          <Icon name={t.icon} className="h-4 w-4" />
+        </span>
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -25,7 +37,14 @@ export function InProgress({ detail }: { detail: RunDetail }) {
   const last = detail.events[detail.events.length - 1];
   return (
     <Shell tone="info" title={detail.status === "queued" ? "Waiting to start" : "Researching"}>
-      <p className="mt-1 text-sm text-fg-soft">{last ? last.message : "Starting up."}</p>
+      <div aria-hidden className="mt-4 h-1 overflow-hidden rounded-full bg-subtle">
+        <span className="skeleton block h-full w-full rounded-full" style={{ backgroundImage: "linear-gradient(90deg, transparent 20%, var(--accent) 50%, transparent 80%)" }} />
+      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.p key={last?.id ?? "start"} role="status" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className="mt-3 text-sm text-fg-soft">
+          {last ? last.message : "Starting up."}
+        </motion.p>
+      </AnimatePresence>
       <p className="mt-2 text-[13px] text-fg-muted">A full run usually takes one to three minutes. You can leave this page; progress is saved and the ledger catches up when you return.</p>
     </Shell>
   );
@@ -65,7 +84,7 @@ export function Clarify({ detail, onResumed }: { detail: RunDetail; onResumed: (
           <label key={i} className={`flex cursor-pointer gap-3 rounded-lg border p-3 text-sm transition-colors ${choice === i ? "border-info bg-info-soft/60" : "border-line hover:border-fg-muted/60"}`}>
             <input type="radio" name="candidate" className="mt-1 h-4 w-4" checked={choice === i} onChange={() => setChoice(i)} />
             <span className="min-w-0">
-              <span className="font-bold">
+              <span className="font-medium">
                 {c.name}
                 {c.role ? `, ${c.role}` : ""}
                 {c.company && c.company !== c.name ? ` at ${c.company}` : ""}
@@ -81,7 +100,7 @@ export function Clarify({ detail, onResumed }: { detail: RunDetail; onResumed: (
       </button>
 
       <div className="mt-6 border-t border-line pt-4">
-        <p className="text-sm font-bold">None of these? Add one more detail and search again.</p>
+        <p className="text-sm font-medium">None of these? Add one more detail and search again.</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <TextField label="Company website" name="companyWebsite" value={extra.companyWebsite} error={fieldErrors.companyWebsite} onChange={(e) => setExtra({ ...extra, companyWebsite: e.target.value })} placeholder="atlasrobotics.io" />
           <TextField label="LinkedIn profile" name="linkedinUrl" value={extra.linkedinUrl} error={fieldErrors.linkedinUrl} onChange={(e) => setExtra({ ...extra, linkedinUrl: e.target.value })} placeholder="linkedin.com/in/…" />

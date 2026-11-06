@@ -5,7 +5,7 @@ import type { GmailStatus } from "@/lib/types";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
 
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
+const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-medium text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
 
 /** Gmail connection for sending approved drafts. Tokens never reach the browser; only the address and the setting do. */
 export function GmailPanel({ initial, result }: { initial: GmailStatus; result: { tone: "ok" | "bad"; text: string } | null }) {
@@ -25,7 +25,7 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
 
   return (
     <section id="gmail" aria-labelledby="gmail-title" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
-      <h2 id="gmail-title" className="text-[15px] font-bold">
+      <h2 id="gmail-title" className="text-[15px] font-semibold">
         Send with Gmail
       </h2>
       {!status.configured ? (
@@ -49,7 +49,7 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
           {!status.canTrack && (
             <p className="mt-3 text-sm text-warn">
               Reply and bounce tracking is off for this connection.{" "}
-              <a href="/api/gmail/connect" className="font-bold underline">
+              <a href="/api/gmail/connect" className="font-medium underline">
                 Reconnect Gmail
               </a>{" "}
               to allow header-only access.
@@ -64,13 +64,13 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
               onChange={(e) => update("PUT", { autoSendOnApprove: e.target.checked })}
             />
             <span>
-              <span className="font-bold">Send when I approve</span>
+              <span className="font-medium">Send when I approve</span>
               <span className="block text-[13px] text-fg-muted">
                 Approve &amp; send emails the exact approved version after a confirmation. Drafts with blocking issues, or without a recipient address, are never sent.
               </span>
             </span>
           </label>
-          <button type="button" onClick={() => update("DELETE", undefined, "Disconnected. Google access was revoked.")} disabled={busy} className="mt-4 min-h-11 text-sm font-bold text-fg-soft hover:text-danger disabled:opacity-45">
+          <button type="button" onClick={() => update("DELETE", undefined, "Disconnected. Google access was revoked.")} disabled={busy} className="mt-4 min-h-11 text-sm font-medium text-fg-soft hover:text-danger disabled:opacity-45">
             Disconnect Gmail
           </button>
         </>

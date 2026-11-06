@@ -8,9 +8,9 @@ import { TextArea, TextField } from "./Field";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
 
-const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-45";
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-bold text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
-const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-bold text-fg-soft hover:bg-canvas hover:text-danger";
+const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-45";
+const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-obsidian px-4 text-sm font-medium text-obsidian transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-45";
+const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-fg-soft hover:bg-canvas hover:text-danger";
 
 type Identity = Pick<SenderProfile, "senderName" | "senderRole" | "companyName" | "companyWebsite" | "defaultCta">;
 
@@ -120,7 +120,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
     <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
       <form onSubmit={submit} noValidate className="self-start rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6">
         <fieldset>
-          <legend className="text-[15px] font-bold">You</legend>
+          <legend className="text-[15px] font-semibold">You</legend>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <TextField label="Your name" name="senderName" value={values.senderName} onChange={set("senderName")} error={errors.senderName} hint="Used to sign drafts." />
             <TextField label="Your role" name="senderRole" value={values.senderRole} onChange={set("senderRole")} error={errors.senderRole} />
@@ -133,7 +133,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
         </fieldset>
 
         <fieldset className="mt-7">
-          <legend className="text-[15px] font-bold">What you sell</legend>
+          <legend className="text-[15px] font-semibold">What you sell</legend>
           <p className="mt-1 text-sm text-fg-soft">
             Group your offerings into sectors. Each new run picks one or more to pitch: the email leads with the best fit and names the others in passing.
           </p>
@@ -141,7 +141,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
             {values.sectors.map((sector, s) => (
               <details key={sector.id} open className="rounded-lg border border-line">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2">
-                  <span className="flex items-center gap-2 font-bold">
+                  <span className="flex items-center gap-2 font-medium">
                     <Icon name="chevron" className="h-4 w-4 text-fg-muted" />
                     {sector.name.trim() || "Untitled sector"}
                   </span>
@@ -176,7 +176,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                           <TextField label="Call to action for this offering" name={`${key}.cta`} value={offering.cta} onChange={(e) => updateOffering(s, o, { cta: e.target.value })} error={errors[`${key}.cta`]} hint="Optional. Leave empty to use the default." />
                           {docs.length > 0 && (
                             <fieldset className="text-sm">
-                              <legend className="font-bold">Documents about this offering</legend>
+                              <legend className="font-medium">Documents about this offering</legend>
                               <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
                                 {docs.map((doc) => (
                                   <label key={doc.id} className="flex min-h-9 cursor-pointer items-center gap-2 text-fg-soft">
@@ -221,7 +221,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
             {busy === "save" ? "Saving…" : "Save profile"}
           </button>
           {dirty && busy === null && (
-            <button type="button" onClick={() => setValues(saved)} className="min-h-11 text-sm font-bold text-fg-soft hover:text-fg">
+            <button type="button" onClick={() => setValues(saved)} className="min-h-11 text-sm font-medium text-fg-soft hover:text-fg">
               Discard changes
             </button>
           )}
@@ -233,7 +233,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
 
       <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
         <section aria-labelledby="seller-docs" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
-          <h2 id="seller-docs" className="text-[15px] font-bold">
+          <h2 id="seller-docs" className="text-[15px] font-semibold">
             Your documents
           </h2>
           <p className="mt-1 text-sm text-fg-soft">
@@ -251,7 +251,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                     type="button"
                     onClick={() => fillFrom(doc)}
                     disabled={busy !== null}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-bold text-info hover:bg-info-soft disabled:opacity-45"
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-info hover:bg-info-soft disabled:opacity-45"
                   >
                     <Icon name="doc" className="h-3.5 w-3.5" />
                     {busy === `fill-${doc.id}` ? "Reading…" : "Fill profile from this"}

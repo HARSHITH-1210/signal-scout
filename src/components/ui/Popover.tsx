@@ -15,6 +15,8 @@ export function Popover({
   className,
   triggerClassName,
   disabled,
+  side = "bottom",
+  align = "start",
 }: {
   trigger: (open: boolean) => React.ReactNode;
   label: string;
@@ -22,6 +24,8 @@ export function Popover({
   className?: string;
   triggerClassName?: (open: boolean) => string;
   disabled?: boolean;
+  side?: "bottom" | "top";
+  align?: "start" | "end";
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -67,12 +71,12 @@ export function Popover({
             id={id}
             role="dialog"
             aria-label={label}
-            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            initial={{ opacity: 0, y: side === "top" ? 4 : -4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98, transition: { duration: 0.12 } }}
+            exit={{ opacity: 0, y: side === "top" ? 4 : -4, scale: 0.98, transition: { duration: 0.12 } }}
             transition={SPRING_SOFT}
-            style={{ transformOrigin: "top left" }}
-            className={cn("absolute left-0 z-30 mt-1.5 rounded-xl border border-line bg-surface p-1.5 shadow-[var(--shadow-overlay)]", className)}
+            style={{ transformOrigin: `${side === "top" ? "bottom" : "top"} ${align === "end" ? "right" : "left"}` }}
+            className={cn("absolute z-30 rounded-xl", side === "top" ? "bottom-full mb-1.5" : "mt-1.5", align === "end" ? "right-0" : "left-0", " border border-line bg-surface p-1.5 shadow-[var(--shadow-overlay)]", className)}
           >
             {children}
           </motion.div>

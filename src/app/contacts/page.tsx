@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default function ContactsPage() {
   return (
     <div>
-      <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em]">Contacts</h1>
+      <h1 className="text-[28px] font-semibold leading-tight tracking-[-0.01em]">Contacts</h1>
       <p className="mt-1 max-w-[68ch] text-fg-soft">
         People and companies on the receiving side. Every run is checked against this list before research, after the prospect is identified, and before any send.
       </p>
