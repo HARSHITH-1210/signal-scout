@@ -213,3 +213,6 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - Every page moved to the Telemetry design (DESIGN.md): a centred pill navbar (Aurora box), Outfit with Martian Mono labels, the cyan-to-lime gradient, and inverted cards. App tokens were aligned with the Telemetry palette in both themes.
   - Primitives were restyled once (Button pills, Badge, PageHeader with a mono label, pill Tabs and SegmentedControl, fields), so the runs list, run view, Settings and Contacts follow. Outreach and New run were rebuilt as compact dashboard and form layouts. Geist fonts were removed.
   - Logic, send gating and confirmations are unchanged.
+- v16 (copy trim, user-requested):
+  - Removed AI-sounding explanatory text: page descriptions, helper paragraphs under sections and fields, and footnotes. Pages now show titles, mono labels and data.
+  - Explanations moved into an accessible `Tooltip`/`InfoTip` (hover and focus, portalled). Buttons explain themselves and give disabled reasons in tooltips. Guardrail labels (inference, stale and bad-news holds) stay visible.

@@ -14,6 +14,7 @@ import type { ProviderStatus } from "@/lib/providers/status";
 import { Spinner } from "./ui/Button";
 import { Collapsible, NumberTicker, RelativeTime, Stagger, StaggerItem } from "./ui/Motion";
 import { useToast } from "./ui/Toast";
+import { InfoTip } from "./ui/Tooltip";
 
 type CheckResult = { checked: number; skipped: "throttled" | "not_connected" | "no_permission" | null; error: string | null };
 
@@ -143,7 +144,7 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
           <Stat label="Sent" value={t.sent} sub={`${t.sentThisWeek} in 7 days`} />
         </StaggerItem>
         <StaggerItem>
-          <Stat label="Delivered" value={tracked ? t.delivered : null} sub={tracked ? (t.pending > 0 ? `${t.pending} pending` : "no bounce seen") : "not tracked"} />
+          <Stat label="Delivered" tip="Sent with no bounce seen. Gmail has no delivery receipts, and only headers of threads Signal Scout sent are read." value={tracked ? t.delivered : null} sub={tracked ? (t.pending > 0 ? `${t.pending} pending` : "no bounce seen") : "not tracked"} />
         </StaggerItem>
         <StaggerItem>
           <Stat
@@ -204,7 +205,7 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
             </Link>
           </div>
           {stats.actions.length === 0 ? (
-            <p className="px-5 py-10 text-center text-[14px] text-[var(--t-muted)]">You&apos;re all caught up. Start a run to research your next prospect.</p>
+            <p className="px-5 py-10 text-center text-[14px] text-[var(--t-muted)]">You&apos;re all caught up.</p>
           ) : (
             <Stagger>
               <ul className="divide-y divide-[var(--t-line)]">
@@ -236,7 +237,7 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
             <span className="t-label">{tracked ? `${t.delivered} delivered · ${t.bounced} bounced` : "not tracked"}</span>
           </div>
           {stats.sentLog.length === 0 ? (
-            <p className="px-5 py-10 text-center text-[14px] text-[var(--t-muted)]">Nothing sent yet. Approve and send a draft from a run to see it here.</p>
+            <p className="px-5 py-10 text-center text-[14px] text-[var(--t-muted)]">Nothing sent yet.</p>
           ) : (
             <ul className="divide-y divide-[var(--t-line)]">
               {stats.sentLog.slice(0, 8).map((s) => (
@@ -322,32 +323,34 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
                   </li>
                 ))}
               </ul>
-              <p className="mt-3 text-[12px] text-[var(--t-muted)]">Replies over sent. With only a handful of emails, treat this as a hint.</p>
             </>
           )}
         </article>
       </section>
 
       <section className="t-card mt-3 px-5 py-1.5">
-        <Collapsible title={<span className="t-label">System status · providers and fallbacks</span>}>
+        <Collapsible title={<span className="t-label">System status</span>}>
           <SystemStatus initial={providers} />
         </Collapsible>
       </section>
 
-      <p className="mt-5 max-w-[80ch] text-[12px] text-[var(--t-muted)]">
-        Delivered means sent with no bounce seen: Gmail has no delivery receipts. Replies and bounces come from the headers of threads Signal Scout sent; email bodies are
-        never read. Opens aren&apos;t tracked.
-      </p>
     </div>
   );
 }
 
 /** Compact KPI card: mono label, medium number, one-line context. The accent stat uses the volt gradient. */
-function Stat({ label, value, sub, accent = false, subTone }: { label: string; value: number | null; sub: string; accent?: boolean; subTone?: Tone }) {
+function Stat({ label, value, sub, accent = false, subTone, tip }: { label: string; value: number | null; sub: string; accent?: boolean; subTone?: Tone; tip?: string }) {
   return (
-    <div className="t-card relative h-full overflow-hidden p-4">
-      {accent && <span aria-hidden className="t-volt-bg absolute inset-x-0 top-0 h-[2px]" />}
-      <p className="t-label">{label}</p>
+    <div className="t-card relative h-full p-4">
+      {accent && <span aria-hidden className="t-volt-bg absolute inset-x-0 top-0 h-[2px] rounded-t-[20px]" />}
+      <p className="t-label flex items-center gap-1.5">
+        {label}
+        {tip && (
+          <InfoTip label={`About ${label}`} align="start" side="bottom">
+            {tip}
+          </InfoTip>
+        )}
+      </p>
       <p className={cn("mt-2 text-[28px] font-medium leading-none tracking-[-0.03em]", accent && "t-volt-text")}>{value === null ? "–" : <NumberTicker value={value} />}</p>
       <p className={cn("t-mono mt-2 truncate text-[11px]", subTone ? TONE_COLOR[subTone] : "text-[var(--t-muted)]")}>{sub}</p>
     </div>

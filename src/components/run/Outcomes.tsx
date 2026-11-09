@@ -45,7 +45,7 @@ export function InProgress({ detail }: { detail: RunDetail }) {
           {last ? last.message : "Starting up."}
         </motion.p>
       </AnimatePresence>
-      <p className="mt-2 text-[13px] text-fg-muted">A full run usually takes one to three minutes. You can leave this page; progress is saved and the ledger catches up when you return.</p>
+      <p className="mt-2 text-[13px] text-fg-muted">Usually 1–3 minutes. Safe to leave this page.</p>
     </Shell>
   );
 }
@@ -100,7 +100,7 @@ export function Clarify({ detail, onResumed }: { detail: RunDetail; onResumed: (
       </button>
 
       <div className="mt-6 border-t border-line pt-4">
-        <p className="text-sm font-medium">None of these? Add one more detail and search again.</p>
+        <p className="text-sm font-medium">None of these? Add a detail and search again.</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <TextField label="Company website" name="companyWebsite" value={extra.companyWebsite} error={fieldErrors.companyWebsite} onChange={(e) => setExtra({ ...extra, companyWebsite: e.target.value })} placeholder="atlasrobotics.io" />
           <TextField label="LinkedIn profile" name="linkedinUrl" value={extra.linkedinUrl} error={fieldErrors.linkedinUrl} onChange={(e) => setExtra({ ...extra, linkedinUrl: e.target.value })} placeholder="linkedin.com/in/…" />
@@ -136,7 +136,7 @@ export function Insufficient({ detail, onResumed }: { detail: RunDetail; onResum
 
   return (
     <Shell tone="warn" title={identityFailed ? "Couldn't confirm who this is" : "No finding strong enough to personalise on"}>
-      <p className="mt-1 text-sm text-fg-soft">Rather than invent a reason to reach out, Signal Scout stopped here. This is what it found and why it wasn&apos;t enough:</p>
+      <p className="mt-1 text-sm text-fg-soft">Not enough verified signal for a grounded email:</p>
       <ul className="mt-3 space-y-1.5 text-sm">
         {detail.limitations.map((l, i) => (
           <li key={i} className="flex gap-2 text-fg-soft">

@@ -7,6 +7,7 @@ import { Badge } from "./Badge";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
 import { Button } from "./ui/Button";
+import { InfoTip } from "./ui/Tooltip";
 
 const STATE: Record<ProviderStatus["state"], { label: string; tone: Tone }> = {
   up: { label: "Up", tone: "ok" },
@@ -39,7 +40,12 @@ export function SystemStatus({ initial }: { initial: ProviderStatus[] }) {
   return (
     <section aria-label="Provider fallback chains" className="-mx-5">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-3">
-        <p className="text-[13px] text-fg-muted">Runs try providers top to bottom.</p>
+        <span className="flex items-center gap-1.5 t-label">
+          Fallback order
+          <InfoTip label="About fallbacks" align="start">
+            Runs try providers top to bottom. One out of quota is skipped until it resets; three outages in a row pause it for two minutes.
+          </InfoTip>
+        </span>
         <Button size="sm" onClick={test} loading={busy}>
           {!busy && <Icon name="refresh" className="h-3.5 w-3.5" />}
           {busy ? "Testing…" : "Test connections"}
@@ -47,7 +53,7 @@ export function SystemStatus({ initial }: { initial: ProviderStatus[] }) {
       </div>
       {allAiDown && (
         <p className="border-y border-line bg-danger-soft px-5 py-2.5 text-sm text-danger">
-          Every AI provider is paused, so new runs wait until one is back. Add another provider key, or test the connections after fixing a key.
+          All AI providers are paused. New runs wait until one is back.
         </p>
       )}
       {error && <p className="px-5 pt-3 text-sm text-danger">{error}</p>}
@@ -83,9 +89,6 @@ export function SystemStatus({ initial }: { initial: ProviderStatus[] }) {
           );
         })}
       </ul>
-      <p className="border-t border-line px-5 py-2.5 text-[13px] text-fg-muted">
-        A provider that runs out of quota is skipped until it resets; three outages in a row pause it for two minutes.
-      </p>
     </section>
   );
 }

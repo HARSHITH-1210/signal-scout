@@ -1,5 +1,6 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/ui/cn";
+import { InfoTip } from "./Tooltip";
 
 /** Telemetry direction: pill buttons. Primary inverts the page (light pill on dark, dark pill with lime on light). */
 export const T_PILL =
@@ -18,6 +19,23 @@ interface FieldProps {
   name: string;
   hint?: string;
   error?: string;
+  /** Extra context shown in a tooltip next to the label instead of a line under the field. */
+  tip?: React.ReactNode;
+}
+
+/** Field wrapper: the label and its optional info tip sit above the control; the tip button stays outside the <label>. */
+function FieldShell({ label, name, tip, children }: { label: string; name: string; tip?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div>
+      <span className="flex items-center gap-1.5">
+        <label htmlFor={`f-${name}`} className="t-label">
+          {label}
+        </label>
+        {tip && <InfoTip label={`About ${label}`}>{tip}</InfoTip>}
+      </span>
+      {children}
+    </div>
+  );
 }
 
 function Note({ name, hint, error }: { name: string; hint?: string; error?: string }) {
@@ -37,35 +55,37 @@ function Note({ name, hint, error }: { name: string; hint?: string; error?: stri
 }
 
 /** Text input with a mono uppercase label, in the Telemetry direction. */
-export function TField({ label, name, hint, error, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
+export function TField({ label, name, hint, error, tip, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <label className="block">
-      <span className="t-label">{label}</span>
-      <input name={name} aria-invalid={Boolean(error)} aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined} className={control(error)} {...rest} />
+    <FieldShell label={label} name={name} tip={tip}>
+      <input id={`f-${name}`} name={name} aria-invalid={Boolean(error)} aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined} className={control(error)} {...rest} />
       <Note name={name} hint={hint} error={error} />
-    </label>
+    </FieldShell>
   );
 }
 
-export function TTextArea({ label, name, hint, error, ...rest }: FieldProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TTextArea({ label, name, hint, error, tip, ...rest }: FieldProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <label className="block">
-      <span className="t-label">{label}</span>
-      <textarea name={name} aria-invalid={Boolean(error)} aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined} className={control(error)} {...rest} />
+    <FieldShell label={label} name={name} tip={tip}>
+      <textarea id={`f-${name}`} name={name} aria-invalid={Boolean(error)} aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined} className={control(error)} {...rest} />
       <Note name={name} hint={hint} error={error} />
-    </label>
+    </FieldShell>
   );
 }
 
-/** Numbered section heading: "02 · The person". */
+/** Numbered section heading: "02 · The person". Any explanation goes in an info tip, not a paragraph. */
 export function TSection({ step, title, children, id }: { step: string; title: string; children?: React.ReactNode; id?: string }) {
   return (
-    <div className="mb-5">
+    <div className="mb-5 flex items-center gap-2">
       <h2 id={id} className="flex items-baseline gap-3 text-[15px] font-semibold tracking-[-0.01em]">
         <span className="t-mono text-[11px] font-normal text-[var(--t-muted)]">{step}</span>
         {title}
       </h2>
-      {children && <p className="mt-1 text-[13px] text-[var(--t-muted)]">{children}</p>}
+      {children && (
+        <InfoTip label={`About ${title}`} align="start">
+          {children}
+        </InfoTip>
+      )}
     </div>
   );
 }

@@ -1,10 +1,13 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { InfoTip } from "./ui/Tooltip";
 
 interface FieldProps {
   label: string;
   name: string;
   hint?: string;
   error?: string;
+  /** Extra context in a tooltip beside the label, instead of a line under the field. */
+  tip?: React.ReactNode;
 }
 
 const control = (error?: string) =>
@@ -28,11 +31,17 @@ function Message({ name, hint, error }: { name: string; hint?: string; error?: s
   return null;
 }
 
-export function TextField({ label, name, hint, error, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
+export function TextField({ label, name, hint, error, tip, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
   return (
-    <label className="block text-sm">
-      <span className="t-label">{label}</span>
+    <div className="text-sm">
+      <span className="flex items-center gap-1.5">
+        <label htmlFor={`f-${name}`} className="t-label">
+          {label}
+        </label>
+        {tip && <InfoTip label={`About ${label}`}>{tip}</InfoTip>}
+      </span>
       <input
+        id={`f-${name}`}
         name={name}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined}
@@ -40,15 +49,21 @@ export function TextField({ label, name, hint, error, ...rest }: FieldProps & In
         {...rest}
       />
       <Message name={name} hint={hint} error={error} />
-    </label>
+    </div>
   );
 }
 
-export function TextArea({ label, name, hint, error, ...rest }: FieldProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TextArea({ label, name, hint, error, tip, ...rest }: FieldProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <label className="block text-sm">
-      <span className="t-label">{label}</span>
+    <div className="text-sm">
+      <span className="flex items-center gap-1.5">
+        <label htmlFor={`f-${name}`} className="t-label">
+          {label}
+        </label>
+        {tip && <InfoTip label={`About ${label}`}>{tip}</InfoTip>}
+      </span>
       <textarea
+        id={`f-${name}`}
         name={name}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${name}-error` : hint ? `${name}-hint` : undefined}
@@ -56,7 +71,7 @@ export function TextArea({ label, name, hint, error, ...rest }: FieldProps & Tex
         {...rest}
       />
       <Message name={name} hint={hint} error={error} />
-    </label>
+    </div>
   );
 }
 

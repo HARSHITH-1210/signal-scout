@@ -17,7 +17,7 @@ export default function RouteError({ reset }: { error: Error & { digest?: string
           </Button>
         }
       >
-        Something went wrong while loading it. Your runs and drafts are saved. If it keeps happening, check that the server is running.
+        Your runs and drafts are saved.
       </EmptyState>
     </div>
   );

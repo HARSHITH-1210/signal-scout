@@ -15,6 +15,7 @@ import { useConfirm } from "../ui/Dialog";
 import { Collapsible } from "../ui/Motion";
 import { Popover } from "../ui/Popover";
 import { useToast } from "../ui/Toast";
+import { InfoTip, Tooltip } from "../ui/Tooltip";
 import { send } from "./api";
 
 function wordCount(text: string) {
@@ -53,13 +54,21 @@ function BeforeYouSend({ items }: { items: CheckItem[] }) {
       <ul className="mt-3 space-y-3">
         <AnimatePresence initial={false}>
           {sorted.map((item) => (
-            <motion.li key={item.key} layout initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25, ease: EASE_OUT }} className="flex gap-3 overflow-hidden">
+            <motion.li key={item.key} layout initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.25, ease: EASE_OUT }} className="flex gap-3">
               <span className={cn("mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md", CHECK_STYLE[item.tone].chip)}>
                 <Icon name={item.icon} className="h-3.5 w-3.5" />
               </span>
               <div className="min-w-0 text-sm">
-                <p className={cn("font-medium", CHECK_STYLE[item.tone].text)}>{item.title}</p>
-                {item.children && <div className="mt-0.5 text-[13px] text-fg-muted">{item.children}</div>}
+                {/* Informational items keep only their title; detail goes in a tooltip. Blocking items keep their controls inline. */}
+                <p className={cn("flex items-center gap-1.5 font-medium", CHECK_STYLE[item.tone].text)}>
+                  {item.title}
+                  {item.tone === "info" && item.children && (
+                    <InfoTip label={`About: ${item.title}`} align="end">
+                      {item.children}
+                    </InfoTip>
+                  )}
+                </p>
+                {item.tone !== "info" && item.children && <div className="mt-0.5 text-[13px] text-fg-muted">{item.children}</div>}
               </div>
             </motion.li>
           ))}
@@ -264,12 +273,13 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
   }
 
   // The primary action and, when it's unavailable, the reason in plain words.
-  const primary: { label: string; busyLabel: string; run: () => void; disabled: boolean; reason: string | null; busyKey: string } | null = sent
+  const primary: { label: string; busyLabel: string; run: () => void; disabled: boolean; reason: string | null; help: string; busyKey: string } | null = sent
     ? null
     : approved
       ? gmail.connected
         ? {
             label: "Send now",
+            help: "Sends this exact version from your Gmail after you confirm.",
             busyLabel: "Sending…",
             busyKey: "send",
             run: sendNow,
@@ -280,6 +290,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
       : autoSend
         ? {
             label: "Approve & send",
+            help: "Emails this exact version after you confirm.",
             busyLabel: "Sending…",
             busyKey: "approve",
             run: approveAndSend,
@@ -288,6 +299,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
           }
         : {
             label: `Approve v${draft.version}`,
+            help: gmail.connected ? "Records that you reviewed this exact version. Send it afterwards." : "Records that you reviewed this exact version. Nothing is sent.",
             busyLabel: "Approving…",
             busyKey: "approve",
             run: approve,
@@ -313,7 +325,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
       title: `Expired on ${formatDateTime(expiresAt!)}`,
       children: (
         <>
-          <p>The role may be filled or the news may have changed since this was researched. Research again before sending.</p>
+          <p>Research again before sending.</p>
           <Button size="sm" className="mt-2" onClick={researchAgain} loading={busy === "rerun"} disabled={busy !== null && busy !== "rerun"}>
             {busy === "rerun" ? "Starting…" : "Research again"}
           </Button>
@@ -333,7 +345,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
               <li key={s.id}>{s.claim}</li>
             ))}
           </ul>
-          <p className="mt-1">It isn&apos;t used in the draft. Outreach right now may land badly.</p>
+          <p className="mt-1">Not used in the draft.</p>
           {!approved && (
             <label className="mt-2 flex cursor-pointer items-start gap-2 font-medium text-fg">
               <input type="checkbox" className="mt-0.5 h-4 w-4" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
@@ -459,7 +471,6 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
               </div>
             </Collapsible>
           )}
-          <p className="mt-1 text-[13px] text-fg-muted">Read it before approving. The checks below were re-run on this version.</p>
         </div>
       )}
 
@@ -534,16 +545,20 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
       <div className="sticky bottom-0 z-10 border-t border-line bg-surface/90 px-5 py-3 backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-2">
           {primary && (
-            <Button variant="primary" onClick={primary.run} disabled={primary.disabled} loading={busy === primary.busyKey}>
-              {busy !== primary.busyKey && <Icon name={primary.label.startsWith("Send") || primary.label.includes("send") ? "mail" : "check"} />}
-              {busy === primary.busyKey ? primary.busyLabel : primary.label}
-              {!primary.disabled && <Kbd className="ml-1">⌘↵</Kbd>}
-            </Button>
+            <Tooltip align="start" content={primary.disabled && busy === null ? primary.reason : primary.help}>
+              <Button variant="primary" onClick={primary.run} disabled={primary.disabled} loading={busy === primary.busyKey}>
+                {busy !== primary.busyKey && <Icon name={primary.label.startsWith("Send") || primary.label.includes("send") ? "mail" : "check"} />}
+                {busy === primary.busyKey ? primary.busyLabel : primary.label}
+                {!primary.disabled && <Kbd className="ml-1">⌘↵</Kbd>}
+              </Button>
+            </Tooltip>
           )}
           {!sent && !approved && autoSend && (
-            <Button onClick={approve} disabled={dirty || onHold || busy !== null}>
-              Approve only
-            </Button>
+            <Tooltip content="Records the review. Sends nothing.">
+              <Button onClick={approve} disabled={dirty || onHold || busy !== null}>
+                Approve only
+              </Button>
+            </Tooltip>
           )}
           <AnimatePresence initial={false}>
             {!sent && dirty && (
@@ -590,7 +605,6 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
             </Popover>
           </div>
         </div>
-        {primary?.disabled && primary.reason && busy === null && <p className="mt-2 text-[12px] text-fg-muted">{primary.reason}</p>}
       </div>
 
       <AnimatePresence initial={false}>
@@ -617,13 +631,17 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
                   className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
                 />
               </label>
-              <p id={`${titleId}-ai-help`} className="mt-1 text-[12px] text-fg-muted">
+              <p id={`${titleId}-ai-help`} className="sr-only">
                 Ask for a rewrite or ask a question. Your unsaved edits are included. New facts can only come from verified findings or from what you state yourself, and the result is checked again before you can approve it.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Button variant="primary" size="sm" onClick={reviseWithAi} disabled={!instruction.trim() || (busy !== null && busy !== "revise")} loading={busy === "revise"}>
-                  {busy === "revise" ? "Working…" : "Apply"}
-                </Button>
+                <Tooltip align="start" content="Rewrite or ask a question. New facts can only come from verified findings or what you state, and the result is checked again.">
+
+                  <Button variant="primary" size="sm" onClick={reviseWithAi} disabled={!instruction.trim() || (busy !== null && busy !== "revise")} loading={busy === "revise"}>
+                    {busy === "revise" ? "Working…" : "Apply"}
+                  </Button>
+
+                </Tooltip>
                 <Button size="sm" variant="ghost" onClick={() => setAiOpen(false)} disabled={busy === "revise"}>
                   Close
                 </Button>
@@ -636,7 +654,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
                   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-3 rounded-lg border border-line bg-surface p-3 text-sm">
                     <p className="font-medium">AI answer (the draft is unchanged)</p>
                     <p className="mt-1 whitespace-pre-line text-fg-soft">{aiAnswer}</p>
-                    <p className="mt-1 text-[12px] text-fg-muted">Written by the AI from the research. Check it against the cited source before relying on it.</p>
+                    <p className="mt-1 text-[12px] text-fg-muted">Check it against the cited source.</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -645,31 +663,20 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
         )}
       </AnimatePresence>
 
-      <div className="border-t border-line px-5 py-4">
-        {detail.error && (detail.status === "awaiting_review" || detail.status === "approved") && (
-          <p role="alert" className="mb-3 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
-            {detail.error}
-          </p>
-        )}
-        <p className="text-[13px] text-fg-muted">
-          {sent ? (
-            "This version was sent and can no longer be edited."
-          ) : autoSend ? (
-            "Approve & send emails this exact version after you confirm. Approve only records the review and sends nothing."
-          ) : gmail.connected ? (
-            "Approving records that a person reviewed this exact version. Send it afterwards with Send now."
-          ) : (
-            <>
-              Approving records that a person reviewed this exact version. Nothing is sent.{" "}
-              {gmail.configured && (
-                <Link href="/settings#gmail" className="font-medium text-fg underline">
-                  Connect Gmail to send from here
-                </Link>
-              )}
-            </>
+      {((detail.error && (detail.status === "awaiting_review" || detail.status === "approved")) || (!sent && !gmail.connected && gmail.configured)) && (
+        <div className="border-t border-line px-5 py-3">
+          {detail.error && (detail.status === "awaiting_review" || detail.status === "approved") && (
+            <p role="alert" className="mb-2 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+              {detail.error}
+            </p>
           )}
-        </p>
-      </div>
+          {!sent && !gmail.connected && gmail.configured && (
+            <Link href="/settings#gmail" className="t-label underline-offset-4 hover:underline">
+              Connect Gmail to send from here →
+            </Link>
+          )}
+        </div>
+      )}
 
       <div className="border-t border-line px-5 py-4">
         <h3 className="flex items-center justify-between text-sm font-medium">
@@ -677,7 +684,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
           {draft.guard.issues.length === 0 && <Badge tone="ok">All clear</Badge>}
         </h3>
         {draft.guard.issues.length === 0 ? (
-          <p className="mt-1.5 text-[13px] text-fg-muted">No issues. Every factual claim maps to a verified quote.</p>
+          <p className="mt-1.5 text-[13px] text-fg-muted">Every claim maps to a verified quote.</p>
         ) : (
           <ul className="mt-3 space-y-2.5 text-sm">
             {[...errors, ...warnings].map((issue, i) => (

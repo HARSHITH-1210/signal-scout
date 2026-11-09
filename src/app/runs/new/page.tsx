@@ -1,21 +1,10 @@
 import Link from "next/link";
 import { getSenderProfile, listDocuments } from "@/lib/db/repo";
 import { NewRunForm } from "@/components/NewRunForm";
-import { STAGES, STAGE_LABELS, type StageName } from "@/lib/types";
+import { STAGES, STAGE_LABELS } from "@/lib/types";
+import { InfoTip } from "@/components/ui/Tooltip";
 
 export const dynamic = "force-dynamic";
-
-/** One line on what each stage does, for the "How a run works" panel. */
-const STAGE_NOTE: Record<StageName, string> = {
-  validate: "Checks the details and any files",
-  resolve_identity: "Confirms who the prospect is",
-  research: "Searches news, hiring and interviews",
-  extract_signals: "Proposes findings, each with a quote",
-  verify: "Matches every quote word for word",
-  rank_hook: "Scores relevance, freshness, source",
-  draft: "Writes from verified facts only",
-  guard: "Audits every claim before you see it",
-};
 
 export default function NewRunPage() {
   const sender = getSenderProfile();
@@ -33,10 +22,6 @@ export default function NewRunPage() {
           All runs →
         </Link>
       </header>
-      <p className="mt-3 max-w-[72ch] text-[14px] text-[var(--t-muted)]">
-        Give whatever you know: a name, a company, a website, or a file. Without a person&apos;s name, the draft is written for the company and suggests who should
-        receive it.
-      </p>
 
       <div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
         <NewRunForm sectors={sender.sectors} />
@@ -49,7 +34,7 @@ export default function NewRunPage() {
             {writingAs ? (
               <p className="mt-2 text-[15px] font-semibold leading-snug tracking-[-0.01em]">{writingAs}</p>
             ) : (
-              <p className="mt-2 text-[14px] text-[var(--t-warn)]">Not set up yet. Drafts stay general until you describe what you sell.</p>
+              <p className="mt-2 text-[14px] text-[var(--t-warn)]">Not set up yet.</p>
             )}
             <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-[var(--t-line)] pt-4">
               <div>
@@ -68,24 +53,23 @@ export default function NewRunPage() {
 
           <section aria-labelledby="how-title" className="t-card p-5">
             <div className="flex items-baseline justify-between">
-              <h2 id="how-title" className="t-label">
+              <h2 id="how-title" className="t-label flex items-center gap-1.5">
                 How a run works
+                <InfoTip align="start">Every quote is verified against its source, and nothing is sent until you approve it.</InfoTip>
               </h2>
               <span className="t-mono text-[11px] text-[var(--t-muted)]">~1 min</span>
             </div>
-            <ol className="mt-4 space-y-3">
+            <ol className="mt-4 space-y-2.5">
               {STAGES.map((stage, i) => (
                 <li key={stage} className="grid grid-cols-[22px_minmax(0,1fr)] gap-x-3">
                   <span className="t-mono pt-px text-[11px] text-[var(--t-muted)]">{String(i + 1).padStart(2, "0")}</span>
                   <div className="min-w-0">
                     <span aria-hidden className="t-seg mb-2 block h-[3px] rounded-full" style={{ backgroundPosition: `${(i / (STAGES.length - 1)) * 100}% 0` }} />
                     <p className="text-[13px] font-medium">{STAGE_LABELS[stage]}</p>
-                    <p className="text-[12px] text-[var(--t-muted)]">{STAGE_NOTE[stage]}</p>
                   </div>
                 </li>
               ))}
             </ol>
-            <p className="t-mono mt-4 border-t border-[var(--t-line)] pt-3 text-[11px] text-[var(--t-muted)]">Nothing is sent until you approve it.</p>
           </section>
         </aside>
       </div>

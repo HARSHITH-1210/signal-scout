@@ -87,6 +87,7 @@ Dark is the reference design; light is its inversion.
 | Forms | Fields (`Field.tsx`, `TField`/`TTextArea`) | Mono uppercase label, 12px-radius input, cyan focus ring. |
 | Surfaces | `.t-card`, `.t-card-inv`, `.t-volt-bg`, `.t-seg`, `.t-rail` | Telemetry surfaces, gradient, segment slices and the horizontal rail. |
 | Unchanged | `Dialog`/`useConfirm`, `Toast`, `Popover`, `CommandPalette`, `Collapsible`, `NumberTicker` | Still in use. Sending email always goes through the confirmation dialog. |
+| Help | `Tooltip`, `InfoTip` (`ui/Tooltip.tsx`) | Hover and focus help, rendered in a portal and clamped to the viewport. Fields and `TSection` take a `tip`. |
 
 ## Motion
 
@@ -101,7 +102,8 @@ Motion is from `motion/react` and respects `MotionConfig reducedMotion="user"`.
 - Use the tokens and primitives.
 - Keep one primary (inverted) pill per region.
 - Put context in mono labels.
-- Write disabled reasons as text.
+- Keep copy lean: pages show titles, mono labels and data. Explanations go in a `Tooltip` or `InfoTip` (portalled, so nothing clips them), and a disabled button gives its reason in its tooltip.
+- Keep guardrail wording visible: "our inference, not a fact" and stale or bad-news warnings are never moved into tooltips.
 
 ### Don't
 - Don't use oversized display type, gradient washes, raw hex in components, or state colours as decoration.

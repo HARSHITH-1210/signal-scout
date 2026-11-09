@@ -11,6 +11,7 @@ import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
 import { SegmentedControl } from "./ui/Tabs";
 import { useToast } from "./ui/Toast";
+import { InfoTip } from "./ui/Tooltip";
 
 type Lists = { doNotContact: string[]; relationships: string[] };
 
@@ -60,8 +61,10 @@ function ListEditor({
           <h2 id={id} className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em]">
             {title}
             <span className="acc rounded-full bg-subtle px-2 py-0.5 text-[11px] font-normal text-fg-muted">{items.length}</span>
+            <InfoTip label={`About ${title}`} align="start">
+              {hint}
+            </InfoTip>
           </h2>
-          <p className="mt-1 text-sm text-fg-muted">{hint}</p>
         </div>
         <SegmentedControl
           label={`${title} view`}
@@ -86,7 +89,6 @@ function ListEditor({
             placeholder={placeholder}
             className="acc w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-[13px] leading-relaxed transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
           />
-          <span className="mt-1 block text-[12px] text-fg-muted">One entry per line. Paste a whole list at once.</span>
         </label>
       ) : (
         <>
@@ -117,10 +119,10 @@ function ListEditor({
               {preview.note ? (
                 <>
                   {" "}
-                  with the note <span className="text-fg">“{preview.note}”</span>
+                  · <span className="text-fg">{preview.note}</span>
                 </>
               ) : (
-                <> with no note. Add one after a colon, like “acme.com: customer since 2023”.</>
+                <> · add a note after a colon</>
               )}
             </p>
           )}
@@ -208,7 +210,7 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
       <ListEditor
         id="dnc-title"
         title="Do not contact"
-        hint="Opt-outs: an email, domain or company. Never researched, never sent to."
+        hint="Emails, domains or companies that are never researched or contacted."
         placeholder={"priya@example.com\nexample.com"}
         items={values.doNotContact}
         onChange={(doNotContact) => setValues((v) => ({ ...v, doNotContact }))}
@@ -216,7 +218,7 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
       <ListEditor
         id="rel-title"
         title="Existing relationships"
-        hint="Customers, open deals, past contacts. The run stops and shows your note."
+        hint="Customers, open deals or past contacts. A matching run stops and shows your note."
         placeholder={"acme.com: customer since 2023\nGlobex: open deal, owner Sam"}
         items={values.relationships}
         onChange={(relationships) => setValues((v) => ({ ...v, relationships }))}

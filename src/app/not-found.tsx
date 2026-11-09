@@ -14,7 +14,7 @@ export default function NotFound() {
         </Link>
       }
     >
-      The link may be old, or the page may have moved. Press ⌘K to jump anywhere.
+      Press ⌘K to jump anywhere.
     </EmptyState>
   );
 }

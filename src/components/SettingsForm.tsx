@@ -12,6 +12,7 @@ import { SPRING_SOFT } from "@/lib/ui/cn";
 import { Button, Kbd, buttonClass } from "./ui/Button";
 import { useConfirm } from "./ui/Dialog";
 import { useToast } from "./ui/Toast";
+import { InfoTip } from "./ui/Tooltip";
 
 const secondary = buttonClass("secondary");
 const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-danger-soft hover:text-danger";
@@ -148,21 +149,23 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
         <fieldset>
           <legend className="text-[15px] font-semibold">You</legend>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <TextField label="Your name" name="senderName" value={values.senderName} onChange={set("senderName")} error={errors.senderName} hint="Used to sign drafts." />
+            <TextField label="Your name" name="senderName" value={values.senderName} onChange={set("senderName")} error={errors.senderName} />
             <TextField label="Your role" name="senderRole" value={values.senderRole} onChange={set("senderRole")} error={errors.senderRole} />
             <TextField label="Company" name="companyName" value={values.companyName} onChange={set("companyName")} error={errors.companyName} />
-            <TextField label="Company website" name="companyWebsite" value={values.companyWebsite} onChange={set("companyWebsite")} error={errors.companyWebsite} hint="The only link a draft may include." inputMode="url" />
+            <TextField label="Company website" name="companyWebsite" value={values.companyWebsite} onChange={set("companyWebsite")} error={errors.companyWebsite} tip="The only link a draft may include." inputMode="url" />
           </div>
           <div className="mt-4">
-            <TextField label="Default call to action" name="defaultCta" value={values.defaultCta} onChange={set("defaultCta")} error={errors.defaultCta} hint="What you want the prospect to agree to, such as a 20-minute call. An offering can override it." />
+            <TextField label="Default call to action" name="defaultCta" value={values.defaultCta} onChange={set("defaultCta")} error={errors.defaultCta} tip="What the prospect should agree to, such as a 20-minute call. An offering can override it." />
           </div>
         </fieldset>
 
         <fieldset className="mt-7">
-          <legend className="text-[15px] font-semibold">What you sell</legend>
-          <p className="mt-1 text-sm text-fg-soft">
-            Group your offerings into sectors. Each new run picks one or more to pitch: the email leads with the best fit and names the others in passing.
-          </p>
+          <legend className="flex items-center gap-2 text-[15px] font-semibold">
+            What you sell
+            <InfoTip label="About offerings" align="start">
+              Group offerings into sectors. Each run pitches one or more: the email leads with the best fit and names the others in passing.
+            </InfoTip>
+          </legend>
           <div className="mt-4 space-y-4">
             {values.sectors.map((sector, s) => (
               <details key={sector.id} open className="group rounded-xl border border-line">
@@ -199,10 +202,15 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                         </div>
                         <div className="mt-3 space-y-3">
                           <TextArea label="What it does" name={`${key}.whatItDoes`} rows={3} value={offering.whatItDoes} onChange={(e) => updateOffering(s, o, { whatItDoes: e.target.value })} error={errors[`${key}.whatItDoes`]} />
-                          <TextField label="Call to action for this offering" name={`${key}.cta`} value={offering.cta} onChange={(e) => updateOffering(s, o, { cta: e.target.value })} error={errors[`${key}.cta`]} hint="Optional. Leave empty to use the default." />
+                          <TextField label="Call to action for this offering" name={`${key}.cta`} value={offering.cta} onChange={(e) => updateOffering(s, o, { cta: e.target.value })} error={errors[`${key}.cta`]} placeholder="Uses the default" />
                           {docs.length > 0 && (
                             <fieldset className="text-sm">
-                              <legend className="font-medium">Documents about this offering</legend>
+                              <legend className="flex items-center gap-1.5">
+                                <span className="t-label">Documents about this offering</span>
+                                <InfoTip label="About offering documents" align="start">
+                                  Documents not ticked under any offering are used for every run.
+                                </InfoTip>
+                              </legend>
                               <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
                                 {docs.map((doc) => (
                                   <label key={doc.id} className="flex min-h-9 cursor-pointer items-center gap-2 text-fg-soft">
@@ -220,7 +228,6 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                                   </label>
                                 ))}
                               </div>
-                              <span className="mt-1 block text-[13px] text-fg-muted">Documents not ticked under any offering are used for every run.</span>
                             </fieldset>
                           )}
                         </div>
@@ -234,7 +241,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                 </div>
               </details>
             ))}
-            {values.sectors.length === 0 && <p className="text-sm text-warn">No offerings yet. Drafts stay general until you add what you sell.</p>}
+            {values.sectors.length === 0 && <p className="text-sm text-warn">No offerings yet.</p>}
             <button type="button" onClick={() => updateSectors((all) => [...all, { id: newId("s"), name: "", offerings: [blankOffering()] }])} className={secondary}>
               <Icon name="plus" />
               Add sector
@@ -274,14 +281,14 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
 
       <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
         <section aria-labelledby="seller-docs" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
-          <h2 id="seller-docs" className="text-[15px] font-semibold">
+          <h2 id="seller-docs" className="flex items-center gap-2 text-[15px] font-semibold">
             Your documents
+            <InfoTip label="About your documents" align="start">
+              One-pagers, decks or case studies. Drafts use them for claims about your offerings, and the claim audit checks against them.
+            </InfoTip>
           </h2>
-          <p className="mt-1 text-sm text-fg-soft">
-            One-pagers, decks or case studies. Drafts draw on them for claims about your offerings, and the claim audit checks those claims against them.
-          </p>
           <div className="mt-4">
-            <DropZone variant="telemetry" scope="sender" onUploaded={(r) => setDocs((d) => [r.document, ...d])} title="Drop a PDF or CSV" hint="Up to 10 MB. Text PDFs only." />
+            <DropZone variant="telemetry" scope="sender" onUploaded={(r) => setDocs((d) => [r.document, ...d])} title="Drop a PDF or CSV" hint="Up to 10 MB" />
           </div>
           {docs.length > 0 && (
             <ul className="space-y-2">
