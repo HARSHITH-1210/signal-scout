@@ -7,11 +7,11 @@ import { validateProspect, type FieldErrors } from "@/lib/pipeline/validate";
 import type { ProspectInput, RunSummary, Sector, StoredDocument } from "@/lib/types";
 import { formatDateTime, RUN_STATUS_LABEL } from "@/lib/ui/format";
 import { DocumentChip, DropZone, type UploadResult } from "./DropZone";
-import { Icon } from "./Icon";
 import { PitchPicker, type PitchSelection } from "./PitchPicker";
 import { AnimatePresence, motion } from "motion/react";
 import { EASE_OUT, RISE_IN, SPRING_SNAPPY, cn } from "@/lib/ui/cn";
 import { Spinner } from "./ui/Button";
+import { Tooltip } from "./ui/Tooltip";
 import { TField, TSection, TTextArea, T_PILL, T_PILL_PRIMARY } from "./ui/telemetry";
 
 const EMPTY = { name: "", email: "", role: "", linkedinUrl: "", company: "", companyWebsite: "", notes: "" };
@@ -259,7 +259,7 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
       <section aria-labelledby="pitch-title" className="t-card relative overflow-hidden p-5 sm:p-6">
         <span aria-hidden className="t-volt-bg absolute inset-x-0 top-0 h-[2px]" />
         <TSection step="01" title="What are you pitching?" id="pitch-title">
-          From your sender profile. Applies to this run, or to every row of a list.
+          Offerings come from your sender profile. The choice applies to this run or every row of a list.
         </TSection>
         <PitchPicker sectors={sectors} value={pitch} onChange={setPitch} error={pitchError ?? undefined} />
       </section>
@@ -301,7 +301,7 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
                     onChange={set("email")}
                     error={errors.email}
                     placeholder="priya@northwindfreight.com"
-                    hint="Only used to send the approved draft. Never researched or shown to the AI."
+                    tip="Only used to send the approved draft. Never researched or shown to the AI."
                     autoComplete="off"
                   />
                   <TField label="Role" name="role" value={values.role} onChange={set("role")} error={errors.role} placeholder="VP Finance" />
@@ -320,14 +320,14 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
 
               <div className="p-5 sm:p-6">
                 <TSection step="04" title="Context" />
-                <TTextArea label="Anything else" name="notes" rows={2} value={values.notes} onChange={set("notes")} error={errors.notes} hint="Context only you know, like ‘met at SaaStr’. It can be referenced in the draft." />
+                <TTextArea label="Anything else" name="notes" rows={2} value={values.notes} onChange={set("notes")} error={errors.notes} placeholder="e.g. Met at SaaStr" tip="Context only you know. The draft may reference it." />
               </div>
 
               <div className="p-5 sm:p-6">
                 <TSection step="05" title="Attach a brief">
-                  Optional. A PDF brief or call notes become evidence, and their quotes are verified like web pages. A CSV lets you pick a row.
+                  PDF briefs become evidence, and their quotes are verified like web pages. A CSV lets you pick a row.
                 </TSection>
-                <DropZone variant="telemetry" scope="prospect" onUploaded={onUploaded} title="Drop a PDF or CSV" hint="Up to 10 MB each · text PDFs only" />
+                <DropZone variant="telemetry" scope="prospect" onUploaded={onUploaded} title="Drop a PDF or CSV" hint="Optional · up to 10 MB" />
                 {chips}
                 {csvTable}
               </div>
@@ -337,12 +337,12 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
           <motion.div key="list" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2, ease: EASE_OUT }}>
             <section aria-labelledby="list-title" className="t-card p-5 sm:p-6">
               <TSection step="02" title="Research a list of leads" id="list-title">
-                Upload a CSV, tick the rows to research, and each runs on its own. Only the rows you pick are used.
+                Only the rows you tick are used. Each becomes its own run.
               </TSection>
-              <DropZone variant="telemetry" scope="prospect" onUploaded={onUploaded} title="Drop a CSV of leads" hint="Up to 10 MB · columns are mapped automatically" />
+              <DropZone variant="telemetry" scope="prospect" onUploaded={onUploaded} title="Drop a CSV of leads" hint="Up to 10 MB" />
               {chips}
               {csvTable}
-              {csv && csv.rows.length <= 1 && <p className="t-mono mt-3 text-[11px] text-[var(--t-muted)]">This file has a single row, so it was placed in the One prospect form.</p>}
+              {csv && csv.rows.length <= 1 && <p className="t-mono mt-3 text-[11px] text-[var(--t-muted)]">Single row: added to the One prospect form.</p>}
             </section>
           </motion.div>
         )}
@@ -374,27 +374,25 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
 
       {/* One primary action, always in reach: a floating pill bar. */}
       <div className="sticky bottom-4 z-20 pt-2">
-        <div className="flex flex-wrap items-center gap-3 rounded-full border border-[var(--t-pill-line)] bg-[color-mix(in_oklab,var(--canvas)_80%,transparent)] py-1.5 pl-1.5 pr-5 shadow-[var(--shadow-overlay)] backdrop-blur-[18px]">
+        <div className="inline-flex items-center gap-3 rounded-full border border-[var(--t-pill-line)] bg-[color-mix(in_oklab,var(--canvas)_80%,transparent)] p-1.5 shadow-[var(--shadow-overlay)] backdrop-blur-[18px]">
           {mode === "single" ? (
             <>
-              <button type="submit" form="new-run" disabled={submitting || !filled} className={T_PILL_PRIMARY}>
-                {submitting && <Spinner />}
-                {submitting ? "Starting…" : "Start research →"}
-              </button>
-              <span className="t-mono min-w-0 flex-1 truncate text-[11px] text-[var(--t-muted)]">
-                {!filled ? "Fill in any one field or attach a file" : chosen ? `Row ${chosen.index + 1} · about a minute · you review before anything is sent` : "About a minute · you review before anything is sent"}
-              </span>
+              <Tooltip align="start" content={!filled ? "Fill in any field or attach a file to start." : "Takes about a minute. You review everything before it's sent."}>
+                <button type="submit" form="new-run" disabled={submitting || !filled} className={T_PILL_PRIMARY}>
+                  {submitting && <Spinner />}
+                  {submitting ? "Starting…" : "Start research →"}
+                </button>
+              </Tooltip>
+              {chosen && <span className="t-label pr-3">Row {chosen.index + 1}</span>}
             </>
           ) : (
-            <>
+            <Tooltip align="start" content={!csv || csv.selected.size === 0 ? "Tick the rows to research." : "Each row runs separately with its own search and model quota."}>
               <button type="button" onClick={runBatch} disabled={submitting || !csv || csv.selected.size === 0} className={T_PILL_PRIMARY}>
                 {submitting && <Spinner />}
                 {csv && csv.selected.size > 0 ? `Research ${csv.selected.size} ${csv.selected.size === 1 ? "row" : "rows"} →` : "Research selected rows →"}
               </button>
-              <span className="t-mono min-w-0 flex-1 truncate text-[11px] text-[var(--t-muted)]">Each row is its own run with its own search and model quota</span>
-            </>
+            </Tooltip>
           )}
-          <Icon name="shield" className="hidden h-3.5 w-3.5 text-[var(--t-muted)] sm:block" />
         </div>
       </div>
     </div>

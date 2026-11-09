@@ -8,6 +8,7 @@ import { Badge } from "../Badge";
 import { Panel } from "../Field";
 import { Icon } from "../Icon";
 import { CopyButton } from "../ui/CopyButton";
+import { InfoTip } from "../ui/Tooltip";
 import { Collapsible, Stagger, StaggerItem } from "../ui/Motion";
 
 const FRESHNESS_TONE: Record<Signal["freshness"], Tone> = { fresh: "ok", aging: "neutral", stale: "warn", unknown: "neutral" };
@@ -137,7 +138,7 @@ export function HookSpecimen({ hook, signals, sources }: { hook: Hook; signals: 
         {hook.staleCaveat && (
           <p className="mt-3 flex gap-2 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
             <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
-            This happened more than a year ago. The draft must refer to it with its date, never as recent news.
+            Over a year old. The draft must date it, never call it recent.
           </p>
         )}
         {alternatives.length > 0 && (
@@ -196,7 +197,9 @@ export function FindingsPanel({ signals, sources }: { signals: Signal[]; sources
         <Badge tone="info">{count("verified")} verified</Badge>
         {count("conflicting") > 0 && <Badge tone="bad">{count("conflicting")} conflicting</Badge>}
         {count("rejected") > 0 && <Badge tone="neutral">{count("rejected")} rejected</Badge>}
-        <p className="basis-full pt-1 text-[13px] text-fg-muted">Every quote is matched word for word against the page or document it came from. Struck-through quotes failed and are never used.</p>
+        <InfoTip label="How findings are verified" align="start">
+          Every quote is matched word for word against its source. Struck-through quotes failed and are never used.
+        </InfoTip>
       </div>
       <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
         {sorted.map((s, i) => (
@@ -249,9 +252,7 @@ export function SourcesPanel({ sources, log }: { sources: Source[]; log: QueryLo
           </ul>
         </Collapsible>
       )}
-      <p className="mt-3 text-[13px] text-fg-muted">
-        Evidence is a snapshot captured {sources[0]?.fetchedAt ? `on ${formatDate(sources[0].fetchedAt)}` : "at research time"}. A live page may have changed since.
-      </p>
+      <p className="t-label mt-3">Snapshot {sources[0]?.fetchedAt ? `from ${formatDate(sources[0].fetchedAt)}` : "from research time"}</p>
     </Panel>
   );
 }

@@ -21,12 +21,6 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <PageHeader
         title="Sender profile"
         label="Your business only · every field optional"
-        description={
-          <>
-        Your business only: who the drafts come from and what you sell. Every field is optional. Drafts only claim what you write here or what your documents
-        say, and never invent customers or results. People you&apos;re writing to belong under Contacts.
-          </>
-        }
       />
       <SettingsForm
         initial={getSenderProfile()}

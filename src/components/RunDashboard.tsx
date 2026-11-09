@@ -109,7 +109,6 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
       <PageHeader
         title="Runs"
         label={`${runs.length} ${runs.length === 1 ? "run" : "runs"} · ${counts.active} in progress · ${counts.review} need you`}
-        description="Every prospect researched, what was verified, and where each draft stands."
         actions={
           <Link href="/runs/new" className={buttonClass("primary")}>
             <Icon name="plus" />
@@ -131,7 +130,7 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
               </Link>
             }
           >
-            Start with whatever you know: a name, a company, a website, or drop in an account brief or a CSV of leads.
+            A name, a company or a file is enough.
           </EmptyState>
         </div>
       ) : (

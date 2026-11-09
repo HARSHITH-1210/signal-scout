@@ -5,6 +5,7 @@ import type { GmailStatus } from "@/lib/types";
 import { send } from "./run/api";
 import { Button, buttonClass } from "./ui/Button";
 import { useConfirm } from "./ui/Dialog";
+import { InfoTip, Tooltip } from "./ui/Tooltip";
 import { Icon } from "./Icon";
 
 /** Gmail connection for sending approved drafts. Tokens never reach the browser; only the address and the setting do. */
@@ -41,19 +42,20 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
         Send with Gmail
       </h2>
       {!status.configured ? (
-        <p className="mt-2 text-sm text-fg-muted">
-          Not set up. Add <span className="acc">GOOGLE_CLIENT_ID</span> and <span className="acc">GOOGLE_CLIENT_SECRET</span> to <span className="acc">.env.local</span> and restart. The
-          README explains how to create them. Until then, approving only records the review.
+        <p className="mt-2 flex items-center gap-2 text-sm text-fg-muted">
+          Not configured
+          <InfoTip label="How to set up Gmail" align="start">
+            Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env.local and restart (see the README). Until then, approving only records the review.
+          </InfoTip>
         </p>
       ) : !status.connected ? (
         <>
-          <p className="mt-2 text-sm text-fg-muted">
-            Connect a Gmail account to send an approved draft from the run page. Signal Scout asks to send, and to read message headers (sender, time) of threads it sent, to track replies and
-            bounces. It never reads email bodies.
-          </p>
-          <a href="/api/gmail/connect" className={buttonClass("primary", "md", "mt-4")}>
-            Connect Gmail
-          </a>
+          <p className="mt-2 text-sm text-fg-muted">Send approved drafts from your own Gmail.</p>
+          <Tooltip align="start" className="mt-4" content="Asks to send, and to read headers (sender, time) of threads it sent to track replies and bounces. Never reads email bodies.">
+            <a href="/api/gmail/connect" className={buttonClass("primary", "md")}>
+              Connect Gmail
+            </a>
+          </Tooltip>
         </>
       ) : (
         <>
@@ -63,15 +65,15 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
           </p>
           {!status.canTrack && (
             <p className="mt-3 text-sm text-warn">
-              Reply and bounce tracking is off for this connection.{" "}
+              Reply tracking is off.{" "}
               <a href="/api/gmail/connect" className="font-medium underline">
-                Reconnect Gmail
-              </a>{" "}
-              to allow header-only access.
+                Reconnect
+              </a>
             </p>
           )}
-          <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm">
-            <span className="relative mt-0.5 inline-flex shrink-0">
+          <div className="mt-4 flex items-center gap-2">
+          <label className="flex cursor-pointer items-center gap-3 text-sm">
+            <span className="relative inline-flex shrink-0">
               <input
                 type="checkbox"
                 role="switch"
@@ -80,16 +82,15 @@ export function GmailPanel({ initial, result }: { initial: GmailStatus; result: 
                 disabled={busy}
                 onChange={(e) => update("PUT", { autoSendOnApprove: e.target.checked })}
               />
-              <span className="h-5 w-9 rounded-full border border-line bg-subtle transition-colors peer-checked:border-transparent peer-checked:bg-obsidian peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 peer-disabled:opacity-45" />
-              <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-surface shadow-sm transition-transform duration-200 peer-checked:translate-x-4" />
+              <span className="h-5 w-9 rounded-full border border-line bg-subtle transition-colors peer-checked:border-transparent peer-checked:bg-[image:var(--t-volt)] peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 peer-disabled:opacity-45" />
+              <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-fg shadow-sm transition-transform duration-200 peer-checked:translate-x-4 peer-checked:bg-[var(--t-inv-btn)]" />
             </span>
-            <span>
-              <span className="font-medium">Send when I approve</span>
-              <span className="block text-[13px] text-fg-muted">
-                Approve &amp; send emails the exact approved version after a confirmation. Drafts with blocking issues, or without a recipient address, are never sent.
-              </span>
-            </span>
+            <span className="font-medium">Send when I approve</span>
           </label>
+          <InfoTip label="About sending on approve" align="start">
+            Approve &amp; send emails the exact approved version after a confirmation. Drafts with blocking issues or no recipient are never sent.
+          </InfoTip>
+          </div>
           <Button variant="ghost" size="sm" className="mt-4 hover:bg-danger-soft hover:text-danger" disabled={busy} onClick={disconnect}>
             Disconnect Gmail
           </Button>

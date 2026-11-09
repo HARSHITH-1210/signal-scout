@@ -11,7 +11,6 @@ export default function ContactsPage() {
       <PageHeader
         title="Contacts"
         label="Checked before research, after identity and before any send"
-        description="People and companies on the receiving side: opt-outs and existing relationships."
       />
       <ContactRulesPanel initial={getContactRules()} />
     </div>

@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { SPRING_SNAPPY, cn } from "@/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Popover } from "./ui/Popover";
+import { InfoTip } from "./ui/Tooltip";
 
 export interface PitchSelection {
   auto: boolean;
@@ -122,17 +123,19 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
           })}
       </div>
 
-      <label className="mt-4 flex min-h-11 cursor-pointer items-start gap-3 text-sm">
-        <span className="relative mt-0.5 inline-flex shrink-0">
+      <div className="mt-4 flex min-h-11 items-center gap-2">
+      <label className="flex cursor-pointer items-center gap-3 text-sm">
+        <span className="relative inline-flex shrink-0">
           <input type="checkbox" role="switch" className="peer sr-only" checked={value.auto} onChange={(e) => update({ auto: e.target.checked, offeringIds: value.offeringIds })} />
           <span className="h-5 w-9 rounded-full border border-[var(--t-line)] bg-[var(--t-pill-box)] transition-colors peer-checked:border-transparent peer-checked:bg-[image:var(--t-volt)] peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2" />
           <span className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-[var(--t-fg)] shadow-sm peer-checked:bg-[var(--t-inv-btn)] transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] peer-checked:translate-x-4" />
         </span>
-        <span>
-          <span className="font-medium">Let Signal Scout choose</span>
-          <span className="block text-[12px] text-[var(--t-muted)]">Consider every offering and lead with whichever the research supports best.</span>
-        </span>
+        <span className="font-medium">Let Signal Scout choose</span>
       </label>
+        <InfoTip label="About letting Signal Scout choose" align="start">
+          Considers every offering and leads with whichever the research supports best.
+        </InfoTip>
+      </div>
 
       <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Chosen offerings">
         <AnimatePresence initial={false}>
@@ -155,16 +158,11 @@ export function PitchPicker({ sectors, value, onChange, error }: { sectors: Sect
             ))}
         </AnimatePresence>
       </ul>
-      <p className={`t-mono mt-3 text-[11px] ${error ? "text-[var(--t-bad)]" : "text-[var(--t-muted)]"}`} role={error ? "alert" : undefined}>
-        {error ??
-          (value.auto
-            ? "Every offering is considered."
-            : chosen.length === 0
-              ? `Choose one or more (up to ${MAX_CHOSEN}).`
-              : chosen.length === 1
-                ? "The email pitches this one."
-                : "The email leads with the best fit for the research and names the others in passing.")}
-      </p>
+      {error && (
+        <p role="alert" className="t-mono mt-3 text-[11px] text-[var(--t-bad)]">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

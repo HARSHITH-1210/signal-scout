@@ -206,7 +206,6 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
                 <Icon name="mail" />
               </span>
               <p className="font-medium text-fg-soft">The draft appears here</p>
-              <p className="mt-1">Once a hook is verified, Signal Scout writes a structured draft built on it, then audits every claim.</p>
             </div>
           )}
         </div>
