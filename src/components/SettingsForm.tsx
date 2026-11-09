@@ -9,7 +9,7 @@ import { Icon } from "./Icon";
 import { send } from "./run/api";
 import { AnimatePresence, motion } from "motion/react";
 import { SPRING_SOFT } from "@/lib/ui/cn";
-import { Button, Kbd, buttonClass } from "./ui/Button";
+import { Button, buttonClass } from "./ui/Button";
 import { useConfirm } from "./ui/Dialog";
 import { useToast } from "./ui/Toast";
 import { InfoTip } from "./ui/Tooltip";
@@ -273,7 +273,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
             </Button>
             <Button size="sm" variant="primary" type="submit" form="sender-profile" loading={busy === "save"} disabled={busy !== null && busy !== "save"}>
               {busy === "save" ? "Saving…" : "Save profile"}
-              {busy !== "save" && <Kbd className="ml-1">⌘S</Kbd>}
+              
             </Button>
           </motion.div>
         )}

@@ -13,8 +13,6 @@ export default function NotFound() {
           Go to Outreach
         </Link>
       }
-    >
-      Press ⌘K to jump anywhere.
-    </EmptyState>
+    />
   );
 }

@@ -9,7 +9,7 @@ import { formatMs, prospectDetail, prospectLabel, RUN_STATUS_LABEL, RUN_STATUS_T
 import { EASE_OUT, cn } from "@/lib/ui/cn";
 import { Badge } from "./Badge";
 import { Icon } from "./Icon";
-import { Kbd, buttonClass } from "./ui/Button";
+import { buttonClass } from "./ui/Button";
 import { EmptyState, PageHeader } from "./ui/Card";
 import { RelativeTime } from "./ui/Motion";
 import { Tabs } from "./ui/Tabs";
@@ -146,7 +146,6 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
                 onChange={(e) => setQuery(e.target.value)}
                 className="h-10 w-full rounded-full border border-line bg-surface pl-9 pr-10 text-[13px] transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
               />
-              <Kbd className="absolute right-3 top-1/2 -translate-y-1/2">/</Kbd>
             </label>
           </div>
           {loadError && (

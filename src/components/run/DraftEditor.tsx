@@ -10,7 +10,7 @@ import { diffWords } from "@/lib/ui/diff";
 import { EASE_OUT, cn } from "@/lib/ui/cn";
 import { Badge } from "../Badge";
 import { Icon, type IconName } from "../Icon";
-import { Button, Kbd } from "../ui/Button";
+import { Button } from "../ui/Button";
 import { useConfirm } from "../ui/Dialog";
 import { Collapsible } from "../ui/Motion";
 import { Popover } from "../ui/Popover";
@@ -527,13 +527,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
           />
         </label>
         <div className="flex items-center justify-between gap-3 pb-3 text-[12px] text-fg-muted">
-          <span className="flex items-center gap-1.5">
-            {!sent && (
-              <>
-                <Kbd>E</Kbd> to edit
-              </>
-            )}
-          </span>
+          <span />
           <span className="acc">
             <span className={words > 200 || words < 90 ? "text-warn" : undefined}>{words} words</span> · {body.length} characters
           </span>
@@ -548,7 +542,6 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
               <Button variant="primary" onClick={primary.run} disabled={primary.disabled} loading={busy === primary.busyKey}>
                 {busy !== primary.busyKey && <Icon name={primary.label.startsWith("Send") || primary.label.includes("send") ? "mail" : "check"} />}
                 {busy === primary.busyKey ? primary.busyLabel : primary.label}
-                {!primary.disabled && <Kbd className="ml-1">⌘↵</Kbd>}
               </Button>
             </Tooltip>
           )}
@@ -564,7 +557,6 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
               <motion.span key="save" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.15 }}>
                 <Button onClick={save} loading={busy === "save"} disabled={busy !== null && busy !== "save"}>
                   {busy === "save" ? "Saving…" : "Save edits"}
-                  <Kbd className="ml-1">⌘S</Kbd>
                 </Button>
               </motion.span>
             )}
@@ -643,9 +635,6 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
                 <Button size="sm" variant="ghost" onClick={() => setAiOpen(false)} disabled={busy === "revise"}>
                   Close
                 </Button>
-                <span className="ml-auto flex items-center gap-1 text-[12px] text-fg-muted">
-                  <Kbd>⌘↵</Kbd> to apply
-                </span>
               </div>
               <AnimatePresence>
                 {aiAnswer && (
