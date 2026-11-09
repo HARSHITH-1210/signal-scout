@@ -5,18 +5,18 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md";
 
 const BASE =
-  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium transition-[background-color,border-color,color,transform,opacity] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45";
+  "inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-medium transition-[background-color,border-color,color,transform,opacity] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "btn-obsidian",
-  secondary: "border border-line bg-surface text-fg shadow-[0_1px_1px_rgb(0_0_0/0.03)] hover:border-fg-muted/40 hover:bg-subtle",
+  secondary: "border border-line bg-surface text-fg hover:border-fg-muted",
   ghost: "text-fg-soft hover:bg-subtle hover:text-fg",
   danger: "border border-danger/30 bg-surface text-danger hover:bg-danger-soft",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "min-h-9 px-3 text-[13px]",
-  md: "min-h-11 px-4 text-sm",
+  sm: "min-h-9 px-3.5 text-[13px]",
+  md: "min-h-10 px-4 text-[13px]",
 };
 
 /** Class string for any element styled as a button (links included). */
@@ -53,7 +53,7 @@ export function Kbd({ children, className }: { children: React.ReactNode; classN
   return (
     <kbd
       className={cn(
-        "inline-flex h-5 min-w-5 items-center justify-center rounded border border-line bg-surface px-1 font-mono text-[11px] font-medium text-fg-muted shadow-[0_1px_0_var(--line)]",
+        "inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-current/25 px-1 font-mono text-[10px] font-medium opacity-70",
         className,
       )}
     >

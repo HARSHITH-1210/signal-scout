@@ -209,3 +209,7 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - New primitives in `src/components/ui/`: Button, Dialog/useConfirm (replaces `window.confirm`), Toast, Tabs, Popover, Collapsible and motion helpers. Added route loading, error and not-found pages.
   - Draft review: a "Before you send" checklist (blockers first), a sticky action bar with written disabled reasons, ⌘S / ⌘↵ / E shortcuts, an unsaved-edit guard, a word diff for AI rewrites (`src/lib/ui/diff.ts`), and a single editor mount. Send gating and the confirmation before every send are unchanged.
   - The review behind this (25 UI and 25 UX improvements) is listed in DESIGN.md. Tests: `tests/unit/diff.test.ts`.
+- v15 (Telemetry direction, user-chosen from four mockups):
+  - Every page moved to the Telemetry design (DESIGN.md): a centred pill navbar (Aurora box), Outfit with Martian Mono labels, the cyan-to-lime gradient, and inverted cards. App tokens were aligned with the Telemetry palette in both themes.
+  - Primitives were restyled once (Button pills, Badge, PageHeader with a mono label, pill Tabs and SegmentedControl, fields), so the runs list, run view, Settings and Contacts follow. Outreach and New run were rebuilt as compact dashboard and form layouts. Geist fonts were removed.
+  - Logic, send gating and confirmations are unchanged.

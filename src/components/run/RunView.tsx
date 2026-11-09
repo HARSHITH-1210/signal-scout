@@ -121,25 +121,25 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
         )}
       </nav>
 
-      <header className="mt-3 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-6">
+      <header className="mt-3 flex flex-wrap items-end justify-between gap-4 pb-2">
         <div className="min-w-0">
           <motion.h1
             initial={{ opacity: 0, y: 12, clipPath: "inset(0 0 100% 0)" }}
             animate={{ opacity: 1, y: 0, clipPath: "inset(0 0 0% 0)" }}
             transition={{ duration: 0.5, ease: EASE_OUT }}
-            className="text-[32px] font-semibold leading-[1.1] tracking-[-0.035em] text-balance sm:text-[40px]"
+            className="text-[26px] font-semibold leading-tight tracking-[-0.025em] text-balance"
           >
             {prospectLabel(p, detail.resolvedLabel)}
           </motion.h1>
-          {subtitle && <p className="mt-1.5 text-base text-fg-soft">{subtitle}</p>}
-          <p className="acc mt-2 text-fg-muted">
+          {subtitle && <p className="mt-1 text-[14px] text-fg-soft">{subtitle}</p>}
+          <p className="t-label mt-2">
             Run {detail.id.slice(0, 8)} · started {formatDateTime(detail.createdAt)}
             {detail.activeMs >= 1000 && !isActive ? ` · ${formatMs(detail.activeMs)} active` : ""}
           </p>
           {detail.documents.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-2">
               {detail.documents.map((d) => (
-                <li key={`${d.documentId}-${d.rowIndex}`} className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-2 py-1 text-[13px] text-fg-soft">
+                <li key={`${d.documentId}-${d.rowIndex}`} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-fg-soft">
                   <Icon name={d.kind === "csv" ? "table" : "file"} className="h-3.5 w-3.5 text-fg-muted" />
                   {d.name}
                   {d.rowIndex !== null ? `, row ${d.rowIndex + 1}` : ""}
@@ -202,7 +202,7 @@ export function RunView({ initial, gmail }: { initial: RunDetail; gmail: GmailSt
             </RiseIn>
           ) : (
             <div className="hidden rounded-[var(--radius-panel)] border border-dashed border-line p-6 text-sm text-fg-muted xl:block">
-              <span className="bg-obsidian-gradient mb-3 grid h-9 w-9 place-items-center rounded-lg">
+              <span className="mb-3 grid h-9 w-9 place-items-center rounded-full border border-line text-fg-muted">
                 <Icon name="mail" />
               </span>
               <p className="font-medium text-fg-soft">The draft appears here</p>

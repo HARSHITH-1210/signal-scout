@@ -10,7 +10,8 @@ export default function ContactsPage() {
     <div className="max-w-[760px]">
       <PageHeader
         title="Contacts"
-        description="People and companies on the receiving side. Every run is checked against this list before research, after the prospect is identified, and before any send."
+        label="Checked before research, after identity and before any send"
+        description="People and companies on the receiving side: opt-outs and existing relationships."
       />
       <ContactRulesPanel initial={getContactRules()} />
     </div>

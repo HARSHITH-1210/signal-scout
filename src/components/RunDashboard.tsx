@@ -108,6 +108,7 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
     <div>
       <PageHeader
         title="Runs"
+        label={`${runs.length} ${runs.length === 1 ? "run" : "runs"} · ${counts.active} in progress · ${counts.review} need you`}
         description="Every prospect researched, what was verified, and where each draft stands."
         actions={
           <Link href="/runs/new" className={buttonClass("primary")}>
@@ -139,15 +140,15 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
             <Tabs label="Filter runs" items={VIEWS.filter((v) => v.value === "all" || counts[v.value] > 0).map((v) => ({ value: v.value, label: v.label, count: counts[v.value] }))} value={view} onChange={setView} className="min-w-0 flex-1 border-b-0" />
             <label className="relative w-full sm:w-72">
               <span className="sr-only">Search runs</span>
-              <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
+              <Icon name="search" className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
               <input
                 ref={search}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search name or company"
-                className="h-9 w-full rounded-lg border border-line bg-surface pl-8 pr-9 text-[13px] transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
+                className="h-10 w-full rounded-full border border-line bg-surface pl-9 pr-10 text-[13px] transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
               />
-              <Kbd className="absolute right-2 top-1/2 -translate-y-1/2">/</Kbd>
+              <Kbd className="absolute right-3 top-1/2 -translate-y-1/2">/</Kbd>
             </label>
           </div>
           {loadError && (
@@ -157,7 +158,7 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
           )}
 
           <div className="mt-3 overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface">
-            <div aria-hidden className={cn("hidden border-b border-line bg-subtle/50 px-5 py-2.5 text-[12px] font-medium text-fg-muted", COLS)}>
+            <div aria-hidden className={cn("t-label hidden border-b border-line px-5 py-3", COLS)}>
               <span>Prospect</span>
               <span>Status</span>
               <span>Hook</span>

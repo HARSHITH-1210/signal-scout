@@ -8,20 +8,20 @@ interface FieldProps {
 }
 
 const control = (error?: string) =>
-  `mt-1.5 block w-full rounded-lg border bg-surface px-3 py-2.5 text-sm text-fg shadow-[0_1px_1px_rgb(0_0_0/0.03)] placeholder:text-fg-muted/70 transition-[border-color,box-shadow] duration-150 focus:outline-none focus:ring-4 focus:ring-accent/15 ${
-    error ? "border-danger" : "border-line hover:border-fg-muted/40 focus:border-accent"
+  `mt-2 block w-full rounded-xl border bg-surface px-3.5 py-2.5 text-[14px] text-fg placeholder:text-fg-muted/60 transition-[border-color,box-shadow] duration-150 focus:outline-none focus:ring-4 focus:ring-accent/15 ${
+    error ? "border-danger" : "border-line hover:border-fg-muted focus:border-accent"
   }`;
 
 function Message({ name, hint, error }: { name: string; hint?: string; error?: string }) {
   if (error)
     return (
-      <span id={`${name}-error`} className="mt-1.5 block text-sm text-danger">
+      <span id={`${name}-error`} className="t-mono mt-1.5 block text-[11px] text-danger">
         {error}
       </span>
     );
   if (hint)
     return (
-      <span id={`${name}-hint`} className="mt-1.5 block text-sm text-fg-muted">
+      <span id={`${name}-hint`} className="mt-1.5 block text-[12px] text-fg-muted">
         {hint}
       </span>
     );
@@ -31,7 +31,7 @@ function Message({ name, hint, error }: { name: string; hint?: string; error?: s
 export function TextField({ label, name, hint, error, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="block text-sm">
-      <span className="font-medium text-fg">{label}</span>
+      <span className="t-label">{label}</span>
       <input
         name={name}
         aria-invalid={Boolean(error)}
@@ -47,7 +47,7 @@ export function TextField({ label, name, hint, error, ...rest }: FieldProps & In
 export function TextArea({ label, name, hint, error, ...rest }: FieldProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <label className="block text-sm">
-      <span className="font-medium text-fg">{label}</span>
+      <span className="t-label">{label}</span>
       <textarea
         name={name}
         aria-invalid={Boolean(error)}
@@ -66,7 +66,7 @@ export function Panel({ title, aside, children, className = "" }: { title?: stri
     <section className={`rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6 ${className}`}>
       {(title || aside) && (
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-          {title && <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{title}</h2>}
+          {title && <h2 className="t-label">{title}</h2>}
           {aside}
         </div>
       )}

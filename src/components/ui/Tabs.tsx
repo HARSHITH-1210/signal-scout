@@ -10,7 +10,7 @@ export interface TabItem<T extends string> {
   count?: number;
 }
 
-/** Underlined tabs; the indicator slides between tabs with a shared layoutId. */
+/** Tabs in the Telemetry pill box (the navbar's Aurora box); the active pill slides with a shared layoutId. */
 export function Tabs<T extends string>({ items, value, onChange, label, className }: { items: TabItem<T>[]; value: T; onChange: (v: T) => void; label: string; className?: string }) {
   const group = useId();
   const onKey = (e: React.KeyboardEvent, index: number) => {
@@ -22,27 +22,29 @@ export function Tabs<T extends string>({ items, value, onChange, label, classNam
     document.getElementById(`${group}-${next.value}`)?.focus();
   };
   return (
-    <div role="tablist" aria-label={label} className={cn("flex gap-1 overflow-x-auto border-b border-line", className)}>
-      {items.map((item, i) => {
-        const active = item.value === value;
-        return (
-          <button
-            key={item.value}
-            id={`${group}-${item.value}`}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            tabIndex={active ? 0 : -1}
-            onClick={() => onChange(item.value)}
-            onKeyDown={(e) => onKey(e, i)}
-            className={cn("relative flex min-h-10 items-center gap-1.5 whitespace-nowrap px-3 text-[13px] font-medium transition-colors", active ? "text-fg" : "text-fg-muted hover:text-fg")}
-          >
-            {item.label}
-            {item.count !== undefined && <span className={cn("acc rounded-full px-1.5 text-[11px]", active ? "bg-obsidian text-obsidian-ink" : "bg-subtle text-fg-muted")}>{item.count}</span>}
-            {active && <motion.span layoutId={`${group}-underline`} transition={SPRING_SNAPPY} className="absolute inset-x-2 -bottom-px h-[2px] rounded-full bg-obsidian" />}
-          </button>
-        );
-      })}
+    <div className={cn("max-w-full overflow-x-auto [scrollbar-width:none]", className)}>
+      <div role="tablist" aria-label={label} className="inline-flex gap-0.5 rounded-full border border-[var(--t-pill-line)] bg-[var(--t-pill-box)] p-1">
+        {items.map((item, i) => {
+          const active = item.value === value;
+          return (
+            <button
+              key={item.value}
+              id={`${group}-${item.value}`}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              tabIndex={active ? 0 : -1}
+              onClick={() => onChange(item.value)}
+              onKeyDown={(e) => onKey(e, i)}
+              className={cn("relative flex min-h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition-colors", active ? "text-fg" : "text-fg-muted hover:text-fg")}
+            >
+              {active && <motion.span layoutId={`${group}-pill`} transition={SPRING_SNAPPY} className="absolute inset-0 rounded-full bg-[var(--t-pill-active)]" />}
+              <span className="relative">{item.label}</span>
+              {item.count !== undefined && <span className="relative font-mono text-[10px] text-fg-muted">{item.count}</span>}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -63,7 +65,7 @@ export function SegmentedControl<T extends string>({
 }) {
   const group = useId();
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg border border-line bg-subtle p-0.5">
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-full border border-[var(--t-pill-line)] bg-[var(--t-pill-box)] p-0.5 backdrop-blur-[18px]">
       {items.map((item) => {
         const active = item.value === value;
         return (
@@ -75,12 +77,12 @@ export function SegmentedControl<T extends string>({
             title={item.title}
             onClick={() => onChange(item.value)}
             className={cn(
-              "relative flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors",
-              size === "sm" ? "h-7 min-w-7 px-1.5 text-xs" : "h-8 px-3 text-[13px]",
+              "relative flex items-center justify-center gap-1.5 rounded-full font-medium transition-colors",
+              size === "sm" ? "h-8 min-w-8 px-2 text-xs" : "h-8 px-3 text-[13px]",
               active ? "text-fg" : "text-fg-muted hover:text-fg",
             )}
           >
-            {active && <motion.span layoutId={`${group}-pill`} transition={SPRING_SNAPPY} className="absolute inset-0 rounded-md border border-line bg-surface shadow-sm" />}
+            {active && <motion.span layoutId={`${group}-pill`} transition={SPRING_SNAPPY} className="absolute inset-0 rounded-full bg-[var(--t-pill-active)]" />}
             <span className="relative flex items-center gap-1.5">{item.label}</span>
           </button>
         );

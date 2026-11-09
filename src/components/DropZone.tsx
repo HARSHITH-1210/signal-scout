@@ -89,7 +89,7 @@ export function DropZone({
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--t-line)] text-[var(--t-muted)] transition-transform duration-200 group-hover:-translate-y-0.5">
               <Icon name="upload" className="h-4 w-4" />
             </span>
-            <span className="min-w-0 flex-1">
+            <span className="min-w-[180px] flex-1">
               <span className="block text-[14px] font-medium">{busy ?? title}</span>
               <span className="t-mono mt-0.5 block text-[11px] text-[var(--t-muted)]">{hint}</span>
             </span>

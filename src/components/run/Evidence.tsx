@@ -92,25 +92,27 @@ export function HookSpecimen({ hook, signals, sources }: { hook: Hook; signals: 
   const source = sources.find((s) => s.id === signal.sourceId);
   const alternatives = signals.filter((s) => hook.alternativeSignalIds.includes(s.id)).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   return (
-    <section aria-labelledby="hook-title" className="glow-border relative overflow-hidden rounded-2xl border border-transparent bg-surface shadow-[0_8px_30px_-12px_oklch(0.4_0.15_285/0.35)]">
-      <div className="bg-obsidian-gradient flex flex-wrap items-center justify-between gap-2 px-5 py-3 sm:px-6">
-        <p className="flex items-center gap-2 text-[13px]">
-          <Icon name="spark" className="h-3.5 w-3.5 text-white/80" />
-          <span id="hook-title" className="font-medium text-white">
-            Selected hook
+    <section aria-labelledby="hook-title" className="relative overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface">
+      <span aria-hidden className="t-volt-bg absolute inset-x-0 top-0 h-[3px]" />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5 sm:px-6">
+        <p className="t-label flex flex-wrap items-center gap-x-2">
+          <span id="hook-title" className="text-fg">
+            The hook
           </span>
-          <span className="text-white/60">
-            {signalTypeLabel(signal.type)} · about the {signal.about}
+          <span>
+            · {signalTypeLabel(signal.type)} · about the {signal.about}
           </span>
         </p>
-        <span className="acc text-white/60">score {hook.score.toFixed(2)}</span>
+        <span className="t-label">
+          score <span className="t-volt-text text-[13px] font-medium">{hook.score.toFixed(2)}</span>
+        </span>
       </div>
       <div className="px-5 pb-5 pt-5 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
           <Verdict signal={signal} />
           <Badge tone={FRESHNESS_TONE[signal.freshness]}>{FRESHNESS_LABEL[signal.freshness]}</Badge>
         </div>
-        <p className="mt-3 max-w-[42ch] text-[22px] font-semibold leading-snug tracking-[-0.02em] text-balance">{signal.claim}</p>
+        <p className="mt-3 max-w-[52ch] text-[19px] font-medium leading-snug tracking-[-0.015em] text-balance">{signal.claim}</p>
         {signal.statusReason && <p className="mt-1 text-[13px] text-fg-muted">{signal.statusReason}</p>}
         <Quote text={signal.evidenceQuote} />
         <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-4">

@@ -266,7 +266,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
             </Button>
             <Button size="sm" variant="primary" type="submit" form="sender-profile" loading={busy === "save"} disabled={busy !== null && busy !== "save"}>
               {busy === "save" ? "Saving…" : "Save profile"}
-              {busy !== "save" && <Kbd className="ml-1 border-white/20 bg-white/10 text-white/80 shadow-none">⌘S</Kbd>}
+              {busy !== "save" && <Kbd className="ml-1">⌘S</Kbd>}
             </Button>
           </motion.div>
         )}
@@ -281,13 +281,13 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
             One-pagers, decks or case studies. Drafts draw on them for claims about your offerings, and the claim audit checks those claims against them.
           </p>
           <div className="mt-4">
-            <DropZone scope="sender" onUploaded={(r) => setDocs((d) => [r.document, ...d])} title="Drop a PDF or CSV" hint="Up to 10 MB. Text PDFs only." />
+            <DropZone variant="telemetry" scope="sender" onUploaded={(r) => setDocs((d) => [r.document, ...d])} title="Drop a PDF or CSV" hint="Up to 10 MB. Text PDFs only." />
           </div>
           {docs.length > 0 && (
             <ul className="space-y-2">
               {docs.map((doc) => (
                 <li key={doc.id} className="flex flex-wrap items-center gap-2">
-                  <DocumentChip doc={doc} onRemove={() => removeDoc(doc)} />
+                  <DocumentChip variant="telemetry" doc={doc} onRemove={() => removeDoc(doc)} />
                   <button
                     type="button"
                     onClick={() => fillFrom(doc)}

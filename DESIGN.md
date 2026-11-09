@@ -1,45 +1,35 @@
 ---
 name: Signal Scout
-description: Obsidian. Cool neutral grounds, hairline borders and one obsidian slab for the brand and the primary action, in light and dark.
+description: Telemetry. A focused SaaS dashboard in a race-telemetry voice. Near-black (or white) grounds, Outfit with Martian Mono labels, one cyan-to-lime gradient, and inverted cards. Dark is the reference; light is its inversion.
 colors:
-  canvas: { light: "#f7f7f9", dark: "#08080b" }
-  surface: { light: "#ffffff", dark: "#111114" }
-  subtle: { light: "#f1f1f4", dark: "#18181c" }
-  line: { light: "#e5e5ea", dark: "#26262c" }
-  line-soft: { light: "#efeff3", dark: "#1d1d22" }
-  fg: { light: "#15141b", dark: "#ededf1" }
-  fg-soft: { light: "#3c3b45", dark: "#c6c5ce" }
-  fg-muted: { light: "#66656f", dark: "#908f9b" }
-  obsidian: { light: "#15131d", dark: "#ecebf3" }
-  primary: { light: "#15131d", dark: "#1b1926" }
-  accent: { light: "oklch(0.52 0.2 285)", dark: "oklch(0.74 0.15 285)" }
-  info: { light: "#2f55c8", dark: "#86a8ff" }
-  danger: { light: "#c2372d", dark: "#ff8a80" }
-  warn: { light: "#8f5600", dark: "#f1b85c" }
-  ok: { light: "#1d7347", dark: "#5fd39a" }
+  canvas: { light: "#f7f7f9", dark: "#09090a" }
+  surface: { light: "#ffffff", dark: "#111113" }
+  subtle: { light: "#f2f2f4", dark: "#18181b" }
+  line: { light: "#e3e3e6", dark: "#232327" }
+  fg: { light: "#0d0d0f", dark: "#f2f2ef" }
+  fg-soft: { light: "#3a3a40", dark: "#d6d6da" }
+  fg-muted: { light: "#66666d", dark: "#8d8d93" }
+  info (verified): { light: "#007f9e", dark: "#00e0ff" }
+  ok: { light: "#3f7a00", dark: "#c6ff3d" }
+  warn: { light: "#9a5b00", dark: "#ffb547" }
+  danger: { light: "#c2372d", dark: "#ff7a6b" }
+  inverted card: { light: "#0d0d0f on light page", dark: "#f2f2ef on dark page" }
 gradients:
-  obsidian: "radial-gradient(120% 90% at 50% 0%, oklch(0.36 0.1 285 / 0.6), transparent 62%), linear-gradient(180deg, oklch(0.2 0.02 280), oklch(0.13 0.014 272) 55%, oklch(0.08 0.006 265))"
+  volt: { light: "linear-gradient(90deg, #0090b0, #3d5bff 45%, #4f8a00)", dark: "linear-gradient(90deg, #00e0ff, #5b8cff 45%, #c6ff3d)" }
 typography:
-  display: { fontFamily: "Geist Sans", fontSize: "40px", fontWeight: 600, lineHeight: 1.1, letterSpacing: "-0.035em" }
-  page-title: { fontFamily: "Geist Sans", fontSize: "28px", fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.03em" }
-  hook-claim: { fontFamily: "Geist Sans", fontSize: "22px", fontWeight: 600, lineHeight: 1.35, letterSpacing: "-0.02em" }
-  section-title: { fontFamily: "Geist Sans", fontSize: "15px", fontWeight: 600, lineHeight: 1.4, letterSpacing: "-0.01em" }
-  body: { fontFamily: "Geist Sans", fontSize: "14px", fontWeight: 400, lineHeight: 1.55 }
-  draft-body: { fontFamily: "Geist Sans", fontSize: "15px", fontWeight: 400, lineHeight: 1.7 }
-  label: { fontFamily: "Geist Sans", fontSize: "13px", fontWeight: 500, lineHeight: 1.4 }
-  data: { fontFamily: "Geist Mono", fontSize: "12px", fontWeight: 400, lineHeight: 1.4 }
+  page-title: { fontFamily: "Outfit", fontSize: "26px", fontWeight: 600, letterSpacing: "-0.025em" }
+  section-title: { fontFamily: "Outfit", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em" }
+  body: { fontFamily: "Outfit", fontSize: "14px", fontWeight: 400, lineHeight: 1.55 }
+  stat: { fontFamily: "Outfit", fontSize: "28px", fontWeight: 500, letterSpacing: "-0.03em" }
+  label: { fontFamily: "Martian Mono", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em" }
+  data: { fontFamily: "Martian Mono", fontSize: "11.5px" }
 rounded:
-  control: "8px"
-  card: "12px"
-  overlay: "16px"
-  chip: "9999px"
+  card: "18-20px"
+  control: "12px (fields)"
+  pill: "9999px (buttons, tabs, nav, badges)"
 motion:
   ease-out: "cubic-bezier(0.22, 1, 0.36, 1)"
-  micro: "150ms"
-  ui: "200-250ms"
-  panel: "300ms"
   spring-indicator: "stiffness 500, damping 35"
-  spring-overlay: "stiffness 300, damping 30"
   stagger: "50ms"
 ---
 
@@ -47,94 +37,75 @@ motion:
 
 ## Overview
 
-**Obsidian.** Signal Scout is a working tool for a sales rep, so the interface stays quiet: cool near-neutral grounds, 1px hairline borders, generous spacing, and Geist type with tight headings. One material carries the brand: an **obsidian slab**, a near-black gradient with a faint violet sheen. It appears on the brand mark, the primary button, the selected hook's header, the "Writing as" card and empty-state tiles. The same slab is used in both themes, because it reads as premium on white and as a lifted surface on black.
+**Telemetry.** Signal Scout reads like a focused SaaS dashboard with a race-telemetry voice. It was chosen in November 2026 from four direction mockups (Monolith, Aurora, Prism, Telemetry), with the navbar's pill box borrowed from Aurora.
 
-Proof is still the product. Evidence quotes, dates, ids and scores are set in Geist Mono, and state colours only ever encode state.
+The look comes from a few elements:
+- **Type:** compact titles in Outfit, with uppercase Martian Mono labels for context lines, data and states.
+- **Gradient:** one cyan-to-blue-to-lime gradient ("volt"), spread across segmented tracks and used as a 2–3px top edge on featured cards.
+- **Inverted card:** a light card on dark pages (dark on light pages) for the thing to read or send.
 
-References: Vercel Geist (gray roles, hairlines, tabular numbers), Linear (oklch tokens, accent kept out of the grays, keyboard first), Raycast (blue-tinted near-black, keycaps), Resend (glass header), Perplexity and ChatGPT Deep Research (source chips, Activity and Sources tabs), Lavender (draft beside its evidence), Lando Norris (one accent on near-black, masked headline reveal).
+There are no oversized headings and no decorative washes.
 
 ## Themes
 
-- Light, dark, or follow the system. `next-themes` sets a `.dark` class on `<html>` before paint, so there is no flash. Transitions are disabled during a switch.
-- Every colour is a semantic token in `src/app/globals.css` (`:root` and `.dark`), exposed to Tailwind v4 through `@theme inline`. Use `bg-surface`, `border-line`, `text-fg-muted` and so on. Never write raw hex or `bg-white` in a component.
-- `obsidian` is a brand ink that adapts (dark text on light, light text on dark). `primary` and `.bg-obsidian-gradient` are the constant slab with white text.
+Dark is the reference design; light is its inversion.
+- **How it switches:** `next-themes` toggles `.dark` on `<html>` before paint, so there is no flash.
+- **App tokens** (`--canvas`, `--surface`, `--line`, `--fg*`, state colours) and the Telemetry tokens (`--t-*`: volt, pill box, inverted card) both live in `src/app/globals.css`.
+- **Inverted cards** (`.t-card-inv`) flip their state palette so tags stay readable in either theme.
 
-## Colors
+## Colours
 
-- **Grounds:** `canvas` (page, with a faint violet wash at the top), `surface` (cards), `subtle` (hover, recessed areas, tracks).
-- **Lines:** `line` for card borders and dividers, `line-soft` inside cards.
-- **Text:** `fg`, `fg-soft` for secondary prose, `fg-muted` for meta and hints. All meet AA on their grounds in both themes.
-- **Accent:** violet, used only for focus rings, selection, the caret and the active pick in a list. It never fills a button.
-- **State colours:** `info` = verified, `danger` = rejected or failed, `warn` = stale or needs attention, `ok` = done or sent. Each has a `-soft` ground. They never decorate.
+- **State colours encode meaning only:** cyan is verified or info, lime is ok or sent, amber is attention or stale, coral is rejected or failed. Neutral states use `fg-muted`.
+- **The volt gradient** never fills large areas. It appears only on:
+  - top edges of featured cards
+  - track segments
+  - the brand bar
+  - one hero number per screen
+  - the on state of a switch
 
 ## Typography
 
-- Geist Sans for UI and prose; Geist Mono (`.acc`) only for data and verbatim quotes, never for decoration.
-- Headings use weight 600 and negative tracking; labels use 500. Bold (700) is not used.
-- Numbers in tables and stats use tabular figures.
+- **Outfit** for UI and prose. Titles are 26px semibold, section titles 15px semibold, body 14px.
+- **Martian Mono** (`.acc`, `.t-mono`, `.t-label`) for labels, ids, dates, counts and evidence quotes. Labels are 11px, uppercase, with 0.12em tracking.
 
 ## Layout
 
-- **Top bar:** a sticky, blurred top bar holds the brand, the primary tabs, ⌘K search and the theme toggle. On small screens the tabs drop to a scrollable pill strip under the brand.
-- **Content width:** max 1440px, 16px gutters on mobile, 32px from `sm`.
-- **Page structure:** every page opens with `PageHeader` (one h1, one sentence, actions on the right).
-- **Run view:** one grid with named areas. Narrow screens get outcome, draft, evidence, pipeline. `lg` puts the pipeline in a left column. `xl` adds a sticky draft column (`260px | 1fr | 440px`). The draft editor is mounted once.
-
-## Elevation
-
-Flat by default: cards are separated by hairlines, not shadows. Shadows appear only on things that float: dialogs, popovers, toasts, the command palette, the floating save bar, and a soft violet glow under the selected hook.
-
-## Shapes
-
-Controls 8px, cards 12px, overlays and the hook card 16px, badges and chips fully rounded.
+- **Navbar:** centred and sticky (`TopNav`). It's one glass pill holding the brand and tabs, with a sliding active pill. ⌘K and the theme toggle sit on the right, and below the pill on small screens.
+- **Page header:** every page opens with `PageHeader`: a title, a mono context line (`label`), one optional sentence, and actions on the right.
+- **Dashboards** (`/`): a row of compact stat cards, a slim funnel track, two-up cards, and charts.
+- **Forms** (`/runs/new`): numbered sections (`TSection`) in one card, a pill mode switch, and a floating pill submit bar.
+- **Run view:** pipeline column, outcome and hook, evidence tabs, and a sticky draft column. The draft editor is mounted once.
 
 ## Components
 
-All primitives live in `src/components/ui/` and `src/components/shell/`.
-
 | Group | Component | What it is |
 |---|---|---|
-| Controls | `Button` / `buttonClass` | `primary` (obsidian slab with an inset highlight and a hover sheen; at most one per region), `secondary`, `ghost`, `danger`; `sm` 36px, `md` 44px; `loading` shows a spinner. |
-| Controls | `Kbd` | Keycap for shortcuts. |
-| Surfaces | `Card`, `PageHeader`, `EmptyState`, `Skeleton` | Containers, the page title block, empty states with an obsidian icon tile, and shimmering loading placeholders. |
-| Overlays | `Dialog` / `useConfirm` | Accessible modal: focus trap, Escape, focus restored to the opener. Replaces `window.confirm`. Sending email always goes through it and shows the recipient, sender and subject. |
-| Overlays | `Popover` | Outside click and Escape close it; `side` and `align` props. |
-| Feedback | `Toast` / `useToast` | Bottom-right stack in an `aria-live` region. |
-| Navigation | `Tabs`, `SegmentedControl` | The indicator slides with a shared `layoutId`. Tabs use arrow keys. |
-| Data display | `Collapsible`, `NumberTicker`, `SpotlightCard`, `RelativeTime`, `Stagger`, `RiseIn` | Motion helpers. |
-| Data display | `CopyButton` | Copies text; its icon morphs to a check and a toast confirms. |
-| Shell | `TopNav` | The hover pill follows the pointer between tabs; the active underline springs to the current tab. |
-| Shell | `CommandPalette` | ⌘K: pages, recent runs, theme. It only navigates; it never approves or sends. |
-| Shell | `ThemeToggle` | System, Light or Dark. |
-
-Run-view specifics:
-- **Hook card:** obsidian header band and gradient hairline border (`.glow-border`), then the claim, the evidence quote and source chips.
-- **Finding cards:** verdict chip, quote with a left rule and a copy button, a domain chip, and a freshness dot whose tooltip gives the full wording.
-- **Draft panel:** a "Before you send" checklist (blockers first), a document-style editor, and a sticky action bar. The bar holds one primary action, Save edits only while dirty, and a menu for the rest. The reason a primary action is disabled is always written out.
+| Controls | `Button` / `buttonClass` | Pills. `primary` is the inverted pill (light on dark, dark with lime on light). `secondary` is outlined; also `ghost` and `danger`. |
+| Controls | `T_PILL*` (`ui/telemetry.tsx`) | The same pills for raw markup. |
+| Status | `Badge` | Dot and a mono uppercase word, on the state's soft ground. |
+| Navigation | `Tabs`, `SegmentedControl` | The Aurora pill box, with the active pill sliding on a shared `layoutId`. |
+| Forms | Fields (`Field.tsx`, `TField`/`TTextArea`) | Mono uppercase label, 12px-radius input, cyan focus ring. |
+| Surfaces | `.t-card`, `.t-card-inv`, `.t-volt-bg`, `.t-seg`, `.t-rail` | Telemetry surfaces, gradient, segment slices and the horizontal rail. |
+| Unchanged | `Dialog`/`useConfirm`, `Toast`, `Popover`, `CommandPalette`, `Collapsible`, `NumberTicker` | Still in use. Sending email always goes through the confirmation dialog. |
 
 ## Motion
 
-Motion comes from `motion/react` in client components only.
-- **Accessibility:** `<MotionConfig reducedMotion="user">` wraps the app, and every CSS animation has a `prefers-reduced-motion` fallback.
-- **Easing and durations:** ease-out `[0.22, 1, 0.36, 1]`. Micro interactions take 150ms, UI changes 200–250ms, panels 300ms. Never ease-in for UI.
-- **Springs:** shared indicators (nav, tabs, palette selection) use `{ stiffness: 500, damping: 35 }`; overlays use `{ 300, 30 }`.
-- **Enter:** pages rise 8px and fade in (`template.tsx`, enter only). Lists stagger by 50ms with a 4px blur-in. The run title reveals from a mask.
-- **What animates:** only opacity, transform, filter, clip-path and layout. Never animate table refreshes, typing, or theme switches.
+Motion is from `motion/react` and respects `MotionConfig reducedMotion="user"`.
+- **Easing:** ease-out `[0.22, 1, 0.36, 1]`. Indicators use a spring (500/35).
+- **What moves:** pages rise in, lists stagger, and numbers tick up. Track segments and bars grow from zero once. The run title reveals from a mask.
+- **What doesn't:** data refreshes and typing are never animated.
 
 ## Do's and Don'ts
 
 ### Do
-- Use the semantic tokens and the primitives; add a new primitive before copying class strings.
-- Keep one primary (obsidian) action per region.
-- Write disabled reasons as text, not only as a `title`.
-- Keep `role="status"` / `aria-live` regions for live progress.
+- Use the tokens and primitives.
+- Keep one primary (inverted) pill per region.
+- Put context in mono labels.
+- Write disabled reasons as text.
 
 ### Don't
-- Don't use `bg-white`, `text-white` (except on the obsidian slab), raw hex or `dark:` overrides for colours that have a token.
-- Don't use state colours as decoration, or mono type for anything that isn't data or a quote.
-- Don't add shadows to static cards, or gradients to tables, forms or body copy.
-- Don't use native `window.confirm` / `alert`.
-- Don't add motion to data refreshes, or exit animations on route changes.
+- Don't use oversized display type, gradient washes, raw hex in components, or state colours as decoration.
+- Don't use `window.confirm`.
 
 ## UI and UX review (November 2026)
 

@@ -537,7 +537,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
             <Button variant="primary" onClick={primary.run} disabled={primary.disabled} loading={busy === primary.busyKey}>
               {busy !== primary.busyKey && <Icon name={primary.label.startsWith("Send") || primary.label.includes("send") ? "mail" : "check"} />}
               {busy === primary.busyKey ? primary.busyLabel : primary.label}
-              {!primary.disabled && <Kbd className="ml-1 border-white/20 bg-white/10 text-white/80 shadow-none">⌘↵</Kbd>}
+              {!primary.disabled && <Kbd className="ml-1">⌘↵</Kbd>}
             </Button>
           )}
           {!sent && !approved && autoSend && (

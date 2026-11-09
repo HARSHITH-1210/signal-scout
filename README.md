@@ -134,7 +134,7 @@ validate → resolve identity ──ambiguous──▶ needs clarification ─�
 
 ### Stack and layout
 
-Next.js 16 (App Router, Node runtime), TypeScript (strict), Tailwind CSS 4, Motion (`motion/react`), `next-themes`, Geist fonts, SQLite (`better-sqlite3`), `zod`, `@anthropic-ai/sdk` (structured outputs, server-side refusal fallback) or OpenRouter's chat completions API (strict JSON-schema output, routed only to providers that enforce it), Tavily REST API, Vitest.
+Next.js 16 (App Router, Node runtime), TypeScript (strict), Tailwind CSS 4, Motion (`motion/react`), `next-themes`, Outfit + Martian Mono, SQLite (`better-sqlite3`), `zod`, `@anthropic-ai/sdk` (structured outputs, server-side refusal fallback) or OpenRouter's chat completions API (strict JSON-schema output, routed only to providers that enforce it), Tavily REST API, Vitest.
 
 **About OpenRouter free models:** they work through the same pipeline and the same verification. A weaker model can't slip invented facts past the verbatim-quote check or the claim audit. In practice it produces more rejected findings and more "Not enough signal" results. The free tier allows 20 requests/minute and 50/day (1,000/day after a one-time $10 credit purchase). A full run uses about 5 requests, and a failed schema check can add one correction request.
 
@@ -302,7 +302,7 @@ Every external call goes through a **fallback chain** (details in [docs/RESILIEN
 
 - [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md): requirements traceability, architecture, decisions and assumptions.
 - [`CLAUDE.md`](CLAUDE.md): instructions and guardrails for AI agents working on this repo.
-- [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md): product brief and the Obsidian design system (light/dark tokens, components, motion, rules).
+- [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md): product brief and the Telemetry design system (light/dark tokens, components, motion, rules).
 - [`docs/EDGE_CASES_AND_RISK_ASSESSMENT.md`](docs/EDGE_CASES_AND_RISK_ASSESSMENT.md): the risk assessment and the status of each fix.
 - [`docs/DEMO_SCENARIOS.md`](docs/DEMO_SCENARIOS.md): reproducible demo and test scenarios.
 - [`docs/LIVE_TESTING_SETUP.md`](docs/LIVE_TESTING_SETUP.md): step-by-step guide to running against the real APIs.
