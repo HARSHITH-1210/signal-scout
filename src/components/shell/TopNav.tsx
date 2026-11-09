@@ -6,21 +6,47 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { SPRING_SNAPPY, cn } from "@/lib/ui/cn";
 import { Icon } from "../Icon";
+import { Tooltip } from "../ui/Tooltip";
+import { AccountMenu } from "./AccountMenu";
 import { ThemeToggle } from "./ThemeToggle";
 import { openCommandPalette } from "./CommandPalette";
 import { NAV_LINKS, isActive } from "./nav";
 
 /**
- * Centred navigation (Telemetry direction, Aurora pill box): one glass pill holding the brand and the
- * tabs. The active tab's pill and the hover pill slide between tabs with shared layoutIds.
+ * Search: its own round button beside the nav pill, ringed in the volt gradient so it reads as a
+ * distinct control rather than another tab. Ctrl/⌘ K still opens the same palette.
  */
-export function TopNav() {
+function SearchButton() {
+  return (
+    <Tooltip side="bottom" content="Search pages and runs">
+      <button
+        type="button"
+        onClick={openCommandPalette}
+        aria-label="Search"
+        aria-keyshortcuts="Control+K Meta+K"
+        className="t-volt-bg group grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full p-[1.5px] transition-transform duration-150 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 active:scale-95"
+      >
+        <span className="grid h-full w-full place-items-center rounded-full bg-surface text-fg">
+          <Icon name="search" className="h-[18px] w-[18px]" />
+        </span>
+      </button>
+    </Tooltip>
+  );
+}
+
+/**
+ * Centred navigation (Telemetry direction, Aurora pill box): one glass pill holding the brand and the
+ * tabs, with Search as a separate button beside it. The active tab's pill and the hover pill slide
+ * between tabs with shared layoutIds. Hidden on the sign-in page.
+ */
+export function TopNav({ user }: { user: { email: string } | null }) {
   const pathname = usePathname();
   const [hovered, setHovered] = useState<string | null>(null);
+  if (pathname === "/signin") return null;
 
   return (
     <header className="telemetry sticky top-0 z-40 px-3 pt-4 pb-2 sm:px-6">
-      <div className="relative mx-auto flex max-w-[1440px] items-center justify-center">
+      <div className="relative mx-auto flex max-w-[1440px] items-center justify-center gap-2.5">
         <nav
           aria-label="Main"
           onMouseLeave={() => setHovered(null)}
@@ -54,29 +80,16 @@ export function TopNav() {
           })}
         </nav>
 
+        <SearchButton />
+
         <div className="absolute right-0 hidden items-center gap-2 lg:flex">
-          <button
-            type="button"
-            onClick={openCommandPalette}
-            aria-label="Open command palette"
-            className="t-mono flex h-9 items-center gap-2 rounded-full border border-[var(--t-pill-line)] bg-[var(--t-pill-box)] px-3 text-[12px] text-[var(--t-muted)] backdrop-blur-[18px] transition-colors hover:text-[var(--t-fg)]"
-          >
-            <Icon name="search" className="h-3.5 w-3.5" />
-            ⌘K
-          </button>
           <ThemeToggle />
+          {user && <AccountMenu email={user.email} />}
         </div>
       </div>
       <div className="mt-2 flex justify-center gap-2 lg:hidden">
-        <button
-          type="button"
-          onClick={openCommandPalette}
-          aria-label="Open command palette"
-          className="grid h-9 w-9 place-items-center rounded-full border border-[var(--t-pill-line)] bg-[var(--t-pill-box)] text-[var(--t-muted)] backdrop-blur-[18px]"
-        >
-          <Icon name="search" className="h-3.5 w-3.5" />
-        </button>
         <ThemeToggle />
+        {user && <AccountMenu email={user.email} />}
       </div>
     </header>
   );

@@ -298,7 +298,7 @@ Lets *Approve & send* email the approved draft from your Gmail. It takes about 1
 2. **OAuth consent screen:** choose *External*, keep it in **Testing**, fill in the app name and your email, and add **yourself as a test user**. Only test users can connect while the app is unverified.
 3. **Credentials → Create credentials → OAuth client ID → Web application.** Add the authorised redirect URI `http://localhost:3000/api/gmail/callback`.
 4. Put the client ID and secret in `.env.local` as `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, then restart `npm run dev`. Don't paste them into chat or commit them.
-5. Open the app at **http://localhost:3000** (not `127.0.0.1`: the sign-in cookie and the redirect URI must use the same host). Go to **Sender profile → Send with Gmail → Connect Gmail**. Google warns that the app isn't verified; continue, and allow *Send email on your behalf* and *View your email message metadata* (headers only, used for reply and bounce tracking on the Outreach page).
+5. Open the app at **http://localhost:3000** (not `127.0.0.1`: the sign-in cookie and the redirect URI must use the same host). You're sent to **Sign in with Google**. Google warns that the app isn't verified; continue, and allow *Send email on your behalf* and *View your email message metadata* (headers only, used for reply and bounce tracking on the Outreach page).
 6. Back in Sender profile, you should see "Connected as you@gmail.com" with *Send when I approve* ticked.
 7. Test with a run whose Email is **your own address**: approve with *Approve & send*, confirm, and check your inbox and Sent folder. The run shows **Sent** with the Gmail message id.
 

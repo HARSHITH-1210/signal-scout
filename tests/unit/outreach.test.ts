@@ -75,7 +75,7 @@ describe("refreshTracking", () => {
     setGmailFetchForTests(async () => new Response("{}", { status: 401 }));
     const run = repo.createRun(NORTHWIND);
     repo.updateRun(run.id, { status: "sent", sent: sent() });
-    expect((await refreshTracking({ now: NOW })).error).toMatch(/Reconnect/);
+    expect((await refreshTracking({ now: NOW })).error).toMatch(/sign in again/);
   });
 });
 

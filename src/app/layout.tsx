@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Martian_Mono, Outfit } from "next/font/google";
 import { missingSettings } from "@/lib/config";
 import { TopNav } from "@/components/shell/TopNav";
+import { currentUser } from "@/lib/auth/server";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -16,8 +17,9 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const missing = missingSettings();
+  const user = await currentUser();
   return (
     <html lang="en" suppressHydrationWarning className={`${outfit.variable} ${martianMono.variable} antialiased`}>
       <body className="min-h-screen">
@@ -25,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2">
             Skip to content
           </a>
-          <TopNav />
+          <TopNav user={user} />
           {missing.length > 0 && (
             <div role="alert" className="border-b border-warn/25 bg-warn-soft">
               <p className="mx-auto max-w-[1440px] px-4 py-2 text-[13px] text-warn sm:px-8">

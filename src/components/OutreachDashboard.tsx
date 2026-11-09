@@ -92,9 +92,9 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
   const maxDay = Math.max(1, ...stats.perDay.map((d) => d.count));
   const segments = Math.max(1, stats.funnel.length - 1);
   const trackingNote = !gmail.connected
-    ? "Gmail isn't connected, so replies and bounces aren't tracked."
+    ? "No Google account is signed in for sending, so replies and bounces aren't tracked."
     : !tracked
-      ? "Reconnect Gmail to allow reply and bounce tracking (header-only access)."
+      ? "Sign out and sign in again to allow reply and bounce tracking (header-only access)."
       : null;
 
   return (

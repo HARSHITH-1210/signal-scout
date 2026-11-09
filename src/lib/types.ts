@@ -376,6 +376,8 @@ export interface GmailStatus {
   autoSendOnApprove: boolean;
   /** Header-only read access, for reply and bounce tracking. False on connections made before it existed. */
   canTrack: boolean;
+  /** gmail.send granted at sign-in. */
+  canSend: boolean;
 }
 
 /** The rep's own list: people and companies not to contact, and existing relationships to check first. */

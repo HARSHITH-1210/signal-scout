@@ -1,4 +1,5 @@
 import path from "node:path";
+import { parseAllowList } from "./auth/session";
 
 export const DEFAULT_MODEL = "claude-opus-5-5";
 export const DEFAULT_OPENROUTER_MODEL = "nvidia/nemotron-3.5-super-vl:free";
@@ -38,6 +39,8 @@ export interface AppConfig {
   googleClientSecret: string | null;
   /** Must match an authorised redirect URI on the Google OAuth client. */
   googleRedirectUri: string;
+  /** ALLOWED_EMAILS: who may sign in. Empty means the first account to sign in owns the workspace. */
+  allowedEmails: string[];
 }
 
 /**
@@ -99,6 +102,7 @@ export function getConfig(): AppConfig {
     googleClientId: readEnv("GOOGLE_CLIENT_ID"),
     googleClientSecret: readEnv("GOOGLE_CLIENT_SECRET"),
     googleRedirectUri: readEnv("GOOGLE_REDIRECT_URI") ?? "http://localhost:3000/api/gmail/callback",
+    allowedEmails: parseAllowList(readEnv("ALLOWED_EMAILS") ?? undefined),
   };
 }
 

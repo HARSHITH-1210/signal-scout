@@ -1,6 +1,6 @@
 import * as repo from "../db/repo";
 import type { GmailStatus, SentRecord } from "../types";
-import { canTrack, GmailError, gmailConfigured, sendRaw } from "./client";
+import { canSend, canTrack, GmailError, gmailConfigured, sendRaw } from "./client";
 import { buildRawMessage, isSafeAddress } from "./mime";
 import { isExpired } from "../pipeline/confidence";
 import { checkContactRules } from "../pipeline/contacts";
@@ -13,6 +13,7 @@ export function gmailStatus(): GmailStatus {
     email: connection?.email ?? null,
     autoSendOnApprove: connection?.autoSendOnApprove ?? false,
     canTrack: connection ? canTrack(connection) : false,
+    canSend: connection ? canSend(connection) : false,
   };
 }
 
@@ -28,7 +29,8 @@ export type SendCheck = { ok: true; to: string; from: string } | { ok: false; re
 export function checkSendable(runId: string, version: number, to: string | undefined, options: { acknowledgeUnaudited?: boolean } = {}): SendCheck {
   if (!gmailConfigured()) return { ok: false, reason: "Gmail isn't set up (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)." };
   const connection = repo.getGmailConnection();
-  if (!connection) return { ok: false, reason: "Connect Gmail in Sender profile first." };
+  if (!connection) return { ok: false, reason: "Sign in with Google first; sending uses the account you sign in with." };
+  if (!canSend(connection)) return { ok: false, reason: "Send permission wasn't granted. Sign out, sign in again and allow Signal Scout to send email." };
   const run = repo.getRun(runId);
   if (!run) return { ok: false, reason: "Run not found." };
   if (inFlight.has(runId)) return { ok: false, reason: "This draft is being sent right now." };
@@ -54,7 +56,7 @@ export function checkSendable(runId: string, version: number, to: string | undef
 export async function sendApprovedDraft(runId: string, version: number, to: string, from: string): Promise<SentRecord> {
   const connection = repo.getGmailConnection();
   const draft = repo.latestDraft(runId);
-  if (!connection || !draft || draft.version !== version) throw new GmailError("The draft or the Gmail connection changed. Reload and try again.", "rejected");
+  if (!connection || !draft || draft.version !== version) throw new GmailError("The draft or the signed-in Google account changed. Reload and try again.", "rejected");
   if (inFlight.has(runId)) throw new GmailError("This draft is being sent right now.", "rejected");
   inFlight.add(runId);
   let sent: { id: string; threadId: string | null };

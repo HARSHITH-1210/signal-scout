@@ -9,11 +9,17 @@ services:
     healthCheckPath: /api/health
     autoDeploy: false # a deploy wipes the demo data; deploy deliberately
     envVars:
-      # Required: the app is public on Render, so it must have a password.
-      - key: APP_PASSWORD
+      # Required: the app is public on Render, so it needs Google sign-in (it refuses to run open).
+      # The redirect must be https://<your-service>.onrender.com/api/gmail/callback
+      - key: GOOGLE_CLIENT_ID
         sync: false
-      - key: APP_USERNAME
-        value: demo
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      # Who may sign in, e.g. you@gmail.com or @yourcompany.com
+      - key: ALLOWED_EMAILS
+        sync: false
       - key: TAVILY_API_KEY
         sync: false
       - key: LLM_PROVIDER
@@ -28,11 +34,4 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: EXA_API_KEY
-        sync: false
-      # Optional Gmail sending. The redirect must be https://<your-service>.onrender.com/api/gmail/callback
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      - key: GOOGLE_REDIRECT_URI
         sync: false

@@ -671,9 +671,9 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
             </p>
           )}
           {!sent && !gmail.connected && gmail.configured && (
-            <Link href="/settings#gmail" className="t-label underline-offset-4 hover:underline">
-              Connect Gmail to send from here →
-            </Link>
+            <a href="/api/auth/signin?next=%2Fsettings%23gmail" className="t-label underline-offset-4 hover:underline">
+              Sign in with Google to send from here →
+            </a>
           )}
         </div>
       )}

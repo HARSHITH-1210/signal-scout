@@ -3,7 +3,7 @@ import { useInMemoryDbForTests } from "@/lib/db/schema";
 import * as repo from "@/lib/db/repo";
 import { redact } from "@/lib/config";
 import { runPipeline, setDepsFactory } from "@/lib/pipeline/runner";
-import { authorizationUrl, connectWithCode, GMAIL_SCOPES, sendRaw, setGmailFetchForTests } from "@/lib/gmail/client";
+import { authorizationUrl, connectWithCode, GMAIL_SCOPES, NeedsConsentError, sendRaw, setGmailFetchForTests } from "@/lib/gmail/client";
 import { buildRawMessage, encodeHeader, isSafeAddress } from "@/lib/gmail/mime";
 import { checkSendable } from "@/lib/gmail/send";
 import { POST as draftAction, PUT as editDraft } from "@/app/api/runs/[id]/draft/route";
@@ -91,10 +91,33 @@ describe("Gmail OAuth client", () => {
     expect(repo.getGmailConnection()).toMatchObject({ email: "rep@example.com", refreshToken: "1//refresh-token-value-abcdef", autoSendOnApprove: true });
   });
 
-  it("refuses a connection that didn't grant the send scope", async () => {
-    setGmailFetchForTests(async () => Response.json({ access_token: "ya29.x", expires_in: 3600, refresh_token: "1//r", id_token: idToken("a@b.co"), scope: "openid email" }));
-    await expect(connectWithCode("code")).rejects.toThrow(/Send permission/);
+  it("forces the consent screen only until a refresh token is stored", () => {
+    expect(new URL(authorizationUrl("s")).searchParams.get("prompt")).toBe("consent");
+    connect();
+    expect(new URL(authorizationUrl("s")).searchParams.get("prompt")).toBe("select_account");
+    expect(new URL(authorizationUrl("s", { consent: true })).searchParams.get("prompt")).toBe("consent");
+  });
+
+  it("signs in without the send scope, but sending is refused until it's granted", async () => {
+    setGmailFetchForTests(async () => Response.json({ access_token: "ya29.x", expires_in: 3600, refresh_token: "1//r", id_token: idToken("rep@example.com"), scope: "openid email" }));
+    await connectWithCode("code");
+    const id = await readyRun();
+    expect(checkSendable(id, 1, undefined)).toMatchObject({ ok: false, reason: expect.stringMatching(/Send permission/) });
+  });
+
+  it("stores nothing when the account isn't allowed to sign in", async () => {
+    await expect(connectWithCode("code", () => "Not you.")).rejects.toThrow("Not you.");
     expect(repo.getGmailConnection()).toBeNull();
+  });
+
+  it("keeps the stored refresh token for a returning rep, and asks for consent for a new account", async () => {
+    connect();
+    const noRefresh = (email: string) => async () => Response.json({ access_token: "ya29.n", expires_in: 3600, id_token: idToken(email), scope: GMAIL_SCOPES.join(" ") });
+    setGmailFetchForTests(noRefresh("rep@example.com"));
+    expect((await connectWithCode("code")).refreshToken).toBe("1//refresh");
+    setGmailFetchForTests(noRefresh("someone-else@example.com"));
+    await expect(connectWithCode("code")).rejects.toBeInstanceOf(NeedsConsentError);
+    expect(repo.getGmailConnection()?.email).toBe("rep@example.com");
   });
 
   it("refreshes an expired access token before sending", async () => {
@@ -105,10 +128,10 @@ describe("Gmail OAuth client", () => {
     expect(repo.getGmailConnection()?.accessToken).toBe("ya29.fresh-access-token");
   });
 
-  it("asks to reconnect on 401 and never retries a send", async () => {
+  it("asks to sign in again on 401 and never retries a send", async () => {
     connect();
     sendResponse = () => new Response("{}", { status: 401 });
-    await expect(sendRaw(repo.getGmailConnection()!, "raw")).rejects.toThrow(/Reconnect/);
+    await expect(sendRaw(repo.getGmailConnection()!, "raw")).rejects.toThrow(/sign in again/);
     expect(sends()).toHaveLength(1);
   });
 
@@ -120,7 +143,7 @@ describe("Gmail OAuth client", () => {
 describe("checkSendable", () => {
   it("lists what's missing, in order", async () => {
     const id = await readyRun(null);
-    expect(checkSendable(id, 1, undefined)).toMatchObject({ ok: false, reason: expect.stringMatching(/Connect Gmail/) });
+    expect(checkSendable(id, 1, undefined)).toMatchObject({ ok: false, reason: expect.stringMatching(/Sign in with Google/) });
     connect();
     expect(checkSendable(id, 1, undefined)).toMatchObject({ ok: false, reason: expect.stringMatching(/recipient's email/) });
     expect(checkSendable(id, 1, "not an email")).toMatchObject({ ok: false, reason: expect.stringMatching(/isn't valid/) });
@@ -206,18 +229,41 @@ describe("approve and send", () => {
   });
 });
 
-describe("OAuth callback", () => {
+describe("Google sign-in callback", () => {
+  const cb = (state: string) => callback(new Request(`http://localhost:3000/api/gmail/callback?code=c&state=${state}`, { headers: { cookie: "oauth_state=good; oauth_next=%2Fruns" } }));
+
   it("rejects a state that doesn't match the cookie", async () => {
-    const res = await callback(new Request("http://localhost:3000/api/gmail/callback?code=c&state=evil", { headers: { cookie: "gmail_oauth_state=good" } }));
-    expect(res.headers.get("location")).toMatch(/gmail=error/);
+    const res = await cb("evil");
+    expect(res.headers.get("location")).toMatch(/\/signin\?error=/);
+    expect(res.headers.get("set-cookie") ?? "").not.toMatch(/ss_session=[^;]/);
     expect(calls).toHaveLength(0);
     expect(repo.getGmailConnection()).toBeNull();
   });
 
-  it("connects when the state matches", async () => {
-    const res = await callback(new Request("http://localhost:3000/api/gmail/callback?code=c&state=good", { headers: { cookie: "gmail_oauth_state=good" } }));
-    expect(res.headers.get("location")).toMatch(/gmail=connected/);
+  it("signs in, connects Gmail and returns to the page the rep asked for", async () => {
+    const res = await cb("good");
+    expect(res.headers.get("location")).toBe("http://localhost:3000/runs");
+    expect(res.headers.get("set-cookie")).toMatch(/ss_session=[^;]+;.*HttpOnly/i);
     expect(repo.getGmailConnection()?.email).toBe("rep@example.com");
+    expect(repo.getOwnerEmail()).toBe("rep@example.com");
+  });
+
+  it("lets only the owner back in when ALLOWED_EMAILS is unset", async () => {
+    repo.setOwnerEmail("owner@example.com");
+    const res = await cb("good");
+    expect(res.headers.get("location")).toMatch(/\/signin\?error=.*another\+Google\+account/);
+    expect(repo.getGmailConnection()).toBeNull();
+  });
+
+  it("follows ALLOWED_EMAILS when it is set", async () => {
+    process.env.ALLOWED_EMAILS = "@other.test";
+    try {
+      expect((await cb("good")).headers.get("location")).toMatch(/\/signin\?error=.*ALLOWED_EMAILS/);
+      process.env.ALLOWED_EMAILS = "@example.com";
+      expect((await cb("good")).headers.get("location")).toBe("http://localhost:3000/runs");
+    } finally {
+      delete process.env.ALLOWED_EMAILS;
+    }
   });
 });
 
@@ -247,8 +293,9 @@ describe("OAuth callback behind a proxy", () => {
   it("returns to the public origin, not the server's internal address", async () => {
     process.env.GOOGLE_REDIRECT_URI = "https://signal-scout-demo.onrender.com/api/gmail/callback";
     try {
-      const res = await callback(new Request("http://0.0.0.0:10000/api/gmail/callback?code=c&state=good", { headers: { cookie: "gmail_oauth_state=good" } }));
-      expect(res.headers.get("location")).toMatch(/^https:\/\/signal-scout-demo\.onrender\.com\/settings\?gmail=connected/);
+      const res = await callback(new Request("http://0.0.0.0:10000/api/gmail/callback?code=c&state=good", { headers: { cookie: "oauth_state=good" } }));
+      expect(res.headers.get("location")).toBe("https://signal-scout-demo.onrender.com/");
+      expect(res.headers.get("set-cookie")).toMatch(/Secure/i);
     } finally {
       delete process.env.GOOGLE_REDIRECT_URI;
     }

@@ -570,6 +570,18 @@ export function deleteGmailConnection(): void {
   getDb().prepare(`DELETE FROM settings WHERE key = 'gmail'`).run();
 }
 
+/** The Google account that owns this workspace: the first to sign in, when ALLOWED_EMAILS is unset. */
+export function getOwnerEmail(): string | null {
+  const row = getDb().prepare(`SELECT value_json FROM settings WHERE key = 'owner'`).get() as { value_json: string } | undefined;
+  return row ? (JSON.parse(row.value_json) as { email: string }).email : null;
+}
+
+export function setOwnerEmail(email: string): void {
+  getDb()
+    .prepare(`INSERT INTO settings (key, value_json) VALUES ('owner', ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json`)
+    .run(JSON.stringify({ email }));
+}
+
 const EMPTY_CONTACT_RULES: ContactRules = { doNotContact: [], relationships: [] };
 
 export function getContactRules(): ContactRules {

@@ -59,35 +59,3 @@ export function checkRequest(input: {
   }
   return { ok: true };
 }
-
-/** Paths reachable without the app password: the uptime monitor's ping (it reports booleans only). */
-const PUBLIC_PATHS = new Set(["/api/health"]);
-
-function safeEqual(a: string, b: string): boolean {
-  // Constant-time over the longer input, so timing doesn't reveal how much of the password matched.
-  const length = Math.max(a.length, b.length);
-  let diff = a.length ^ b.length;
-  for (let i = 0; i < length; i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-  return diff === 0;
-}
-
-/**
- * HTTP Basic auth for hosted deployments, on when APP_PASSWORD is set. Local use (no password) is
- * unchanged. Browsers resend the credentials on every request to the origin, including the live
- * event stream and the Gmail sign-in redirect.
- */
-export function checkBasicAuth(input: { pathname: string; authorization: string | null; username?: string; password?: string }): boolean {
-  if (!input.password) return true;
-  if (PUBLIC_PATHS.has(input.pathname)) return true;
-  const match = /^Basic\s+([A-Za-z0-9+/=]+)$/i.exec(input.authorization?.trim() ?? "");
-  if (!match) return false;
-  let decoded: string;
-  try {
-    decoded = new TextDecoder().decode(Uint8Array.from(atob(match[1]), (c) => c.charCodeAt(0)));
-  } catch {
-    return false;
-  }
-  const at = decoded.indexOf(":");
-  if (at === -1) return false;
-  return safeEqual(decoded.slice(0, at), input.username || "demo") && safeEqual(decoded.slice(at + 1), input.password);
-}

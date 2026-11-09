@@ -47,7 +47,11 @@ export function newOAuthState(): string {
   return randomBytes(24).toString("base64url");
 }
 
-export function authorizationUrl(state: string): string {
+/**
+ * Google sign-in, which also grants Gmail sending: one consent covers both. The consent screen is
+ * forced only when no refresh token is stored yet, so returning reps just pick their account.
+ */
+export function authorizationUrl(state: string, options: { consent?: boolean } = {}): string {
   const { clientId, redirectUri } = requireConfig();
   const params = new URLSearchParams({
     client_id: clientId,
@@ -55,7 +59,7 @@ export function authorizationUrl(state: string): string {
     response_type: "code",
     scope: GMAIL_SCOPES.join(" "),
     access_type: "offline",
-    prompt: "consent", // always return a refresh token
+    prompt: options.consent || !getGmailConnection() ? "consent" : "select_account",
     include_granted_scopes: "true",
     state,
   });
@@ -82,7 +86,7 @@ async function tokenRequest(body: Record<string, string>) {
   if (!res.ok) {
     const code = (json as { error?: string }).error ?? `HTTP ${res.status}`;
     throw new GmailError(
-      code === "invalid_grant" ? "Gmail access was revoked or expired. Reconnect Gmail in Sender profile." : `Google rejected the token request (${code}).`,
+      code === "invalid_grant" ? "Google access was revoked or expired. Sign out and sign in again." : `Google rejected the token request (${code}).`,
       code === "invalid_grant" ? "auth" : "rejected",
     );
   }
@@ -102,28 +106,47 @@ export function emailFromIdToken(idToken: string | undefined): string | null {
   }
 }
 
-/** Completes the OAuth flow and stores the connection (tokens stay server-side). */
-export async function connectWithCode(code: string): Promise<GmailConnection> {
+/** Thrown when Google returns no refresh token for a new account; signing in with the consent screen fixes it. */
+export class NeedsConsentError extends GmailError {
+  constructor() {
+    super("Google didn't return a refresh token. Sign in again and approve the permissions.", "rejected");
+  }
+}
+
+/**
+ * Completes Google sign-in. `authorize` decides whether this account may use the app (it returns a
+ * refusal message, or null) and runs BEFORE anything is stored. The rep's sign-in is also their Gmail
+ * connection; tokens stay server-side.
+ */
+export async function connectWithCode(code: string, authorize: (email: string) => string | null = () => null): Promise<GmailConnection> {
   const { clientId, clientSecret, redirectUri } = requireConfig();
   const tokens = await tokenRequest({ grant_type: "authorization_code", code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri });
-  const granted = tokens.scope?.split(" ") ?? [];
-  if (!granted.includes(GMAIL_SEND_SCOPE))
-    throw new GmailError("Send permission wasn't granted. Connect again and allow Signal Scout to send email.", "rejected");
-  if (!tokens.refresh_token) throw new GmailError("Google didn't return a refresh token. Remove Signal Scout's access in your Google account and connect again.", "rejected");
   const email = emailFromIdToken(tokens.id_token);
-  if (!email) throw new GmailError("Couldn't read which Gmail account was connected.", "rejected");
+  if (!email) throw new GmailError("Couldn't read which Google account signed in.", "rejected");
+  const refusal = authorize(email);
+  if (refusal) throw new GmailError(refusal, "auth");
   const previous = getGmailConnection();
+  const samePrevious = previous && previous.email.toLowerCase() === email.toLowerCase() ? previous : null;
+  // A returning rep who skipped the consent screen gets no new refresh token; keep the stored one.
+  const refreshToken = tokens.refresh_token ?? samePrevious?.refreshToken;
+  if (!refreshToken) throw new NeedsConsentError();
+  const granted = tokens.scope?.split(" ") ?? [];
   const connection: GmailConnection = {
     email,
-    refreshToken: tokens.refresh_token,
+    refreshToken,
     accessToken: tokens.access_token,
     accessTokenExpiresAt: Date.now() + tokens.expires_in * 1000,
     connectedAt: new Date().toISOString(),
-    autoSendOnApprove: previous?.autoSendOnApprove ?? true,
+    autoSendOnApprove: samePrevious?.autoSendOnApprove ?? true,
     scopes: granted,
   };
   saveGmailConnection(connection);
   return connection;
+}
+
+/** Send permission granted. Connections saved before scopes were recorded were send-only, so they can send. */
+export function canSend(connection: GmailConnection): boolean {
+  return !connection.scopes || connection.scopes.includes(GMAIL_SEND_SCOPE);
 }
 
 export function canTrack(connection: GmailConnection): boolean {
@@ -150,7 +173,7 @@ export async function sendRaw(connection: GmailConnection, raw: string): Promise
   });
   const json = (await res.json().catch(() => ({}))) as { id?: string; threadId?: string; error?: { message?: string } };
   if (!res.ok) {
-    if (res.status === 401 || res.status === 403) throw new GmailError("Gmail refused the send. Reconnect Gmail in Sender profile.", "auth");
+    if (res.status === 401 || res.status === 403) throw new GmailError("Gmail refused the send. Sign out and sign in again, allowing Signal Scout to send email.", "auth");
     throw new GmailError(`Gmail couldn't send the email (${redact(json.error?.message ?? `HTTP ${res.status}`)}).`, "rejected");
   }
   if (!json.id) throw new GmailError("Gmail accepted the request but returned no message id. Check your Sent folder.", "unavailable");

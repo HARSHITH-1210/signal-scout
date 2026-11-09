@@ -20,7 +20,7 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 | `docs/DEMO_SCENARIOS.md` | Reproducible happy-path and edge-case scenarios |
 | `src/lib/documents/` | PDF/CSV parsing, CRM column mapping, chunking for uploaded files |
 | `src/lib/discover/` | Discover: web search plus one model call to list companies named in the results, each verified against its cited source |
-| `src/proxy.ts`, `src/lib/api/guard.ts` | Host allow-list (DNS rebinding) and same-origin writes (CSRF) for every request |
+| `src/proxy.ts`, `src/lib/api/guard.ts`, `src/lib/auth/` | Host allow-list (DNS rebinding), same-origin writes (CSRF) and Google sign-in (signed session cookie; `ALLOWED_EMAILS` or first-account owner) for every request |
 | `PRODUCT.md`, `DESIGN.md`, `.impeccable/` | Product brief, design system and the direction contract; read DESIGN.md before any UI change |
 
 ## Development workflow
@@ -53,7 +53,7 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 |---|---|---|---|
 | Anthropic Claude | `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL` (default `claude-opus-5-5`) | Identity classification, signal extraction, conflict check, drafting, claim check | `messages.parse` + zod schema; check `stop_reason` (`refusal`, `max_tokens`); SDK retries 429/5xx; a failure fails the stage with a clear message and a retry option |
 | OpenRouter (alternative LLM) | `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL`, `LLM_PROVIDER` | Same tasks as Claude, for any OpenRouter model incl. free ones | Strict `json_schema` output with `provider.require_parameters`; zod-validated with one corrective retry; empty replies retried; hard cap of 14 requests per run; daily free-limit 429s aren't retried |
-| Gmail (optional) | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, optional `GOOGLE_REDIRECT_URI` | Send an approved draft from the rep's account | OAuth web flow with state cookie; tokens in SQLite settings, never sent to the browser; refresh on expiry; a send is never retried |
+| Google sign-in + Gmail (optional locally, required hosted) | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, optional `GOOGLE_REDIRECT_URI`, `ALLOWED_EMAILS`, `SESSION_SECRET` | Sign in to the app; the same grant sends an approved draft from the rep's account | One OAuth web flow (state cookie) signs in and connects Gmail; HMAC-signed HttpOnly session cookie checked in `src/proxy.ts`; tokens in SQLite settings, never sent to the browser; refresh on expiry; a send is never retried. No other login method (the Basic-auth password is gone). |
 | Gemini (backup LLM) | `GEMINI_API_KEY`, optional `GEMINI_MODEL`, `LLM_FALLBACKS` | Same tasks as Claude/OpenRouter when the primary fails | REST `generateContent` with `responseJsonSchema`; zod-validated, one corrective retry; 14 requests per run; daily quota opens the circuit until midnight Pacific |
 | Exa (backup search) | `EXA_API_KEY` | Search and page text when Tavily fails | Single attempt per call (the chain decides); 402 = quota until the 1st |
 | GDELT, Jina Reader, direct read | none (`JINA_API_KEY` optional) | Keyless last-resort news search and page reading | Only active when a keyed search provider is configured; direct reads are SSRF-guarded (public http(s) only, redirects re-checked, size/time caps) |

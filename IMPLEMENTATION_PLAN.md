@@ -172,7 +172,7 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - Contact list in Sender profile (do-not-contact, existing relationships), checked before research, after identity and before any send; new status `held` (migration 4, `hold_json`).
   - Recency windows per signal type; swap test; obviousness penalty for funding/award; congratulations and assumption-as-fact checks; draft expiry by hook type.
   - Tests: `tests/pipeline/edge-cases.test.ts`. Not live-tested.
-- v8 (demo hosting): `render.yaml` (free Docker web service), Basic-auth app password via `APP_PASSWORD` in `src/proxy.ts` (`/api/health` exempt for UptimeRobot), Render hostname trusted automatically. The Docker image was built and run locally with Render's settings (port 10000, 512 MB): auth, host guard, CSRF and a PDF upload all work. Not yet run on Render itself.
+- v8 (demo hosting): `render.yaml` (free Docker web service), Basic-auth app password via `APP_PASSWORD` in `src/proxy.ts` (replaced in v18 by Google sign-in) (`/api/health` exempt for UptimeRobot), Render hostname trusted automatically. The Docker image was built and run locally with Render's settings (port 10000, 512 MB): auth, host guard, CSRF and a PDF upload all work. Not yet run on Render itself.
 - v9 (Outreach dashboard):
   - New `/outreach` page: tiles, funnel, action queue, sent log with Gmail links, sends per day, and replies by hook type (`src/lib/outreach/stats.ts`, pure and unit-tested).
   - Added the `gmail.metadata` scope (user-approved) for header-only reply, bounce and auto-reply detection on threads the app sent (`src/lib/gmail/tracking.ts`). Sends now store `threadId`.
@@ -219,3 +219,10 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
 - v17 (Discover, user-requested):
   - `/discover` searches the web for a described set of companies (`src/lib/discover/discover.ts`, `POST /api/discover`). The model only proposes names; each is kept only if its name appears in a cited source, websites are kept only when a cited source mentions the domain, and LinkedIn or injection-like pages never reach the model. Contact rules flag do-not-contact and relationships.
   - Picking a company opens New run prefilled (`?company=&website=`); validation and duplicate checks are unchanged. Nothing runs or sends from Discover. Tests: `tests/unit/discover.test.ts`.
+- v18 (Google sign-in, user-requested):
+  - "Sign in with Google" replaces the Basic-auth password prompt. One OAuth grant signs the rep in and connects the Gmail approved drafts are sent from, so there's no separate Connect Gmail step on Sender profile (it now shows the *Sending account*, the send-on-approve toggle and *Revoke Google access*).
+  - `src/lib/auth/session.ts` (pure, Web Crypto): HMAC-signed HttpOnly session cookie (7 days), `ALLOWED_EMAILS` matching, safe `next` paths. `src/proxy.ts` requires a session for everything but `/signin`, the OAuth routes and `/api/health` whenever `GOOGLE_CLIENT_ID/SECRET` are set; on Render without them it refuses to serve.
+  - Without `ALLOWED_EMAILS`, the first account to sign in becomes the owner (`settings.owner`) and is the only one let in. The allow check runs before any token is stored.
+  - Signing in without the send scope is allowed, but `checkSendable` refuses until it's granted. Consent is forced only until a refresh token is stored.
+  - Top bar: Search is its own round button beside the nav pill (no ⌘K label; the shortcut still works), with the theme toggle and an account menu (Sign out) on the right.
+  - Tests: `tests/unit/session.test.ts`, sign-in callback cases in `tests/unit/gmail.test.ts`. Verified in a production build: gating, 401s, forged-cookie rejection, the Google redirect. A real Google sign-in wasn't exercised here.

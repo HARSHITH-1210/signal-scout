@@ -66,7 +66,7 @@ async function fetchThread(token: string, threadId: string): Promise<GmailThread
       throw new GmailError(`Couldn't reach Gmail (${redact(e instanceof Error ? e.message : String(e))}).`, "unavailable");
     },
   );
-  if (res.status === 401 || res.status === 403) throw new GmailError("Gmail refused the check. Reconnect Gmail in Sender profile.", "auth");
+  if (res.status === 401 || res.status === 403) throw new GmailError("Gmail refused the check. Sign out and sign in again.", "auth");
   if (res.status === 404) return { messages: [] };
   if (!res.ok) throw new GmailError(`Gmail couldn't return the thread (HTTP ${res.status}).`, "unavailable");
   const parsed = ThreadSchema.safeParse(await res.json().catch(() => null));
