@@ -6,7 +6,11 @@ import { InfoTip } from "@/components/ui/Tooltip";
 
 export const dynamic = "force-dynamic";
 
-export default function NewRunPage() {
+/** Discover links here with ?company=…&website=… to prefill the form; values are capped and still validated on submit. */
+export default async function NewRunPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams;
+  const one = (k: string, max: number) => (typeof params[k] === "string" ? (params[k] as string).trim().slice(0, max) : "");
+  const prefill = { company: one("company", 120), companyWebsite: one("website", 200) };
   const sender = getSenderProfile();
   const senderDocs = listDocuments("sender");
   const offeringCount = sender.sectors.reduce((n, s) => n + s.offerings.length, 0);
@@ -24,7 +28,7 @@ export default function NewRunPage() {
       </header>
 
       <div className="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <NewRunForm sectors={sender.sectors} />
+        <NewRunForm sectors={sender.sectors} prefill={prefill} />
 
         <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start">
           <section aria-labelledby="writing-as" className="t-card-inv p-5">

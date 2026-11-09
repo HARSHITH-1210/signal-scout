@@ -2,6 +2,7 @@ import type { IconName } from "../Icon";
 
 export const NAV_LINKS: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "Outreach", icon: "mail" },
+  { href: "/discover", label: "Discover", icon: "search" },
   { href: "/runs", label: "Runs", icon: "runs" },
   { href: "/runs/new", label: "New run", icon: "plus" },
   { href: "/contacts", label: "Contacts", icon: "contacts" },

@@ -578,6 +578,11 @@ export function setDepsFactory(factory: () => PipelineDeps) {
   queue().depsFactory = factory;
 }
 
+/** Providers for work outside a run (Discover). Goes through the same factory, so tests can substitute fakes. */
+export function currentDeps(): PipelineDeps {
+  return queue().depsFactory();
+}
+
 let pauseTimer: ReturnType<typeof setTimeout> | null = null;
 
 function pump() {

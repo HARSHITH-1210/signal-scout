@@ -39,7 +39,7 @@ const fromProspect = (p: ProspectInput): Values => ({
 type Mode = "single" | "list";
 
 
-export function NewRunForm({ sectors }: { sectors: Sector[] }) {
+export function NewRunForm({ sectors, prefill }: { sectors: Sector[]; prefill?: Partial<Values> }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("single");
   const [pitch, setPitchState] = useState<PitchSelection>({ auto: false, offeringIds: [] });
@@ -51,7 +51,7 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
   const hasOfferings = sectors.some((s) => s.offerings.length > 0);
   const pitchReady = !hasOfferings || pitch.auto || pitch.offeringIds.length > 0;
   const pitchBody = { autoPitch: pitch.auto, offeringIds: pitch.auto ? [] : pitch.offeringIds };
-  const [values, setValues] = useState<Values>(EMPTY);
+  const [values, setValues] = useState<Values>({ ...EMPTY, ...prefill });
   const [pdfs, setPdfs] = useState<StoredDocument[]>([]);
   const [csv, setCsv] = useState<CsvState | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
