@@ -78,7 +78,7 @@ Keys are read only on the server. They are never sent to the browser or written 
    - **Duplicate check.** If you researched the same prospect in the last 24 hours, you're offered that run instead of paying for the same research twice.
    - **Without a name**, research is about the company. The draft opens with "Hi there", never invents a name, and suggests who to send it to (e.g. "CFO or VP Finance").
    - **Vague input** (e.g. only a role, or a company name several firms share) leads to *Needs clarification* or *Not enough signal*, not a guess.
-3. **Watch the run.** The **accession ledger** on the left is the live pipeline diagram. The eight stages sit on a line that fills in as each completes; the running stage pulses, and the two exits (needs clarification, not enough signal) light up only when taken. A single status line announces progress to screen readers. It's driven by server-sent events that replay from the database, so refreshing or leaving and coming back loses nothing.
+3. **Watch the run.** The **pipeline** column on the left is the live diagram. The eight stages sit on a line that fills in as each completes; the running stage pulses, and the two exits (needs clarification, not enough signal) light up only when taken. A single status line announces progress to screen readers. It's driven by server-sent events that replay from the database, so refreshing or leaving and coming back loses nothing.
 4. **Review the outcome.**
    - **Ready for review.** The hook is "mounted" with its verbatim quote, a collection label (source, date, accession id, reliability) and a pinned **determination slip**. Every finding carries one too (verified, rejected or conflicting).
      - **The draft is structured:** a hook, an insight for their role, your value, and one ask, about 120–190 words, plus an optional P.S. drawn from a second verified finding.
@@ -134,7 +134,7 @@ validate → resolve identity ──ambiguous──▶ needs clarification ─�
 
 ### Stack and layout
 
-Next.js 16 (App Router, Node runtime), TypeScript (strict), Tailwind CSS 4, SQLite (`better-sqlite3`), `zod`, `@anthropic-ai/sdk` (structured outputs, server-side refusal fallback) or OpenRouter's chat completions API (strict JSON-schema output, routed only to providers that enforce it), Tavily REST API, Vitest.
+Next.js 16 (App Router, Node runtime), TypeScript (strict), Tailwind CSS 4, Motion (`motion/react`), `next-themes`, Outfit + Martian Mono, SQLite (`better-sqlite3`), `zod`, `@anthropic-ai/sdk` (structured outputs, server-side refusal fallback) or OpenRouter's chat completions API (strict JSON-schema output, routed only to providers that enforce it), Tavily REST API, Vitest.
 
 **About OpenRouter free models:** they work through the same pipeline and the same verification. A weaker model can't slip invented facts past the verbatim-quote check or the claim audit. In practice it produces more rejected findings and more "Not enough signal" results. The free tier allows 20 requests/minute and 50/day (1,000/day after a one-time $10 credit purchase). A full run uses about 5 requests, and a failed schema check can add one correction request.
 
@@ -302,7 +302,7 @@ Every external call goes through a **fallback chain** (details in [docs/RESILIEN
 
 - [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md): requirements traceability, architecture, decisions and assumptions.
 - [`CLAUDE.md`](CLAUDE.md): instructions and guardrails for AI agents working on this repo.
-- [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md): product brief and the Herbarium Accession design system (tokens, components, rules).
+- [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md): product brief and the Telemetry design system (light/dark tokens, components, motion, rules).
 - [`docs/EDGE_CASES_AND_RISK_ASSESSMENT.md`](docs/EDGE_CASES_AND_RISK_ASSESSMENT.md): the risk assessment and the status of each fix.
 - [`docs/DEMO_SCENARIOS.md`](docs/DEMO_SCENARIOS.md): reproducible demo and test scenarios.
 - [`docs/LIVE_TESTING_SETUP.md`](docs/LIVE_TESTING_SETUP.md): step-by-step guide to running against the real APIs.

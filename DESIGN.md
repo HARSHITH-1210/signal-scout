@@ -1,235 +1,166 @@
 ---
 name: Signal Scout
-description: Herbarium Accession. Every finding is a collected specimen with its collection label and determination slip.
+description: Telemetry. A focused SaaS dashboard in a race-telemetry voice. Near-black (or white) grounds, Outfit with Martian Mono labels, one cyan-to-lime gradient, and inverted cards. Dark is the reference; light is its inversion.
 colors:
-  rail: "#1f3b2d"
-  rail-strong: "#16291f"
-  rail-ink: "#dfe8dc"
-  rail-muted: "#9fb5a5"
-  board: "#e8eee6"
-  board-deep: "#dde5da"
-  paper: "#fbfbf7"
-  ink: "#1c2420"
-  ink-soft: "#46544b"
-  muted: "#56645b"
-  rule: "#cfd9cc"
-  rule-soft: "#e1e8de"
-  quote: "#eef2ea"
-  det: "#2c3e66"
-  det-soft: "#e4e9f3"
-  specimen: "#b3362b"
-  specimen-soft: "#f7e6e3"
-  ochre: "#7d5410"
-  ochre-soft: "#f5ecd8"
-  ok: "#2e6b43"
-  ok-soft: "#e3efe5"
+  canvas: { light: "#f7f7f9", dark: "#09090a" }
+  surface: { light: "#ffffff", dark: "#111113" }
+  subtle: { light: "#f2f2f4", dark: "#18181b" }
+  line: { light: "#e3e3e6", dark: "#232327" }
+  fg: { light: "#0d0d0f", dark: "#f2f2ef" }
+  fg-soft: { light: "#3a3a40", dark: "#d6d6da" }
+  fg-muted: { light: "#66666d", dark: "#8d8d93" }
+  info (verified): { light: "#007f9e", dark: "#00e0ff" }
+  ok: { light: "#3f7a00", dark: "#c6ff3d" }
+  warn: { light: "#9a5b00", dark: "#ffb547" }
+  danger: { light: "#c2372d", dark: "#ff7a6b" }
+  inverted card: { light: "#0d0d0f on light page", dark: "#f2f2ef on dark page" }
+gradients:
+  volt: { light: "linear-gradient(90deg, #0090b0, #3d5bff 45%, #4f8a00)", dark: "linear-gradient(90deg, #00e0ff, #5b8cff 45%, #c6ff3d)" }
 typography:
-  page-title:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "32px"
-    fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "-0.01em"
-  section-title:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "15px"
-    fontWeight: 700
-    lineHeight: 1.4
-  hook-claim:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "22px"
-    fontWeight: 700
-    lineHeight: 1.35
-  body:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "15px"
-    fontWeight: 400
-    lineHeight: 1.5
-  draft-body:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "16px"
-    fontWeight: 400
-    lineHeight: 1.65
-  accession:
-    fontFamily: "Spline Sans Mono, ui-monospace, monospace"
-    fontSize: "12px"
-    fontWeight: 400
-    lineHeight: 1.4
-  index-title:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "28px"
-    fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "-0.01em"
-  outcome-title:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "17px"
-    fontWeight: 700
-    lineHeight: 1.35
-  subtitle:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "16px"
-    fontWeight: 400
-    lineHeight: 1.5
-  small:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "14px"
-    fontWeight: 400
-    lineHeight: 1.45
-  secondary:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "13px"
-    fontWeight: 400
-    lineHeight: 1.45
-  rail-label:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "11px"
-    fontWeight: 400
-    lineHeight: 1.2
+  page-title: { fontFamily: "Outfit", fontSize: "26px", fontWeight: 600, letterSpacing: "-0.025em" }
+  section-title: { fontFamily: "Outfit", fontSize: "15px", fontWeight: 600, letterSpacing: "-0.01em" }
+  body: { fontFamily: "Outfit", fontSize: "14px", fontWeight: 400, lineHeight: 1.55 }
+  stat: { fontFamily: "Outfit", fontSize: "28px", fontWeight: 500, letterSpacing: "-0.03em" }
+  label: { fontFamily: "Martian Mono", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em" }
+  data: { fontFamily: "Martian Mono", fontSize: "11.5px" }
 rounded:
-  chip: "4px"
-  control: "8px"
-  panel: "12px"
-  pill: "9999px"
-spacing:
-  xs: "8px"
-  sm: "12px"
-  md: "20px"
-  lg: "24px"
-  xl: "32px"
-components:
-  button-primary:
-    backgroundColor: "{colors.rail}"
-    textColor: "#ffffff"
-    rounded: "{rounded.control}"
-    padding: "0 20px"
-    height: "44px"
-  button-primary-hover:
-    backgroundColor: "{colors.rail-strong}"
-  button-secondary:
-    backgroundColor: "transparent"
-    textColor: "{colors.rail}"
-    rounded: "{rounded.control}"
-    padding: "0 16px"
-    height: "44px"
-  panel:
-    backgroundColor: "{colors.paper}"
-    rounded: "{rounded.panel}"
-    padding: "20px"
-  input:
-    backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.control}"
-    padding: "10px 12px"
-  badge-verified:
-    backgroundColor: "{colors.det-soft}"
-    textColor: "{colors.det}"
-    rounded: "{rounded.pill}"
-    padding: "2px 10px"
-  nav-rail:
-    backgroundColor: "{colors.rail}"
-    textColor: "{colors.rail-muted}"
-    width: "84px"
+  card: "18-20px"
+  control: "12px (fields)"
+  pill: "9999px (buttons, tabs, nav, badges)"
+motion:
+  ease-out: "cubic-bezier(0.22, 1, 0.36, 1)"
+  spring-indicator: "stiffness 500, damping 35"
+  stagger: "50ms"
 ---
 
 # Design System: Signal Scout
 
 ## Overview
 
-**Herbarium Accession.** Signal Scout is a working research tool whose promise is that every fact in a draft traces back to a quote. The visual world borrows from herbarium specimen sheets: a botanical-green nav rail, a sage mounting-board ground, and label-paper panels. Each finding is "mounted" with a typed collection label (source, date, accession id, reliability) and a pinned **determination slip** that states the verdict: verified, rejected or conflicting.
+**Telemetry.** Signal Scout reads like a focused SaaS dashboard with a race-telemetry voice. It was chosen in November 2026 from four direction mockups (Monolith, Aurora, Prism, Telemetry), with the navbar's pill box borrowed from Aurora.
 
-It's an Operate surface, so the world contributes only type, palette, density and that one signature move. Navigation, forms, tables and buttons stay standard web controls. The live **accession ledger** (the pipeline diagram) is the second signature: the run's eight stages on a vertical line that fills in as each completes, with the two exits (needs clarification, not enough signal) as side tabs that light up only when taken.
+The look comes from a few elements:
+- **Type:** compact titles in Outfit, with uppercase Martian Mono labels for context lines, data and states.
+- **Gradient:** one cyan-to-blue-to-lime gradient ("volt"), spread across segmented tracks and used as a 2–3px top edge on featured cards.
+- **Inverted card:** a light card on dark pages (dark on light pages) for the thing to read or send.
 
-**Key characteristics**
-- Proof sits beside every claim: the verbatim quote, in mono on a quote-tinted field, directly under the claim it backs.
-- Stopping is a first-class outcome: amber and red outcome panels get the same weight as success.
-- One rhythm of label-paper panels on sage; borders, not shadows (the slip is the only lifted element).
+There are no oversized headings and no decorative washes.
 
-## Colors
+## Themes
 
-### Primary
-- **Rail green** (`#1f3b2d`): the nav rail, primary buttons, filled ledger spine. Hover deepens to `#16291f`.
+Dark is the reference design; light is its inversion.
+- **How it switches:** `next-themes` toggles `.dark` on `<html>` before paint, so there is no flash.
+- **App tokens** (`--canvas`, `--surface`, `--line`, `--fg*`, state colours) and the Telemetry tokens (`--t-*`: volt, pill box, inverted card) both live in `src/app/globals.css`.
+- **Inverted cards** (`.t-card-inv`) flip their state palette so tags stay readable in either theme.
 
-### Secondary
-- **Determination blue-black** (`#2c3e66`): verified slips, links, focus rings, the running stage. Tint `#e4e9f3`.
+## Colours
 
-### Tertiary
-- **Specimen red** (`#b3362b`): rejected findings, failures, destructive hover. Tint `#f7e6e3`.
-- **Ochre** (`#7d5410`): stale or attention states, clarification and not-enough-signal outcomes, warnings. Tint `#f5ecd8`. Darkened from `#b8862b` so text passes AA.
-- **Check green** (`#2e6b43`): completed stages, success copy. Tint `#e3efe5`.
-
-### Neutral
-- **Board** `#e8eee6` (page ground), **board-deep** `#dde5da` (neutral badges, status line), **paper** `#fbfbf7` (panels), **quote** `#eef2ea` (verbatim evidence field).
-- Text: **ink** `#1c2420`, **ink-soft** `#46544b`, **muted** `#56645b` (≥4.8:1 on every ground).
-- Rules: `#cfd9cc` panel borders, `#e1e8de` row dividers.
-
-### Named Rules
-- **The determination rule.** Blue-black means verified, red means rejected or failed, ochre means stale or needs attention. These colours never decorate.
-- **One accent per screen region.** The rail green carries actions; colour elsewhere always encodes state.
+- **State colours encode meaning only:** cyan is verified or info, lime is ok or sent, amber is attention or stale, coral is rejected or failed. Neutral states use `fg-muted`.
+- **The volt gradient** never fills large areas. It appears only on:
+  - top edges of featured cards
+  - track segments
+  - the brand bar
+  - one hero number per screen
+  - the on state of a switch
 
 ## Typography
 
-Atkinson Hyperlegible carries all UI and prose. It's a workhorse face built for legibility, which suits a tool read under demo pressure. Spline Sans Mono is used **only** for accession data: ids, dates, scores, domains, word counts and verbatim quotes, all with tabular figures.
-
-### Hierarchy
-A ten-step ramp: 11 / 12 / 13 / 14 / 15 / 16 / 17 / 22 / 28 / 32 px. No half-pixel sizes.
-- Run title 32px/700 and index-page titles 28px/700, tracking -0.01em, balanced.
-- Hook claim 22px/700, at most 38ch. Outcome titles 17px/700.
-- Section title 15px/700. Body 15px/400, 1.5. Draft body and subtitles 16px, 1.65 for the draft.
-- Small UI 14px, secondary text 13px, rail labels 11px.
-- Accession data 11–13px mono.
-
-### Named Rules
-- **Mono is evidence.** A string in mono is either data or a verbatim quote. Never use it as decoration.
+- **Outfit** for UI and prose. Titles are 26px semibold, section titles 15px semibold, body 14px.
+- **Martian Mono** (`.acc`, `.t-mono`, `.t-label`) for labels, ids, dates, counts and evidence quotes. Labels are 11px, uppercase, with 0.12em tracking.
 
 ## Layout
 
-- A shell with an 84px rail on desktop, collapsing to a sticky top bar under `lg`. Content max width 1440px, gutters 16px (mobile) and 32px (desktop).
-- Run view: `290px | 1fr | 420px` at `xl` (ledger, specimen, draft), dropping to `290px | 1fr` at `lg` with the draft after the outcome, and to one column on mobile.
-- Dashboard: a single dense table (status, live stage, hook, verified / sources, active time, started). It scrolls horizontally inside its panel on narrow screens.
-- Panels are spaced 24px apart, with 20px padding.
-
-## Elevation & Depth
-
-Flat by default: 1px rule borders define panels. The one exception is the **determination slip**, a pinned label with a soft offset shadow (`0 6px 14px -6px rgb(31 59 45 / 0.28)`) and a 2° tilt on the hook.
-
-## Shapes
-
-Panels 12px, controls and focus rings 8px, slips and chips 2–4px, badges and filter chips fully rounded. No other radii.
+- **Navbar:** centred and sticky (`TopNav`). It's one glass pill holding the brand and tabs, with a sliding active pill. ⌘K and the theme toggle sit on the right, and below the pill on small screens.
+- **Page header:** every page opens with `PageHeader`: a title, a mono context line (`label`), one optional sentence, and actions on the right.
+- **Dashboards** (`/`): a row of compact stat cards, a slim funnel track, two-up cards, and charts.
+- **Forms** (`/runs/new`): numbered sections (`TSection`) in one card, a pill mode switch, and a floating pill submit bar.
+- **Run view:** pipeline column, outcome and hook, evidence tabs, and a sticky draft column. The draft editor is mounted once.
 
 ## Components
 
-### Buttons
-Primary is rail green with white text and a 44px minimum height. Secondary is a rail-green outline. Tertiary is a text button in blue-black. Disabled is 45% opacity with a not-allowed cursor.
+| Group | Component | What it is |
+|---|---|---|
+| Controls | `Button` / `buttonClass` | Pills. `primary` is the inverted pill (light on dark, dark with lime on light). `secondary` is outlined; also `ghost` and `danger`. |
+| Controls | `T_PILL*` (`ui/telemetry.tsx`) | The same pills for raw markup. |
+| Status | `Badge` | Dot and a mono uppercase word, on the state's soft ground. |
+| Navigation | `Tabs`, `SegmentedControl` | The Aurora pill box, with the active pill sliding on a shared `layoutId`. |
+| Forms | Fields (`Field.tsx`, `TField`/`TTextArea`) | Mono uppercase label, 12px-radius input, cyan focus ring. |
+| Surfaces | `.t-card`, `.t-card-inv`, `.t-volt-bg`, `.t-seg`, `.t-rail` | Telemetry surfaces, gradient, segment slices and the horizontal rail. |
+| Unchanged | `Dialog`/`useConfirm`, `Toast`, `Popover`, `CommandPalette`, `Collapsible`, `NumberTicker` | Still in use. Sending email always goes through the confirmation dialog. |
 
-### Chips
-Status badges are pill-shaped tints with bold 12px text. A live dot pulses while a run is active. Filter chips use `aria-pressed`, and the selected one fills with rail green.
+## Motion
 
-### Cards / Containers
-The label-paper panel is the only container. Outcome panels (in progress, clarification, not enough signal, failed) use the same panel with a state-tinted border and title.
-
-### Inputs / Fields
-A visible label above every control, a paper background, a rule border, and a blue-black focus ring at 30%. Errors in specimen red sit under the field and are linked with `aria-describedby`. The drop zone is a labelled file input (click, keyboard, or drag) with a 44px "Choose file" control.
-
-### Navigation
-The rail holds an icon and label per item. The active item is a darker green tile with white text. On small screens it becomes a horizontal bar.
-
-### Determination slip (signature)
-A small pinned label in mono: an uppercase verdict ("det. verified") over a one-line basis ("quote matched in S5 + 1 more"). It's pinned to the top edge of every finding card and tilted 2° on the hook.
-
-### Accession ledger (signature)
-The pipeline as a vertical spine with 22px stage nodes. A node's state sets its fill and glyph (number, check, alert, cross, dash). The running stage carries a pulse ring, and the next spine segment flows. A single `role="status"` line announces "Stage n of 8: …". Exit tabs appear only when an exit is taken (or in preview).
+Motion is from `motion/react` and respects `MotionConfig reducedMotion="user"`.
+- **Easing:** ease-out `[0.22, 1, 0.36, 1]`. Indicators use a spring (500/35).
+- **What moves:** pages rise in, lists stagger, and numbers tick up. Track segments and bars grow from zero once. The run title reveals from a mask.
+- **What doesn't:** data refreshes and typing are never animated.
 
 ## Do's and Don'ts
 
-### Do:
-- Put the verbatim quote directly under every claim, in mono on the quote field.
-- Label inference as inference ("Why it matters, our inference, not a fact").
-- Use the state colours only to encode state.
-- Keep every control standard and keyboard-reachable, with a 44px target for primary actions.
+### Do
+- Use the tokens and primitives.
+- Keep one primary (inverted) pill per region.
+- Put context in mono labels.
+- Write disabled reasons as text.
 
-### Don't:
-- Don't add eyebrows or kickers above headings. Metadata goes under the title.
-- Don't use glyph characters as icons. The authored 16px SVG set (1.6 stroke) is the icon family.
-- Don't add shadows to panels. Only the determination slip lifts.
-- Don't draw grid or stripe textures on the board ground; it's a mounting board, not a measuring surface.
+### Don't
+- Don't use oversized display type, gradient washes, raw hex in components, or state colours as decoration.
+- Don't use `window.confirm`.
+
+## UI and UX review (November 2026)
+
+The redesign came from a senior-PM review that listed 25 UI and 25 UX improvements. All of them are implemented.
+
+**UI**
+1. Top tab navigation, sticky and blurred.
+2. Breadcrumbs on the run page.
+3. Obsidian primary button with a sheen.
+4. One `Button` primitive.
+5. Semantic tokens with no hardcoded white.
+6. Geist with tight headings.
+7. Hairline cards.
+8. Stat tiles with a number ticker and spotlight.
+9. Hook card with a gradient border.
+10. Finding cards with domain chips.
+11. Compact freshness dot.
+12. Softer pipeline stepper.
+13. Dot-and-label status badges.
+14. Runs as a link grid with relative times.
+15. Stacked rows on mobile.
+16. New-run hero heading and pitch picker in a popover.
+17. "Before you send" checklist.
+18. Document-style draft editor.
+19. Evidence tabs.
+20. Empty states.
+21. Skeletons.
+22. Extended icon set.
+23. Settings sections and a floating save bar.
+24. Toasts.
+25. One accent focus ring.
+
+**UX**
+1. ⌘K command palette.
+2. Draft shortcuts (E, ⌘S, ⌘↵, which still confirms before sending).
+3. Styled confirmation dialogs.
+4. Loading, error and not-found routes.
+5. Page enter motion.
+6. Current state first on mobile, with a progress pill.
+7. Staggered findings.
+8. Live narration in a status region.
+9. A single draft editor mount.
+10. Unsaved-edit guards.
+11. Blockers ordered first, with the fix inline.
+12. Sticky action bar with an overflow menu.
+13. A diff of what an AI rewrite changed.
+14. Collapsible audit and version timeline.
+15. One-prospect and Import-a-list tabs with a sticky submit.
+16. Accessible pitch popover.
+17. Keyboard-reachable runs rows (↑/↓, `/` to search).
+18. Saved views kept in the URL.
+19. Ticking relative times.
+20. "Needs your action" first, system status collapsed.
+21. Floating save bar with ⌘S.
+22. Contacts as editable lists with a match/note preview and text mode.
+23. Copy buttons for the email and quotes.
+24. Theme toggle in the bar and the palette, with no flash.
+25. Reduced motion, 44px targets and focus restore.

@@ -8,20 +8,20 @@ interface FieldProps {
 }
 
 const control = (error?: string) =>
-  `mt-1.5 block w-full rounded-lg border bg-paper px-3 py-2.5 text-[15px] text-ink placeholder:text-muted/80 transition-colors focus:outline-none focus:ring-2 focus:ring-det/30 ${
-    error ? "border-specimen" : "border-rule hover:border-muted/60 focus:border-det"
+  `mt-2 block w-full rounded-xl border bg-surface px-3.5 py-2.5 text-[14px] text-fg placeholder:text-fg-muted/60 transition-[border-color,box-shadow] duration-150 focus:outline-none focus:ring-4 focus:ring-accent/15 ${
+    error ? "border-danger" : "border-line hover:border-fg-muted focus:border-accent"
   }`;
 
 function Message({ name, hint, error }: { name: string; hint?: string; error?: string }) {
   if (error)
     return (
-      <span id={`${name}-error`} className="mt-1.5 block text-sm text-specimen">
+      <span id={`${name}-error`} className="t-mono mt-1.5 block text-[11px] text-danger">
         {error}
       </span>
     );
   if (hint)
     return (
-      <span id={`${name}-hint`} className="mt-1.5 block text-sm text-muted">
+      <span id={`${name}-hint`} className="mt-1.5 block text-[12px] text-fg-muted">
         {hint}
       </span>
     );
@@ -31,7 +31,7 @@ function Message({ name, hint, error }: { name: string; hint?: string; error?: s
 export function TextField({ label, name, hint, error, ...rest }: FieldProps & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="block text-sm">
-      <span className="font-bold text-ink">{label}</span>
+      <span className="t-label">{label}</span>
       <input
         name={name}
         aria-invalid={Boolean(error)}
@@ -47,7 +47,7 @@ export function TextField({ label, name, hint, error, ...rest }: FieldProps & In
 export function TextArea({ label, name, hint, error, ...rest }: FieldProps & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <label className="block text-sm">
-      <span className="font-bold text-ink">{label}</span>
+      <span className="t-label">{label}</span>
       <textarea
         name={name}
         aria-invalid={Boolean(error)}
@@ -60,13 +60,13 @@ export function TextArea({ label, name, hint, error, ...rest }: FieldProps & Tex
   );
 }
 
-/** A label-paper panel: the one container in the system. */
+/** A bordered surface panel: the one container in the system. */
 export function Panel({ title, aside, children, className = "" }: { title?: string; aside?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
-    <section className={`rounded-[var(--radius-panel)] border border-rule bg-paper p-5 ${className}`}>
+    <section className={`rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6 ${className}`}>
       {(title || aside) && (
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-          {title && <h2 className="text-[15px] font-bold">{title}</h2>}
+          {title && <h2 className="t-label">{title}</h2>}
           {aside}
         </div>
       )}

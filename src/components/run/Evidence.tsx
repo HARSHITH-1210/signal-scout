@@ -1,68 +1,88 @@
+"use client";
+
+import { motion } from "motion/react";
 import type { Hook, Identity, QueryLogEntry, Signal, Source } from "@/lib/types";
 import { formatDate, FRESHNESS_LABEL, signalTypeLabel, type Tone } from "@/lib/ui/format";
+import { EASE_OUT, cn } from "@/lib/ui/cn";
 import { Badge } from "../Badge";
 import { Panel } from "../Field";
 import { Icon } from "../Icon";
+import { CopyButton } from "../ui/CopyButton";
+import { Collapsible, Stagger, StaggerItem } from "../ui/Motion";
 
 const FRESHNESS_TONE: Record<Signal["freshness"], Tone> = { fresh: "ok", aging: "neutral", stale: "warn", unknown: "neutral" };
+const FRESHNESS_DOT: Record<Signal["freshness"], string> = { fresh: "bg-ok", aging: "bg-fg-muted", stale: "bg-warn", unknown: "bg-line" };
 
 const isDocument = (s: Source | undefined) => s?.origin === "prospect_document";
 
 export function SourceLink({ source }: { source: Source | undefined }) {
-  if (!source) return <span className="text-specimen">Source missing</span>;
+  if (!source) return <span className="text-danger">Source missing</span>;
   if (isDocument(source))
     return (
-      <span className="inline-flex items-center gap-1 font-bold text-rail">
+      <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-1.5 py-0.5 text-[12px] font-medium text-fg-soft">
         <Icon name="file" className="h-3.5 w-3.5" />
-        From your document
+        Your document
       </span>
     );
   return (
-    <a href={source.url} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1 font-bold text-det hover:underline">
-      {source.domain}
-      <Icon name="external" className="h-3 w-3" />
+    <a
+      href={source.url}
+      target="_blank"
+      rel="noopener noreferrer nofollow"
+      title={source.title}
+      className="group inline-flex max-w-full items-center gap-1.5 rounded-md border border-line bg-surface py-0.5 pl-0.5 pr-1.5 text-[12px] font-medium text-fg-soft transition-colors hover:border-fg-muted/40 hover:text-fg"
+    >
+      <span aria-hidden className="grid h-4 w-4 shrink-0 place-items-center rounded bg-subtle text-[10px] font-semibold uppercase text-fg-muted">
+        {source.domain.replace(/^www\./, "").charAt(0)}
+      </span>
+      <span className="truncate">{source.domain}</span>
+      <Icon name="external" className="h-3 w-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-100" />
       <span className="sr-only">(opens in a new tab)</span>
     </a>
   );
 }
 
-/** The determination slip pinned to a finding: the verdict, stated plainly. */
-function Slip({ signal, className = "" }: { signal: Signal; className?: string }) {
-  const tone =
-    signal.status === "verified" ? "text-det" : signal.status === "conflicting" ? "text-specimen" : "text-specimen";
-  const word = signal.status === "verified" ? "det. verified" : signal.status === "conflicting" ? "det. conflicting" : "det. rejected";
+/** Compact freshness: a coloured dot and the short word; the full meaning is in the tooltip. */
+function Freshness({ signal, source }: { signal: Signal; source: Source | undefined }) {
+  const date = formatDate(signal.eventDate ?? source?.publishedDate ?? null);
   return (
-    <span className={`slip inline-block rounded-sm px-2 py-1 text-[11px] leading-tight ${tone} ${className}`}>
-      <strong className="block text-[12px] uppercase tracking-wide">{word}</strong>
-      {signal.status === "verified"
-        ? `quote matched in ${signal.sourceId}${signal.corroboratingSourceIds.length ? ` + ${signal.corroboratingSourceIds.length} more` : ""}`
-        : signal.status === "conflicting"
-          ? "sources disagree"
-          : "not used"}
+    <span className="inline-flex items-center gap-1.5 text-[12px] text-fg-muted" title={`${FRESHNESS_LABEL[signal.freshness]} · ${date}`}>
+      <span aria-hidden className={cn("h-1.5 w-1.5 rounded-full", FRESHNESS_DOT[signal.freshness])} />
+      <span className="sr-only">Freshness: </span>
+      {FRESHNESS_LABEL[signal.freshness]}
+      <span className="acc">· {date}</span>
     </span>
   );
 }
 
-/** The four-cell collection label under a mounted finding. */
-function CollectionLabel({ signal, source }: { signal: Signal; source: Source | undefined }) {
-  const cells: [string, React.ReactNode][] = [
-    ["Collected from", <SourceLink key="s" source={source} />],
-    ["Date", <span key="d">{formatDate(signal.eventDate ?? source?.publishedDate ?? null)}</span>],
-    ["Accession", <span key="a">{signal.sourceId} / {signal.id}</span>],
-    ["Reliability", <span key="r">{source?.reliabilityLabel ?? "unknown"}</span>],
-  ];
+/** The verdict on a finding, stated plainly. */
+function Verdict({ signal }: { signal: Signal }) {
+  const verified = signal.status === "verified";
   return (
-    <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-md border border-ink/70 2xl:grid-cols-4">
-      {cells.map(([label, value], i) => (
-        <div
-          key={label}
-          className={`min-w-0 px-3 py-2 ${i % 2 === 0 ? "border-r border-ink/20" : ""} ${i < 2 ? "border-b border-ink/20 2xl:border-b-0" : ""} 2xl:border-r 2xl:last:border-r-0`}
-        >
-          <dt className="acc text-[11px] uppercase text-muted">{label}</dt>
-          <dd className="acc mt-0.5 text-[13px] break-words text-ink">{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", verified ? "bg-info-soft text-info" : "bg-danger-soft text-danger")}>
+      <Icon name={verified ? "check" : signal.status === "conflicting" ? "alert" : "cross"} className="h-3 w-3" />
+      {verified
+        ? `Verified in ${signal.sourceId}${signal.corroboratingSourceIds.length ? ` +${signal.corroboratingSourceIds.length}` : ""}`
+        : signal.status === "conflicting"
+          ? "Sources disagree"
+          : "Rejected, not used"}
+    </span>
+  );
+}
+
+function Quote({ text, struck = false }: { text: string; struck?: boolean }) {
+  return (
+    <figure className="group/quote relative mt-3">
+      <blockquote
+        className={cn(
+          "acc rounded-lg border-l-2 py-2.5 pl-3.5 pr-9 text-[12.5px] leading-relaxed",
+          struck ? "border-line bg-transparent text-fg-muted line-through decoration-fg-muted/50" : "border-obsidian/70 bg-quote text-fg",
+        )}
+      >
+        “{text}”
+      </blockquote>
+      {!struck && <CopyButton text={text} label="Copy quote" className="absolute right-1.5 top-1.5 opacity-0 focus-visible:opacity-100 group-hover/quote:opacity-100" />}
+    </figure>
   );
 }
 
@@ -70,48 +90,72 @@ export function HookSpecimen({ hook, signals, sources }: { hook: Hook; signals: 
   const signal = signals.find((s) => s.id === hook.signalId);
   if (!signal) return null;
   const source = sources.find((s) => s.id === signal.sourceId);
-  const alternatives = signals
-    .filter((s) => hook.alternativeSignalIds.includes(s.id))
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const alternatives = signals.filter((s) => hook.alternativeSignalIds.includes(s.id)).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   return (
-    <section aria-labelledby="hook-title" className="relative rounded-[var(--radius-panel)] border border-rule bg-paper px-5 pt-6 pb-5 sm:px-7">
-      <Slip signal={signal} className="absolute -top-3 right-5 rotate-[2deg]" />
-      <p className="text-[13px] text-muted">
-        <span id="hook-title" className="font-bold text-ink-soft">Selected hook</span>
-        {"  "}
-        {signalTypeLabel(signal.type)}, about the {signal.about}
-      </p>
-      <p className="mt-2 max-w-[38ch] text-[22px] font-bold leading-snug text-balance">{signal.claim}</p>
-      {signal.statusReason && <p className="mt-1 text-[13px] text-muted">{signal.statusReason}</p>}
-      <blockquote className="acc mt-4 rounded-lg bg-quote px-4 py-3 text-[13px] leading-relaxed text-ink">“{signal.evidenceQuote}”</blockquote>
-      <CollectionLabel signal={signal} source={source} />
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-        <Badge tone={FRESHNESS_TONE[signal.freshness]}>{FRESHNESS_LABEL[signal.freshness]}</Badge>
-        <span className="acc text-muted">score {hook.score.toFixed(2)}</span>
-      </div>
-      <p className="mt-3 text-[14px] text-ink-soft">
-        <span className="font-bold text-ink">Why it matters</span> <span className="text-muted">(our inference, not a fact)</span>: {hook.whyItMatters}
-      </p>
-      {hook.staleCaveat && (
-        <p className="mt-3 rounded-lg bg-ochre-soft px-3 py-2 text-sm text-ochre">
-          This happened more than a year ago. The draft must refer to it with its date, never as recent news.
+    <section aria-labelledby="hook-title" className="relative overflow-hidden rounded-[var(--radius-panel)] border border-line bg-surface">
+      <span aria-hidden className="t-volt-bg absolute inset-x-0 top-0 h-[3px]" />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5 sm:px-6">
+        <p className="t-label flex flex-wrap items-center gap-x-2">
+          <span id="hook-title" className="text-fg">
+            The hook
+          </span>
+          <span>
+            · {signalTypeLabel(signal.type)} · about the {signal.about}
+          </span>
         </p>
-      )}
-      {alternatives.length > 0 && (
-        <div className="mt-5">
-          <p className="text-[13px] font-bold text-ink-soft">Runners-up</p>
-          <ul className="mt-2 grid gap-2 sm:grid-cols-3">
-            {alternatives.map((a) => (
-              <li key={a.id} className="rounded-lg border border-rule px-3 py-2 text-[13px]">
-                <span className="acc block text-muted">
-                  {a.id} {signalTypeLabel(a.type).toLowerCase()} {a.score?.toFixed(2)}
-                </span>
-                <span className="line-clamp-2">{a.claim}</span>
-              </li>
-            ))}
-          </ul>
+        <span className="t-label">
+          score <span className="t-volt-text text-[13px] font-medium">{hook.score.toFixed(2)}</span>
+        </span>
+      </div>
+      <div className="px-5 pb-5 pt-5 sm:px-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <Verdict signal={signal} />
+          <Badge tone={FRESHNESS_TONE[signal.freshness]}>{FRESHNESS_LABEL[signal.freshness]}</Badge>
         </div>
-      )}
+        <p className="mt-3 max-w-[52ch] text-[19px] font-medium leading-snug tracking-[-0.015em] text-balance">{signal.claim}</p>
+        {signal.statusReason && <p className="mt-1 text-[13px] text-fg-muted">{signal.statusReason}</p>}
+        <Quote text={signal.evidenceQuote} />
+        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-[13px] sm:grid-cols-4">
+          {(
+            [
+              ["Source", <SourceLink key="s" source={source} />],
+              ["Date", <span key="d" className="acc">{formatDate(signal.eventDate ?? source?.publishedDate ?? null)}</span>],
+              ["Reference", <span key="a" className="acc">{signal.sourceId} / {signal.id}</span>],
+              ["Reliability", <span key="r">{source?.reliabilityLabel ?? "unknown"}</span>],
+            ] as [string, React.ReactNode][]
+          ).map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-[11px] font-medium uppercase tracking-wider text-fg-muted">{label}</dt>
+              <dd className="mt-1 min-w-0 break-words text-fg">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-5 rounded-xl border border-line-soft bg-subtle/50 px-4 py-3 text-sm text-fg-soft">
+          <span className="font-medium text-fg">Why it matters</span> <span className="text-[12px] text-fg-muted">(our inference, not a fact)</span>
+          <p className="mt-1">{hook.whyItMatters}</p>
+        </div>
+        {hook.staleCaveat && (
+          <p className="mt-3 flex gap-2 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+            <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" />
+            This happened more than a year ago. The draft must refer to it with its date, never as recent news.
+          </p>
+        )}
+        {alternatives.length > 0 && (
+          <div className="mt-5">
+            <p className="text-[12px] font-medium uppercase tracking-wider text-fg-muted">Runners-up</p>
+            <Stagger className="mt-2 grid gap-2 sm:grid-cols-3">
+              {alternatives.map((a) => (
+                <StaggerItem key={a.id} className="rounded-lg border border-line px-3 py-2.5 text-[13px] transition-colors hover:border-fg-muted/40">
+                  <span className="acc block text-fg-muted">
+                    {signalTypeLabel(a.type)} · {a.score?.toFixed(2)}
+                  </span>
+                  <span className="mt-0.5 line-clamp-2">{a.claim}</span>
+                </StaggerItem>
+              ))}
+            </Stagger>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -119,23 +163,25 @@ export function HookSpecimen({ hook, signals, sources }: { hook: Hook; signals: 
 function FindingCard({ signal, source }: { signal: Signal; source: Source | undefined }) {
   const verified = signal.status === "verified";
   return (
-    <li className={`relative rounded-lg border px-4 pt-5 pb-3 ${verified ? "border-rule bg-paper" : signal.status === "conflicting" ? "border-specimen/30 bg-specimen-soft/40" : "border-rule-soft bg-board/40"}`}>
-      <Slip signal={signal} className="absolute -top-2.5 right-3" />
-      <p className="acc text-muted">
-        {signal.id} {signalTypeLabel(signal.type).toLowerCase()}
-      </p>
-      <p className={`mt-1 text-[15px] leading-snug ${verified ? "text-ink" : "text-ink-soft"}`}>{signal.claim}</p>
-      <p className={`acc mt-2 text-[13px] leading-relaxed ${verified ? "rounded bg-quote px-2 py-1.5 text-ink" : signal.status === "rejected" ? "text-muted line-through decoration-muted/50" : "text-ink-soft"}`}>
-        “{signal.evidenceQuote}”
-      </p>
-      {signal.statusReason && <p className={`mt-1.5 text-[13px] ${verified ? "text-muted" : signal.status === "conflicting" ? "text-specimen" : "text-ochre"}`}>{signal.statusReason}</p>}
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
-        <SourceLink source={source} />
-        <span className="acc">{formatDate(signal.eventDate ?? source?.publishedDate ?? null)}</span>
-        <Badge tone={FRESHNESS_TONE[signal.freshness]}>{FRESHNESS_LABEL[signal.freshness]}</Badge>
-        {signal.score !== null && <span className="acc">score {signal.score.toFixed(2)}</span>}
+    <div
+      className={cn(
+        "h-full rounded-xl border p-4 transition-[border-color,box-shadow] duration-200",
+        verified ? "border-line bg-surface hover:border-fg-muted/30 hover:shadow-[0_4px_20px_-10px_rgb(0_0_0/0.2)]" : signal.status === "conflicting" ? "border-danger/25 bg-danger-soft/40" : "border-line-soft bg-subtle/40",
+      )}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[12px] font-medium text-fg-muted">{signalTypeLabel(signal.type)}</span>
+        <Verdict signal={signal} />
       </div>
-    </li>
+      <p className={cn("mt-2 text-[15px] leading-snug", verified ? "text-fg" : "text-fg-soft")}>{signal.claim}</p>
+      <Quote text={signal.evidenceQuote} struck={signal.status === "rejected"} />
+      {signal.statusReason && <p className={cn("mt-2 text-[13px]", verified ? "text-fg-muted" : signal.status === "conflicting" ? "text-danger" : "text-warn")}>{signal.statusReason}</p>}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <SourceLink source={source} />
+        <Freshness signal={signal} source={source} />
+        {signal.score !== null && <span className="acc text-fg-muted">score {signal.score.toFixed(2)}</span>}
+      </div>
+    </div>
   );
 }
 
@@ -145,80 +191,65 @@ export function FindingsPanel({ signals, sources }: { signals: Signal[]; sources
   const sorted = [...signals].sort((a, b) => order[a.status] - order[b.status] || (b.score ?? 0) - (a.score ?? 0));
   const count = (s: Signal["status"]) => signals.filter((x) => x.status === s).length;
   return (
-    <Panel
-      title={`Findings (${signals.length})`}
-      aside={
-        <span className="flex flex-wrap gap-1.5">
-          <Badge tone="info">{count("verified")} verified</Badge>
-          {count("conflicting") > 0 && <Badge tone="bad">{count("conflicting")} conflicting</Badge>}
-          {count("rejected") > 0 && <Badge tone="neutral">{count("rejected")} rejected</Badge>}
-        </span>
-      }
-    >
-      <p className="-mt-2 mb-4 text-[13px] text-muted">Every quote is matched word for word against the page or document it came from. Struck-through quotes failed and are never used.</p>
-      {signals.length === 0 ? (
-        <p className="text-sm text-muted">No findings were extracted from the sources.</p>
-      ) : (
-        <ul className="grid gap-5 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-          {sorted.map((s) => (
-            <FindingCard key={s.id} signal={s} source={byId.get(s.sourceId)} />
-          ))}
-        </ul>
-      )}
-    </Panel>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-1.5">
+        <Badge tone="info">{count("verified")} verified</Badge>
+        {count("conflicting") > 0 && <Badge tone="bad">{count("conflicting")} conflicting</Badge>}
+        {count("rejected") > 0 && <Badge tone="neutral">{count("rejected")} rejected</Badge>}
+        <p className="basis-full pt-1 text-[13px] text-fg-muted">Every quote is matched word for word against the page or document it came from. Struck-through quotes failed and are never used.</p>
+      </div>
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+        {sorted.map((s, i) => (
+          <motion.li key={s.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: EASE_OUT, delay: Math.min(i, 8) * 0.04 }}>
+            <FindingCard signal={s} source={byId.get(s.sourceId)} />
+          </motion.li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
 export function SourcesPanel({ sources, log }: { sources: Source[]; log: QueryLogEntry[] }) {
   return (
-    <Panel title={`Sources (${sources.length})`}>
+    <Panel>
       {sources.length === 0 ? (
-        <p className="text-sm text-muted">No sources were collected.</p>
+        <p className="text-sm text-fg-muted">No sources were collected.</p>
       ) : (
-        <div className="-mx-1 overflow-x-auto">
-          <table className="w-full min-w-[480px] table-fixed text-left text-[13px]">
-            <thead className="text-muted">
-              <tr className="border-b border-rule">
-                <th className="w-10 px-1 py-2 font-bold">ID</th>
-                <th className="px-1 py-2 font-bold">Title</th>
-                <th className="w-[34%] px-1 py-2 font-bold">From</th>
-                <th className="w-24 px-1 py-2 font-bold">Published</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sources.map((s) => (
-                <tr key={s.id} className="border-b border-rule-soft last:border-0">
-                  <td className="acc px-1 py-2 text-muted">{s.id}</td>
-                  <td className="truncate px-1 py-2" title={s.title}>
-                    {isDocument(s) ? s.title : (
-                      <a href={s.url} target="_blank" rel="noopener noreferrer nofollow" className="hover:text-det hover:underline">
-                        {s.title}
-                      </a>
-                    )}
-                  </td>
-                  <td className="truncate px-1 py-2">
-                    {s.suspicious ? <span className="font-bold text-specimen">Instructs AI; ignored</span> : <span className="text-ink-soft">{isDocument(s) ? "Your document" : s.domain}</span>}
-                  </td>
-                  <td className="acc px-1 py-2 text-muted">{s.publishedDate ? formatDate(s.publishedDate) : "no date"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="-mx-2 divide-y divide-line-soft">
+          {sources.map((s) => (
+            <li key={s.id} className="grid grid-cols-[36px_minmax(0,1fr)] gap-x-2 rounded-lg px-2 py-2.5 sm:grid-cols-[36px_minmax(0,1fr)_auto] sm:items-center">
+              <span className="acc pt-0.5 text-fg-muted">{s.id}</span>
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-medium" title={s.title}>
+                  {isDocument(s) ? (
+                    s.title
+                  ) : (
+                    <a href={s.url} target="_blank" rel="noopener noreferrer nofollow" className="hover:underline">
+                      {s.title}
+                    </a>
+                  )}
+                </p>
+                <p className="truncate text-[12px]">
+                  {s.suspicious ? <span className="font-medium text-danger">Instructs AI; ignored</span> : <span className="text-fg-muted">{isDocument(s) ? "Your document" : s.domain}</span>}
+                </p>
+              </div>
+              <span className="acc col-start-2 text-fg-muted sm:col-start-auto">{s.publishedDate ? formatDate(s.publishedDate) : "no date"}</span>
+            </li>
+          ))}
+        </ul>
       )}
       {log.length > 0 && (
-        <details className="mt-4 text-sm">
-          <summary className="cursor-pointer text-ink-soft hover:text-ink">Searches run ({log.length})</summary>
-          <ul className="mt-2 space-y-1 text-[13px]">
+        <Collapsible className="mt-3 border-t border-line-soft pt-2" title={<span className="text-fg-soft">Searches run ({log.length})</span>}>
+          <ul className="space-y-1 text-[13px]">
             {log.map((entry, i) => (
-              <li key={i} className={entry.error ? "text-specimen" : "text-ink-soft"}>
-                <span className="font-bold">{entry.category}</span>: “{entry.query}”: {entry.error ? `failed (${entry.error})` : `${entry.resultCount} result(s)`}
+              <li key={i} className={entry.error ? "text-danger" : "text-fg-soft"}>
+                <span className="font-medium">{entry.category}</span>: “{entry.query}”: {entry.error ? `failed (${entry.error})` : `${entry.resultCount} result(s)`}
               </li>
             ))}
           </ul>
-        </details>
+        </Collapsible>
       )}
-      <p className="mt-3 text-[13px] text-muted">
+      <p className="mt-3 text-[13px] text-fg-muted">
         Evidence is a snapshot captured {sources[0]?.fetchedAt ? `on ${formatDate(sources[0].fetchedAt)}` : "at research time"}. A live page may have changed since.
       </p>
     </Panel>
@@ -241,21 +272,21 @@ export function IdentityPanel({ identity }: { identity: Identity }) {
     <Panel title="Identity" aside={<Badge tone={tone}>{label}</Badge>}>
       {identity.resolvedName || identity.resolvedCompany ? (
         <p className="text-[15px]">
-          <span className="font-bold">{identity.resolvedName ?? "No specific person"}</span>
+          <span className="font-medium">{identity.resolvedName ?? "No specific person"}</span>
           {identity.resolvedRole ? `, ${identity.resolvedRole}` : ""}
           {identity.resolvedCompany ? ` at ${identity.resolvedCompany}` : ""}
-          {identity.companyDomain && <span className="acc ml-2 text-muted">{identity.companyDomain}</span>}
+          {identity.companyDomain && <span className="acc ml-2 text-fg-muted">{identity.companyDomain}</span>}
         </p>
       ) : null}
-      <p className="mt-1 text-sm text-ink-soft">{identity.reasoning}</p>
+      <p className="mt-1 text-sm text-fg-soft">{identity.reasoning}</p>
       {identity.evidenceUrls.length > 0 && (
         <ul className="mt-2 space-y-0.5 text-sm">
           {identity.evidenceUrls.map((url) => (
             <li key={url} className="min-w-0 truncate">
               {url.startsWith("upload://") ? (
-                <span className="text-rail">Your document: {decodeURIComponent(url.slice(9))}</span>
+                <span className="text-fg-soft">Your document: {decodeURIComponent(url.slice(9))}</span>
               ) : (
-                <a href={url} target="_blank" rel="noopener noreferrer nofollow" className="acc text-det hover:underline">
+                <a href={url} target="_blank" rel="noopener noreferrer nofollow" className="acc text-info hover:underline">
                   {url}
                 </a>
               )}
@@ -270,11 +301,11 @@ export function IdentityPanel({ identity }: { identity: Identity }) {
 export function LimitationsPanel({ limitations }: { limitations: string[] }) {
   if (limitations.length === 0) return null;
   return (
-    <Panel title="What this research couldn't establish">
-      <ul className="space-y-1.5 text-sm text-ink-soft">
+    <Panel title="What this research couldn't establish" className="border-warn/20">
+      <ul className="space-y-1.5 text-sm text-fg-soft">
         {limitations.map((l, i) => (
           <li key={i} className="flex gap-2">
-            <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0 text-ochre" />
+            <Icon name="alert" className="mt-0.5 h-4 w-4 shrink-0 text-warn" />
             {l}
           </li>
         ))}

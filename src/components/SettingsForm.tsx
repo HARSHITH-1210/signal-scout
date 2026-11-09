@@ -1,16 +1,20 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { Offering, Sector, SenderProfile, StoredDocument } from "@/lib/types";
 import type { ReactNode } from "react";
 import { DocumentChip, DropZone } from "./DropZone";
 import { TextArea, TextField } from "./Field";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
+import { AnimatePresence, motion } from "motion/react";
+import { SPRING_SOFT } from "@/lib/ui/cn";
+import { Button, Kbd, buttonClass } from "./ui/Button";
+import { useConfirm } from "./ui/Dialog";
+import { useToast } from "./ui/Toast";
 
-const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-action px-5 text-sm font-bold text-white transition-colors hover:bg-action-strong disabled:cursor-not-allowed disabled:opacity-45";
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45";
-const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-bold text-ink-soft hover:bg-board hover:text-specimen";
+const secondary = buttonClass("secondary");
+const quiet = "inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-danger-soft hover:text-danger";
 
 type Identity = Pick<SenderProfile, "senderName" | "senderRole" | "companyName" | "companyWebsite" | "defaultCta">;
 
@@ -33,8 +37,28 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
   const [status, setStatus] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
+  const confirm = useConfirm();
+  const toast = useToast();
   const dirty = JSON.stringify(values) !== JSON.stringify(saved);
   const touched = () => setStatus(null);
+
+  // Warn before leaving with unsaved edits; ⌘S saves.
+  useEffect(() => {
+    if (!dirty) return;
+    const onUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        (document.getElementById("sender-profile") as HTMLFormElement | null)?.requestSubmit();
+      }
+    };
+    window.addEventListener("beforeunload", onUnload);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [dirty]);
 
   const set = (key: keyof Identity) => (e: { target: { value: string } }) => {
     setValues((v) => ({ ...v, [key]: e.target.value }));
@@ -64,7 +88,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
     setSaved(profile);
     setValues(profile);
     setErrors({});
-    setStatus({ tone: "ok", text: "Saved. New runs can pitch these offerings." });
+    toast({ tone: "ok", title: "Profile saved", description: "New runs can pitch these offerings." });
   }
 
   /** Adds what the document states: empty identity fields are filled, offerings are merged into sectors by name. */
@@ -106,6 +130,8 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
   }
 
   async function removeDoc(doc: StoredDocument) {
+    const ok = await confirm({ title: `Remove ${doc.name}?`, description: "Drafts stop drawing on it, and offerings linked to it are unlinked.", confirmLabel: "Remove", tone: "danger" });
+    if (!ok) return;
     const result = await send(`/api/documents/${doc.id}`, "DELETE");
     if (!result.ok) return setStatus({ tone: "bad", text: result.error });
     setDocs((d) => d.filter((x) => x.id !== doc.id));
@@ -117,10 +143,10 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
   const offeringCount = values.sectors.reduce((n, s) => n + s.offerings.length, 0);
 
   return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <form onSubmit={submit} noValidate className="self-start rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
+    <div className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <form id="sender-profile" onSubmit={submit} noValidate className="self-start rounded-[var(--radius-panel)] border border-line bg-surface p-5 sm:p-6">
         <fieldset>
-          <legend className="text-[15px] font-bold">You</legend>
+          <legend className="text-[15px] font-semibold">You</legend>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
             <TextField label="Your name" name="senderName" value={values.senderName} onChange={set("senderName")} error={errors.senderName} hint="Used to sign drafts." />
             <TextField label="Your role" name="senderRole" value={values.senderRole} onChange={set("senderRole")} error={errors.senderRole} />
@@ -133,21 +159,21 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
         </fieldset>
 
         <fieldset className="mt-7">
-          <legend className="text-[15px] font-bold">What you sell</legend>
-          <p className="mt-1 text-sm text-ink-soft">
+          <legend className="text-[15px] font-semibold">What you sell</legend>
+          <p className="mt-1 text-sm text-fg-soft">
             Group your offerings into sectors. Each new run picks one or more to pitch: the email leads with the best fit and names the others in passing.
           </p>
           <div className="mt-4 space-y-4">
             {values.sectors.map((sector, s) => (
-              <details key={sector.id} open className="rounded-lg border border-rule">
+              <details key={sector.id} open className="group rounded-xl border border-line">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-4 py-2">
-                  <span className="flex items-center gap-2 font-bold">
-                    <Icon name="chevron" className="h-4 w-4 text-muted" />
+                  <span className="flex items-center gap-2 font-medium">
+                    <Icon name="chevron" className="h-4 w-4 text-fg-muted transition-transform duration-200 group-open:rotate-90" />
                     {sector.name.trim() || "Untitled sector"}
                   </span>
-                  <span className="acc text-muted">{sector.offerings.length === 1 ? "1 offering" : `${sector.offerings.length} offerings`}</span>
+                  <span className="acc text-fg-muted">{sector.offerings.length === 1 ? "1 offering" : `${sector.offerings.length} offerings`}</span>
                 </summary>
-                <div className="space-y-4 border-t border-rule px-4 pt-3 pb-4">
+                <div className="space-y-4 border-t border-line px-4 pt-3 pb-4">
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="min-w-0 flex-1">
                       <TextField label="Sector name" name={`sectors.${s}.name`} value={sector.name} onChange={(e) => updateSector(s, { name: e.target.value })} error={errors[`sectors.${s}.name`]} placeholder="AI solutions" />
@@ -161,7 +187,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                   {sector.offerings.map((offering, o) => {
                     const key = `sectors.${s}.offerings.${o}`;
                     return (
-                      <div key={offering.id} className="rounded-lg bg-board/60 p-3">
+                      <div key={offering.id} className="rounded-xl border border-line-soft bg-subtle/50 p-4">
                         <div className="flex flex-wrap items-end gap-3">
                           <div className="min-w-0 flex-1">
                             <TextField label="Offering" name={`${key}.name`} value={offering.name} onChange={(e) => updateOffering(s, o, { name: e.target.value })} error={errors[`${key}.name`]} placeholder="Invoice-processing agents" />
@@ -176,10 +202,10 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                           <TextField label="Call to action for this offering" name={`${key}.cta`} value={offering.cta} onChange={(e) => updateOffering(s, o, { cta: e.target.value })} error={errors[`${key}.cta`]} hint="Optional. Leave empty to use the default." />
                           {docs.length > 0 && (
                             <fieldset className="text-sm">
-                              <legend className="font-bold">Documents about this offering</legend>
+                              <legend className="font-medium">Documents about this offering</legend>
                               <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
                                 {docs.map((doc) => (
-                                  <label key={doc.id} className="flex min-h-9 cursor-pointer items-center gap-2 text-ink-soft">
+                                  <label key={doc.id} className="flex min-h-9 cursor-pointer items-center gap-2 text-fg-soft">
                                     <input
                                       type="checkbox"
                                       className="h-4 w-4"
@@ -194,7 +220,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                                   </label>
                                 ))}
                               </div>
-                              <span className="mt-1 block text-[13px] text-muted">Documents not ticked under any offering are used for every run.</span>
+                              <span className="mt-1 block text-[13px] text-fg-muted">Documents not ticked under any offering are used for every run.</span>
                             </fieldset>
                           )}
                         </div>
@@ -208,7 +234,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                 </div>
               </details>
             ))}
-            {values.sectors.length === 0 && <p className="text-sm text-ochre">No offerings yet. Drafts stay general until you add what you sell.</p>}
+            {values.sectors.length === 0 && <p className="text-sm text-warn">No offerings yet. Drafts stay general until you add what you sell.</p>}
             <button type="button" onClick={() => updateSectors((all) => [...all, { id: newId("s"), name: "", offerings: [blankOffering()] }])} className={secondary}>
               <Icon name="plus" />
               Add sector
@@ -216,42 +242,57 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
           </div>
         </fieldset>
 
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          <button type="submit" disabled={busy !== null || !dirty} className={primary}>
-            {busy === "save" ? "Saving…" : "Save profile"}
-          </button>
-          {dirty && busy === null && (
-            <button type="button" onClick={() => setValues(saved)} className="min-h-11 text-sm font-bold text-ink-soft hover:text-ink">
-              Discard changes
-            </button>
-          )}
-          <p role="status" className={`text-sm ${status?.tone === "bad" ? "text-specimen" : "text-ok"}`}>
-            {status?.text ?? (!dirty ? <span className="text-muted">All changes saved. {offeringCount === 1 ? "1 offering" : `${offeringCount} offerings`}.</span> : null)}
-          </p>
-        </div>
+        <p role="status" className={`mt-6 text-sm ${status?.tone === "bad" ? "text-danger" : "text-fg-muted"}`}>
+          {status?.text ?? (!dirty ? `All changes saved · ${offeringCount === 1 ? "1 offering" : `${offeringCount} offerings`}` : null)}
+        </p>
       </form>
 
-      <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-        <section aria-labelledby="seller-docs" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5">
-          <h2 id="seller-docs" className="text-[15px] font-bold">
+      {/* Save bar: slides up only while there are unsaved changes. */}
+      <AnimatePresence>
+        {dirty && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={SPRING_SOFT}
+            className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-[min(560px,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-line bg-surface/90 py-2.5 pl-4 pr-2.5 shadow-[var(--shadow-overlay)] backdrop-blur-md"
+          >
+            <span className="flex flex-1 items-center gap-2 text-sm text-fg-soft">
+              <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden />
+              Unsaved changes
+            </span>
+            <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => setValues(saved)}>
+              Discard
+            </Button>
+            <Button size="sm" variant="primary" type="submit" form="sender-profile" loading={busy === "save"} disabled={busy !== null && busy !== "save"}>
+              {busy === "save" ? "Saving…" : "Save profile"}
+              {busy !== "save" && <Kbd className="ml-1">⌘S</Kbd>}
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+        <section aria-labelledby="seller-docs" className="rounded-[var(--radius-panel)] border border-line bg-surface p-5">
+          <h2 id="seller-docs" className="text-[15px] font-semibold">
             Your documents
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">
+          <p className="mt-1 text-sm text-fg-soft">
             One-pagers, decks or case studies. Drafts draw on them for claims about your offerings, and the claim audit checks those claims against them.
           </p>
           <div className="mt-4">
-            <DropZone scope="sender" onUploaded={(r) => setDocs((d) => [r.document, ...d])} title="Drop a PDF or CSV" hint="Up to 10 MB. Text PDFs only." />
+            <DropZone variant="telemetry" scope="sender" onUploaded={(r) => setDocs((d) => [r.document, ...d])} title="Drop a PDF or CSV" hint="Up to 10 MB. Text PDFs only." />
           </div>
           {docs.length > 0 && (
             <ul className="space-y-2">
               {docs.map((doc) => (
                 <li key={doc.id} className="flex flex-wrap items-center gap-2">
-                  <DocumentChip doc={doc} onRemove={() => removeDoc(doc)} />
+                  <DocumentChip variant="telemetry" doc={doc} onRemove={() => removeDoc(doc)} />
                   <button
                     type="button"
                     onClick={() => fillFrom(doc)}
                     disabled={busy !== null}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2 text-[13px] font-bold text-det hover:bg-det-soft disabled:opacity-45"
+                    className={buttonClass("ghost", "sm")}
                   >
                     <Icon name="doc" className="h-3.5 w-3.5" />
                     {busy === `fill-${doc.id}` ? "Reading…" : "Fill profile from this"}

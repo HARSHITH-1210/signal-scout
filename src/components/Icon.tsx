@@ -1,4 +1,4 @@
-// Authored icon set: 16px grid, 1.6 stroke, round caps. Decorative (aria-hidden) unless a parent labels it.
+// Authored icon set: 16px grid, 1.5 stroke, round caps. Decorative (aria-hidden) unless a parent labels it.
 const PATHS = {
   runs: "M3 4h10M3 8h10M3 12h6",
   plus: "M8 3v10M3 8h10",
@@ -19,6 +19,14 @@ const PATHS = {
   doc: "M4.5 2.5h7v11h-7zM6.5 5.5h3M6.5 8h3M6.5 10.5h2",
   mail: "M2.5 4h11v8h-11zM2.5 4.5l5.5 4 5.5-4",
   edit: "M10.5 3l2.5 2.5L6 12.5H3.5V10zM9 4.5l2.5 2.5",
+  search: "M7 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10ZM14 14l-3.5-3.5",
+  arrowRight: "M3 8h10M9 4l4 4-4 4",
+  spark: "M8 2v3M8 11v3M2 8h3M11 8h3M4 4l1.8 1.8M10.2 10.2 12 12M4 12l1.8-1.8M10.2 5.8 12 4",
+  clock: "M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM8 4.5V8l2.5 1.5",
+  globe: "M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM2 8h12M8 2c1.6 1.7 2.4 3.7 2.4 6S9.6 12.3 8 14M8 2C6.4 3.7 5.6 5.7 5.6 8s.8 4.3 2.4 6",
+  stop: "M4.5 4.5h7v7h-7z",
+  more: "M4 8h.01M8 8h.01M12 8h.01",
+  shield: "M8 2l5 2v4c0 3-2.2 5.2-5 6-2.8-.8-5-3-5-6V4z",
   contacts: "M6 7.5a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5ZM2 13c.6-2 2.1-3 4-3s3.4 1 4 3M10.5 3.2a2.2 2.2 0 0 1 0 4.1M12 10.2c1 .4 1.7 1.3 2 2.8",
 } as const;
 
@@ -26,19 +34,21 @@ export type IconName = keyof typeof PATHS;
 
 export function Icon({ name, className = "h-4 w-4" }: { name: IconName; className?: string }) {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
       <path d={PATHS[name]} />
     </svg>
   );
 }
 
-/** The product mark: a specimen tag with its eyelet. */
+/** The product mark: an obsidian tile with a signal rising from a point. */
 export function Mark({ className = "h-8 w-8" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden="true" className={className}>
-      <path d="M9 4h14a2 2 0 0 1 2 2v14l-9 8-9-8V6a2 2 0 0 1 2-2Z" fill="#e8eee6" />
-      <circle cx="16" cy="10" r="2.6" fill="none" stroke="#1f3b2d" strokeWidth="1.8" />
-      <path d="M11 16h10M11 19.5h7" stroke="#1f3b2d" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
+    <span aria-hidden="true" className={`bg-obsidian-gradient inline-grid shrink-0 place-items-center rounded-[28%] ${className}`}>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" className="h-[58%] w-[58%]">
+        <circle cx="4" cy="12" r="1.4" fill="currentColor" stroke="none" />
+        <path d="M4 7.5a4.5 4.5 0 0 1 4.5 4.5" opacity="0.85" />
+        <path d="M4 3a9 9 0 0 1 9 9" opacity="0.55" />
+      </svg>
+    </span>
   );
 }

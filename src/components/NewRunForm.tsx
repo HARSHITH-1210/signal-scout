@@ -7,9 +7,12 @@ import { validateProspect, type FieldErrors } from "@/lib/pipeline/validate";
 import type { ProspectInput, RunSummary, Sector, StoredDocument } from "@/lib/types";
 import { formatDateTime, RUN_STATUS_LABEL } from "@/lib/ui/format";
 import { DocumentChip, DropZone, type UploadResult } from "./DropZone";
-import { TextArea, TextField } from "./Field";
 import { Icon } from "./Icon";
 import { PitchPicker, type PitchSelection } from "./PitchPicker";
+import { AnimatePresence, motion } from "motion/react";
+import { EASE_OUT, RISE_IN, SPRING_SNAPPY, cn } from "@/lib/ui/cn";
+import { Spinner } from "./ui/Button";
+import { TField, TSection, TTextArea, T_PILL, T_PILL_PRIMARY } from "./ui/telemetry";
 
 const EMPTY = { name: "", email: "", role: "", linkedinUrl: "", company: "", companyWebsite: "", notes: "" };
 type Values = typeof EMPTY;
@@ -33,11 +36,12 @@ const fromProspect = (p: ProspectInput): Values => ({
   notes: p.notes ?? "",
 });
 
-const primary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-action px-5 text-sm font-bold text-white transition-colors hover:bg-action-strong disabled:cursor-not-allowed disabled:opacity-45";
-const secondary = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-rail px-4 text-sm font-bold text-rail transition-colors hover:bg-board disabled:cursor-not-allowed disabled:opacity-45";
+type Mode = "single" | "list";
+
 
 export function NewRunForm({ sectors }: { sectors: Sector[] }) {
   const router = useRouter();
+  const [mode, setMode] = useState<Mode>("single");
   const [pitch, setPitchState] = useState<PitchSelection>({ auto: false, offeringIds: [] });
   const [pitchError, setPitchError] = useState<string | null>(null);
   const setPitch = useCallback((next: PitchSelection) => {
@@ -161,168 +165,238 @@ export function NewRunForm({ sectors }: { sectors: Sector[] }) {
   }
 
   const message = formError ?? errors._form;
+  const chosen = csv && csv.chosen !== null ? csv.rows[csv.chosen] : null;
+
+  const csvTable = csv && csv.rows.length > 1 && (
+    <div className="mt-5">
+      <p className="t-label">{mode === "list" ? `Tick up to ${MAX_BATCH} rows · each becomes its own run` : "Pick a row to fill the form"}</p>
+      <div className="mt-2.5 max-h-80 overflow-auto rounded-2xl border border-[var(--t-line)]">
+        <table className="w-full min-w-[560px] text-left text-[13px]">
+          <thead className="sticky top-0 z-10 bg-[var(--t-card)]">
+            <tr className="border-b border-[var(--t-line)]">
+              {mode === "list" && (
+                <th className="w-10 px-4 py-2.5">
+                  <span className="sr-only">Queue</span>
+                </th>
+              )}
+              <th className="t-label px-3 py-2.5 font-normal">#</th>
+              <th className="t-label px-3 py-2.5 font-normal">Name</th>
+              <th className="t-label px-3 py-2.5 font-normal">Role</th>
+              <th className="t-label px-3 py-2.5 font-normal">Company</th>
+              <th className="t-label px-3 py-2.5 font-normal">Website</th>
+              {mode === "single" && (
+                <th className="px-3 py-2.5">
+                  <span className="sr-only">Fill form</span>
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {csv.rows.map((row) => {
+              const p = row.prospect;
+              const empty = !Object.values(p).some(Boolean);
+              const picked = mode === "single" ? csv.chosen === row.index : csv.selected.has(row.index);
+              return (
+                <tr key={row.index} className={cn("border-t border-[var(--t-line)] transition-colors first:border-0", picked && "bg-[var(--t-pill-hover)]")}>
+                  {mode === "list" && (
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        aria-label={`Queue row ${row.index + 1}`}
+                        className="h-4 w-4"
+                        disabled={empty || (!csv.selected.has(row.index) && csv.selected.size >= MAX_BATCH)}
+                        checked={csv.selected.has(row.index)}
+                        onChange={() => toggleRow(row.index)}
+                      />
+                    </td>
+                  )}
+                  <td className="t-mono px-3 py-2.5 text-[11px] text-[var(--t-muted)]">{String(row.index + 1).padStart(2, "0")}</td>
+                  <td className="px-3 py-2.5 font-medium">{p.name ?? <span className="font-normal text-[var(--t-muted)]">none</span>}</td>
+                  <td className="px-3 py-2.5 text-[var(--t-soft)]">{p.role}</td>
+                  <td className="px-3 py-2.5 text-[var(--t-soft)]">{p.company}</td>
+                  <td className="t-mono px-3 py-2.5 text-[11px] text-[var(--t-muted)]">{p.companyWebsite}</td>
+                  {mode === "single" && (
+                    <td className="px-3 py-1.5 text-right">
+                      <button
+                        type="button"
+                        disabled={empty}
+                        onClick={() => chooseRow(row.index)}
+                        className={cn(
+                          "t-mono min-h-8 rounded-full px-3 text-[11px] uppercase tracking-[0.1em] transition-colors disabled:opacity-40",
+                          csv.chosen === row.index ? "bg-[var(--t-inv-bg)] text-[var(--t-inv-btn)]" : "border border-[var(--t-line)] hover:border-[var(--t-muted)]",
+                        )}
+                      >
+                        {csv.chosen === row.index ? "In form" : "Use"}
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const chips = (pdfs.length > 0 || csv) && (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {pdfs.map((d) => (
+        <DocumentChip key={d.id} variant="telemetry" doc={d} onRemove={() => setPdfs((prev) => prev.filter((x) => x.id !== d.id))} />
+      ))}
+      {csv && <DocumentChip variant="telemetry" doc={csv.doc} detail={csv.chosen !== null ? `row ${csv.chosen + 1} of ${csv.rows.length}` : `${csv.rows.length} rows`} onRemove={() => setCsv(null)} />}
+    </div>
+  );
+
+  const modes: { value: Mode; label: string; count?: number }[] = [
+    { value: "single", label: "One prospect" },
+    { value: "list", label: "Import a list", count: csv && csv.rows.length > 1 ? csv.rows.length : undefined },
+  ];
 
   return (
-    <div className="space-y-6">
-      <section aria-labelledby="pitch-title" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
-        <h2 id="pitch-title" className="text-[15px] font-bold">
-          What are you pitching?
-        </h2>
-        <p className="mt-1 mb-3 text-sm text-ink-soft">From your sender profile. Applies to this run, or to every row of a CSV batch.</p>
+    <div className="space-y-3">
+      {/* 01 · Pitch */}
+      <section aria-labelledby="pitch-title" className="t-card relative overflow-hidden p-5 sm:p-6">
+        <span aria-hidden className="t-volt-bg absolute inset-x-0 top-0 h-[2px]" />
+        <TSection step="01" title="What are you pitching?" id="pitch-title">
+          From your sender profile. Applies to this run, or to every row of a list.
+        </TSection>
         <PitchPicker sectors={sectors} value={pitch} onChange={setPitch} error={pitchError ?? undefined} />
       </section>
 
-      <section aria-labelledby="files-title" className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
-        <h2 id="files-title" className="text-[15px] font-bold">
-          Start from a file <span className="font-normal text-muted">(optional)</span>
-        </h2>
-        <p className="mt-1 text-sm text-ink-soft">
-          An account brief or call notes (PDF) become evidence: their quotes are verified like web pages. A CSV of leads lets you pick a row, or queue several.
-        </p>
-        <div className="mt-4">
-          <DropZone scope="prospect" onUploaded={onUploaded} title="Drop a PDF or CSV here" hint="Up to 10 MB each. Text PDFs only; scans can't be read." />
-        </div>
-        {(pdfs.length > 0 || csv) && (
-          <div className="flex flex-wrap gap-2">
-            {pdfs.map((d) => (
-              <DocumentChip key={d.id} doc={d} onRemove={() => setPdfs((prev) => prev.filter((x) => x.id !== d.id))} />
-            ))}
-            {csv && <DocumentChip doc={csv.doc} detail={csv.chosen !== null ? `row ${csv.chosen + 1} of ${csv.rows.length}` : `${csv.rows.length} rows`} onRemove={() => setCsv(null)} />}
-          </div>
-        )}
+      {/* Mode switch: the Aurora-style pill box used by the navbar. */}
+      <div role="tablist" aria-label="How to start" className="inline-flex rounded-full border border-[var(--t-pill-line)] bg-[var(--t-pill-box)] p-1">
+        {modes.map((m) => (
+          <button
+            key={m.value}
+            type="button"
+            role="tab"
+            aria-selected={mode === m.value}
+            onClick={() => setMode(m.value)}
+            className={cn("relative rounded-full px-4 py-2 text-[13px] font-medium transition-colors", mode === m.value ? "text-[var(--t-fg)]" : "text-[var(--t-muted)] hover:text-[var(--t-fg)]")}
+          >
+            {mode === m.value && <motion.span layoutId="new-run-mode" transition={SPRING_SNAPPY} className="absolute inset-0 rounded-full bg-[var(--t-pill-active)]" />}
+            <span className="relative flex items-center gap-2">
+              {m.label}
+              {m.count !== undefined && <span className="t-mono text-[11px] text-[var(--t-muted)]">{m.count}</span>}
+            </span>
+          </button>
+        ))}
+      </div>
 
-        {csv && csv.rows.length > 1 && (
-          <div className="mt-4">
-            <p className="text-sm text-ink-soft">
-              <span className="font-bold text-ink">Pick a row</span> to fill the form, or tick up to {MAX_BATCH} to research them all.
-            </p>
-            <div className="mt-2 max-h-80 overflow-auto rounded-lg border border-rule">
-              <table className="w-full min-w-[640px] text-left text-[13px]">
-                <thead className="sticky top-0 bg-board text-muted">
-                  <tr>
-                    <th className="w-10 px-2 py-2">
-                      <span className="sr-only">Queue</span>
-                    </th>
-                    <th className="px-2 py-2 font-bold">#</th>
-                    <th className="px-2 py-2 font-bold">Name</th>
-                    <th className="px-2 py-2 font-bold">Role</th>
-                    <th className="px-2 py-2 font-bold">Company</th>
-                    <th className="px-2 py-2 font-bold">Website</th>
-                    <th className="px-2 py-2">
-                      <span className="sr-only">Fill form</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {csv.rows.map((row) => {
-                    const p = row.prospect;
-                    const empty = !Object.values(p).some(Boolean);
-                    return (
-                      <tr key={row.index} className={`border-t border-rule-soft ${csv.chosen === row.index ? "bg-det-soft/50" : ""}`}>
-                        <td className="px-2 py-1.5">
-                          <input
-                            type="checkbox"
-                            aria-label={`Queue row ${row.index + 1}`}
-                            className="h-4 w-4"
-                            disabled={empty || (!csv.selected.has(row.index) && csv.selected.size >= MAX_BATCH)}
-                            checked={csv.selected.has(row.index)}
-                            onChange={() => toggleRow(row.index)}
-                          />
-                        </td>
-                        <td className="acc px-2 py-1.5 text-muted">{row.index + 1}</td>
-                        <td className="px-2 py-1.5 font-bold">{p.name ?? <span className="font-normal text-muted">none</span>}</td>
-                        <td className="px-2 py-1.5 text-ink-soft">{p.role}</td>
-                        <td className="px-2 py-1.5 text-ink-soft">{p.company}</td>
-                        <td className="acc px-2 py-1.5 text-muted">{p.companyWebsite}</td>
-                        <td className="px-2 py-1.5 text-right">
-                          <button type="button" disabled={empty} onClick={() => chooseRow(row.index)} className="min-h-8 rounded-md px-2 font-bold text-det hover:bg-det-soft disabled:opacity-40">
-                            {csv.chosen === row.index ? "In form" : "Use"}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            {csv.selected.size > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <button type="button" onClick={runBatch} disabled={submitting} className={secondary}>
-                  <Icon name="table" />
-                  Research {csv.selected.size} selected {csv.selected.size === 1 ? "row" : "rows"}
-                </button>
-                <span className="text-[13px] text-muted">Each row is its own run and uses its own search and model quota.</span>
+      <AnimatePresence mode="wait" initial={false}>
+        {mode === "single" ? (
+          <motion.div key="single" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2, ease: EASE_OUT }}>
+            <form id="new-run" onSubmit={(e) => submit(e)} noValidate className="t-card divide-y divide-[var(--t-line)]">
+              <fieldset className="p-5 sm:p-6">
+                <legend className="sr-only">The person</legend>
+                <TSection step="02" title="The person" />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <TField label="Full name" name="name" value={values.name} onChange={set("name")} error={errors.name} placeholder="Priya Raman" autoComplete="off" autoFocus />
+                  <TField
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={values.email}
+                    onChange={set("email")}
+                    error={errors.email}
+                    placeholder="priya@northwindfreight.com"
+                    hint="Only used to send the approved draft. Never researched or shown to the AI."
+                    autoComplete="off"
+                  />
+                  <TField label="Role" name="role" value={values.role} onChange={set("role")} error={errors.role} placeholder="VP Finance" />
+                  <TField label="LinkedIn profile" name="linkedinUrl" value={values.linkedinUrl} onChange={set("linkedinUrl")} error={errors.linkedinUrl} placeholder="linkedin.com/in/priya-raman" inputMode="url" />
+                </div>
+              </fieldset>
+
+              <fieldset className="p-5 sm:p-6">
+                <legend className="sr-only">Their company</legend>
+                <TSection step="03" title="Their company" />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <TField label="Company" name="company" value={values.company} onChange={set("company")} error={errors.company} placeholder="Northwind Freight" />
+                  <TField label="Website" name="companyWebsite" value={values.companyWebsite} onChange={set("companyWebsite")} error={errors.companyWebsite} placeholder="northwindfreight.com" inputMode="url" />
+                </div>
+              </fieldset>
+
+              <div className="p-5 sm:p-6">
+                <TSection step="04" title="Context" />
+                <TTextArea label="Anything else" name="notes" rows={2} value={values.notes} onChange={set("notes")} error={errors.notes} hint="Context only you know, like ‘met at SaaStr’. It can be referenced in the draft." />
               </div>
-            )}
-          </div>
+
+              <div className="p-5 sm:p-6">
+                <TSection step="05" title="Attach a brief">
+                  Optional. A PDF brief or call notes become evidence, and their quotes are verified like web pages. A CSV lets you pick a row.
+                </TSection>
+                <DropZone variant="telemetry" scope="prospect" onUploaded={onUploaded} title="Drop a PDF or CSV" hint="Up to 10 MB each · text PDFs only" />
+                {chips}
+                {csvTable}
+              </div>
+            </form>
+          </motion.div>
+        ) : (
+          <motion.div key="list" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2, ease: EASE_OUT }}>
+            <section aria-labelledby="list-title" className="t-card p-5 sm:p-6">
+              <TSection step="02" title="Research a list of leads" id="list-title">
+                Upload a CSV, tick the rows to research, and each runs on its own. Only the rows you pick are used.
+              </TSection>
+              <DropZone variant="telemetry" scope="prospect" onUploaded={onUploaded} title="Drop a CSV of leads" hint="Up to 10 MB · columns are mapped automatically" />
+              {chips}
+              {csvTable}
+              {csv && csv.rows.length <= 1 && <p className="t-mono mt-3 text-[11px] text-[var(--t-muted)]">This file has a single row, so it was placed in the One prospect form.</p>}
+            </section>
+          </motion.div>
         )}
-      </section>
+      </AnimatePresence>
 
-      <form onSubmit={(e) => submit(e)} noValidate className="rounded-[var(--radius-panel)] border border-rule bg-paper p-5 sm:p-6">
-        <fieldset>
-          <legend className="text-[15px] font-bold">The person</legend>
-          <div className="mt-3 space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField label="Full name" name="name" value={values.name} onChange={set("name")} error={errors.name} placeholder="Priya Raman" autoComplete="off" />
-              <TextField
-                label="Email"
-                name="email"
-                type="email"
-                value={values.email}
-                onChange={set("email")}
-                error={errors.email}
-                placeholder="priya@northwindfreight.com"
-                hint="Only used to send the approved draft. Never researched or shown to the AI."
-                autoComplete="off"
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField label="Role" name="role" value={values.role} onChange={set("role")} error={errors.role} placeholder="VP Finance" />
-              <TextField label="LinkedIn profile" name="linkedinUrl" value={values.linkedinUrl} onChange={set("linkedinUrl")} error={errors.linkedinUrl} placeholder="linkedin.com/in/priya-raman" inputMode="url" />
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset className="mt-7">
-          <legend className="text-[15px] font-bold">Their company</legend>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <TextField label="Company" name="company" value={values.company} onChange={set("company")} error={errors.company} placeholder="Northwind Freight" />
-            <TextField label="Website" name="companyWebsite" value={values.companyWebsite} onChange={set("companyWebsite")} error={errors.companyWebsite} placeholder="northwindfreight.com" inputMode="url" />
-          </div>
-        </fieldset>
-
-        <div className="mt-7">
-          <TextArea label="Anything else" name="notes" rows={2} value={values.notes} onChange={set("notes")} error={errors.notes} hint="Context only you know, like ‘met at SaaStr’. It can be referenced in the draft." />
-        </div>
-
+      <AnimatePresence>
         {duplicate && (
-          <div role="alert" className="mt-6 rounded-lg border border-ochre/40 bg-ochre-soft px-4 py-3 text-sm text-ochre">
-            <p>
+          <motion.div role="alert" {...RISE_IN} exit={{ opacity: 0 }} className="t-card px-5 py-4 text-[13px]">
+            <p className="t-label text-[var(--t-warn)]">Researched recently</p>
+            <p className="mt-1.5 text-[var(--t-soft)]">
               You researched this prospect {formatDateTime(duplicate.createdAt)} ({RUN_STATUS_LABEL[duplicate.status].toLowerCase()}). Re-running costs another search and draft.
             </p>
-            <div className="mt-2 flex flex-wrap gap-3">
-              <Link href={`/runs/${duplicate.id}`} className="font-bold underline">
-                Open that run
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link href={`/runs/${duplicate.id}`} className={cn(T_PILL, "border border-[var(--t-line)]")}>
+                Open that run →
               </Link>
-              <button type="button" onClick={() => submit(null, true)} className="font-bold underline">
+              <button type="button" onClick={() => submit(null, true)} className={cn(T_PILL, "text-[var(--t-muted)] hover:text-[var(--t-fg)]")}>
                 Run again anyway
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
-        {message && (
-          <p role="alert" className="mt-6 rounded-lg bg-specimen-soft px-3 py-2 text-sm text-specimen">
-            {message}
-          </p>
-        )}
+      </AnimatePresence>
+      {message && (
+        <p role="alert" className="t-card t-mono px-5 py-3 text-[12px] text-[var(--t-bad)]">
+          {message}
+        </p>
+      )}
 
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          <button type="submit" disabled={submitting || !filled} className={primary}>
-            {submitting ? "Starting…" : "Start research"}
-          </button>
-          {!filled && <span className="text-sm text-muted">Fill in any one field or attach a file to start.</span>}
+      {/* One primary action, always in reach: a floating pill bar. */}
+      <div className="sticky bottom-4 z-20 pt-2">
+        <div className="flex flex-wrap items-center gap-3 rounded-full border border-[var(--t-pill-line)] bg-[color-mix(in_oklab,var(--canvas)_80%,transparent)] py-1.5 pl-1.5 pr-5 shadow-[var(--shadow-overlay)] backdrop-blur-[18px]">
+          {mode === "single" ? (
+            <>
+              <button type="submit" form="new-run" disabled={submitting || !filled} className={T_PILL_PRIMARY}>
+                {submitting && <Spinner />}
+                {submitting ? "Starting…" : "Start research →"}
+              </button>
+              <span className="t-mono min-w-0 flex-1 truncate text-[11px] text-[var(--t-muted)]">
+                {!filled ? "Fill in any one field or attach a file" : chosen ? `Row ${chosen.index + 1} · about a minute · you review before anything is sent` : "About a minute · you review before anything is sent"}
+              </span>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={runBatch} disabled={submitting || !csv || csv.selected.size === 0} className={T_PILL_PRIMARY}>
+                {submitting && <Spinner />}
+                {csv && csv.selected.size > 0 ? `Research ${csv.selected.size} ${csv.selected.size === 1 ? "row" : "rows"} →` : "Research selected rows →"}
+              </button>
+              <span className="t-mono min-w-0 flex-1 truncate text-[11px] text-[var(--t-muted)]">Each row is its own run with its own search and model quota</span>
+            </>
+          )}
+          <Icon name="shield" className="hidden h-3.5 w-3.5 text-[var(--t-muted)] sm:block" />
         </div>
-      </form>
+      </div>
     </div>
   );
 }

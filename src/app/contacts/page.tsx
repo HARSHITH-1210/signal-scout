@@ -1,19 +1,19 @@
 import { getContactRules } from "@/lib/db/repo";
 import { ContactRulesPanel } from "@/components/ContactRulesPanel";
+import { PageHeader } from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
 
 /** The rep's list of people and companies on the receiving side: opt-outs and existing relationships. */
 export default function ContactsPage() {
   return (
-    <div>
-      <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em]">Contacts</h1>
-      <p className="mt-1 max-w-[68ch] text-ink-soft">
-        People and companies on the receiving side. Every run is checked against this list before research, after the prospect is identified, and before any send.
-      </p>
-      <div className="mt-6 max-w-[720px]">
-        <ContactRulesPanel initial={getContactRules()} />
-      </div>
+    <div className="max-w-[760px]">
+      <PageHeader
+        title="Contacts"
+        label="Checked before research, after identity and before any send"
+        description="People and companies on the receiving side: opt-outs and existing relationships."
+      />
+      <ContactRulesPanel initial={getContactRules()} />
     </div>
   );
 }

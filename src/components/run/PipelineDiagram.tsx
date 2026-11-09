@@ -20,12 +20,12 @@ const STAGE_HINTS: Record<StageName, string> = {
 };
 
 const NODE: Record<StageStatus, { fill: string; stroke: string; glyph: "num" | "check" | "alert" | "cross" | "dash" | "dot" }> = {
-  pending: { fill: "var(--color-paper)", stroke: "var(--color-rule)", glyph: "num" },
-  running: { fill: "var(--color-paper)", stroke: "var(--color-det)", glyph: "dot" },
+  pending: { fill: "var(--color-surface)", stroke: "var(--color-line)", glyph: "num" },
+  running: { fill: "var(--color-surface)", stroke: "var(--color-info)", glyph: "dot" },
   succeeded: { fill: "var(--color-ok)", stroke: "var(--color-ok)", glyph: "check" },
-  warning: { fill: "var(--color-ochre)", stroke: "var(--color-ochre)", glyph: "alert" },
-  failed: { fill: "var(--color-specimen)", stroke: "var(--color-specimen)", glyph: "cross" },
-  skipped: { fill: "var(--color-board)", stroke: "var(--color-rule)", glyph: "dash" },
+  warning: { fill: "var(--color-warn)", stroke: "var(--color-warn)", glyph: "alert" },
+  failed: { fill: "var(--color-danger)", stroke: "var(--color-danger)", glyph: "cross" },
+  skipped: { fill: "var(--color-subtle)", stroke: "var(--color-line)", glyph: "dash" },
 };
 
 const STATUS_WORD: Record<StageStatus, string> = {
@@ -38,7 +38,7 @@ const STATUS_WORD: Record<StageStatus, string> = {
 };
 
 function Glyph({ kind, x, y, n }: { kind: (typeof NODE)[StageStatus]["glyph"]; x: number; y: number; n: number }) {
-  const stroke = { stroke: "white", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
+  const stroke = { stroke: "var(--color-surface)", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, fill: "none" };
   switch (kind) {
     case "check":
       return <path d={`M${x - 4.5} ${y + 0.5}l3 3 6-6.5`} {...stroke} />;
@@ -47,12 +47,12 @@ function Glyph({ kind, x, y, n }: { kind: (typeof NODE)[StageStatus]["glyph"]; x
     case "cross":
       return <path d={`M${x - 3.5} ${y - 3.5}l7 7M${x + 3.5} ${y - 3.5}l-7 7`} {...stroke} />;
     case "dash":
-      return <path d={`M${x - 4} ${y}h8`} stroke="var(--color-muted)" strokeWidth={2} strokeLinecap="round" />;
+      return <path d={`M${x - 4} ${y}h8`} stroke="var(--color-fg-muted)" strokeWidth={2} strokeLinecap="round" />;
     case "dot":
-      return <circle cx={x} cy={y} r={4} fill="var(--color-det)" />;
+      return <circle cx={x} cy={y} r={4} fill="var(--color-info)" />;
     default:
       return (
-        <text x={x} y={y + 4} textAnchor="middle" className="acc" fontSize={11} fill="var(--color-muted)">
+        <text x={x} y={y + 4} textAnchor="middle" className="acc" fontSize={11} fill="var(--color-fg-muted)">
           {n}
         </text>
       );
@@ -113,7 +113,7 @@ export function PipelineDiagram({
 
   return (
     <div>
-      <p role="status" aria-atomic="true" className="mb-4 rounded-lg bg-board px-3 py-2 text-sm text-ink-soft">
+      <p role="status" aria-atomic="true" className="mb-4 rounded-lg bg-canvas px-3 py-2 text-sm text-fg-soft">
         {summary}
       </p>
       <div className="relative" style={{ minHeight: height }}>
@@ -131,8 +131,9 @@ export function PipelineDiagram({
                 x2={CX}
                 y1={y1}
                 y2={y2}
-                stroke={filled ? "var(--color-rail)" : "var(--color-rule)"}
-                strokeWidth={filled ? 2.5 : 2}
+                stroke={filled ? "var(--color-ok)" : "var(--color-line)"}
+                strokeOpacity={filled ? 0.55 : 1}
+                strokeWidth={2}
                 strokeDasharray={filled && !flowing ? undefined : "4 4"}
                 className={flowing ? "flow" : undefined}
               />
@@ -145,7 +146,7 @@ export function PipelineDiagram({
             const isCurrent = i === current && !preview;
             return (
               <g key={stage} className={changed.has(stage) && !preview ? "stamp-in" : undefined}>
-                {status === "running" && <circle cx={CX} cy={y} r={13} fill="none" stroke="var(--color-det)" strokeWidth={2} className="pulse-ring" />}
+                {status === "running" && <circle cx={CX} cy={y} r={13} fill="none" stroke="var(--color-info)" strokeWidth={2} className="pulse-ring" />}
                 <circle cx={CX} cy={y} r={R} fill={node.fill} stroke={node.stroke} strokeWidth={isCurrent ? 2.5 : 1.5} strokeDasharray={status === "skipped" ? "3 3" : undefined} />
                 <Glyph kind={node.glyph} x={CX} y={y} n={i + 1} />
               </g>
@@ -168,19 +169,19 @@ export function PipelineDiagram({
                 style={{ height: ROW }}
               >
                 <div className="flex items-baseline justify-between gap-2 pt-[11px]">
-                  <span className={`text-[14px] font-bold leading-tight ${muted ? "text-muted" : "text-ink"}`}>
+                  <span className={`text-[14px] font-medium leading-tight ${muted ? "text-fg-muted" : "text-fg"}`}>
                     {STAGE_LABELS[stage]}
                     <span className="sr-only">: {STATUS_WORD[status]}</span>
                   </span>
-                  {time && <span className="acc shrink-0 text-muted">{time}</span>}
+                  {time && <span className="acc shrink-0 text-fg-muted">{time}</span>}
                 </div>
-                <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${status === "failed" ? "text-specimen" : "text-muted"}`} title={last?.message}>
+                <p className={`mt-0.5 line-clamp-1 text-[13px] leading-snug ${status === "failed" ? "text-danger" : "text-fg-muted"}`} title={last?.message}>
                   {preview || !last ? STAGE_HINTS[stage] : last.message}
                 </p>
                 {showExit && (preview || exitTaken) && (
                   <span
-                    className={`mt-1 inline-flex w-fit items-center gap-1.5 rounded px-1.5 py-px text-[11px] font-bold ${
-                      exitTaken ? "bg-ochre-soft text-ochre" : "border border-dashed border-rule text-muted"
+                    className={`mt-1 inline-flex w-fit items-center gap-1.5 rounded px-1.5 py-px text-[11px] font-medium ${
+                      exitTaken ? "bg-warn-soft text-warn" : "border border-dashed border-line text-fg-muted"
                     }`}
                   >
                     <svg aria-hidden="true" width="14" height="10" viewBox="0 0 14 10">
