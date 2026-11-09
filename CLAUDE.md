@@ -10,7 +10,7 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 ## Key directories
 | Path | What lives there |
 |---|---|
-| `src/app/` | Pages (Outreach dashboard `/`, runs list `/runs`, `/runs/new`, `/runs/[id]`, `/settings` (sender profile: our business only), `/contacts`) and API routes under `src/app/api/` |
+| `src/app/` | Pages (Outreach dashboard `/`, Discover `/discover`, runs list `/runs`, `/runs/new`, `/runs/[id]`, `/settings` (sender profile: our business only), `/contacts`) and API routes under `src/app/api/` |
 | `src/lib/pipeline/` | Stage orchestrator (`runner.ts`), stages (`stages/*`), and the deterministic logic: scoring, freshness, reliability, sanitisation, guard |
 | `src/lib/providers/` | `SearchProvider` (Tavily) and `LlmProvider` (Anthropic, OpenRouter) interfaces and real implementations |
 | `src/lib/db/` | SQLite schema and repository functions; the only place SQL is written |
@@ -19,6 +19,7 @@ Instruction manual for Claude Code and any AI agent working in this repo. Read t
 | `scripts/smoke.ts`, `scripts/demo-scenarios.json` | Live end-to-end run of the demo scenarios against real APIs |
 | `docs/DEMO_SCENARIOS.md` | Reproducible happy-path and edge-case scenarios |
 | `src/lib/documents/` | PDF/CSV parsing, CRM column mapping, chunking for uploaded files |
+| `src/lib/discover/` | Discover: web search plus one model call to list companies named in the results, each verified against its cited source |
 | `src/proxy.ts`, `src/lib/api/guard.ts` | Host allow-list (DNS rebinding) and same-origin writes (CSRF) for every request |
 | `PRODUCT.md`, `DESIGN.md`, `.impeccable/` | Product brief, design system and the direction contract; read DESIGN.md before any UI change |
 

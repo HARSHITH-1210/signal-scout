@@ -98,7 +98,7 @@ Keys are read only on the server. They are never sent to the browser or written 
    - **Sent emails:** each with its status and a link to the Gmail thread.
    - **Charts:** sends per day, and replies by hook type.
    - **How tracking works:** on page open, or with *Check replies*, it reads only the headers of threads it sent, throttled to once every 5 minutes. "Delivered" means no bounce was seen, because Gmail has no delivery receipts. Opens aren't tracked.
-6. **Runs** (`/runs`). All runs with status (and the live stage), hook, verified findings out of sources, active time and start time. You can filter by status or search, and it auto-refreshes while runs are active. A row whose status changes flashes once.
+. **Discover** (`/discover`). Describe the companies you want ("freight companies expanding into Mexico"). Signal Scout searches the web (two searches) and makes one model call to list companies named in the results. A company is kept only when its name appears in a source it cites; each card shows those source links, and the contact list flags do-not-contact and existing relationships. *Research* opens New run prefilled with the company and website. Nothing starts until you click Start research.
 
 ---
 

@@ -216,3 +216,6 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
 - v16 (copy trim, user-requested):
   - Removed AI-sounding explanatory text: page descriptions, helper paragraphs under sections and fields, and footnotes. Pages now show titles, mono labels and data.
   - Explanations moved into an accessible `Tooltip`/`InfoTip` (hover and focus, portalled). Buttons explain themselves and give disabled reasons in tooltips. Guardrail labels (inference, stale and bad-news holds) stay visible.
+- v17 (Discover, user-requested):
+  - `/discover` searches the web for a described set of companies (`src/lib/discover/discover.ts`, `POST /api/discover`). The model only proposes names; each is kept only if its name appears in a cited source, websites are kept only when a cited source mentions the domain, and LinkedIn or injection-like pages never reach the model. Contact rules flag do-not-contact and relationships.
+  - Picking a company opens New run prefilled (`?company=&website=`); validation and duplicate checks are unchanged. Nothing runs or sends from Discover. Tests: `tests/unit/discover.test.ts`.
