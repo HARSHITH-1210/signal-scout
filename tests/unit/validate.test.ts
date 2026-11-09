@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateClarification, validateProspect, validateSenderProfile } from "@/lib/pipeline/validate";
-import { DEFAULT_SENDER_PROFILE } from "@/lib/db/repo";
+import { SAMPLE_SENDER_PROFILE } from "../fixtures/senderProfile";
 
 describe("validateProspect", () => {
   it("accepts a name plus company and trims fields", () => {
@@ -53,10 +53,10 @@ describe("validateClarification", () => {
 
 describe("validateSenderProfile", () => {
   it("accepts the default profile, blank or missing fields, and rejects overlong ones", () => {
-    expect(validateSenderProfile(DEFAULT_SENDER_PROFILE).ok).toBe(true);
-    expect(validateSenderProfile({ ...DEFAULT_SENDER_PROFILE, defaultCta: "  " })).toEqual({ ok: true, value: { ...DEFAULT_SENDER_PROFILE, defaultCta: "" } });
+    expect(validateSenderProfile(SAMPLE_SENDER_PROFILE).ok).toBe(true);
+    expect(validateSenderProfile({ ...SAMPLE_SENDER_PROFILE, defaultCta: "  " })).toEqual({ ok: true, value: { ...SAMPLE_SENDER_PROFILE, defaultCta: "" } });
     expect(validateSenderProfile({})).toMatchObject({ ok: true, value: { sectors: [] } });
-    const r = validateSenderProfile({ ...DEFAULT_SENDER_PROFILE, senderName: "x".repeat(81) });
+    const r = validateSenderProfile({ ...SAMPLE_SENDER_PROFILE, senderName: "x".repeat(81) });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(Object.keys(r.errors)).toEqual(["senderName"]);
   });

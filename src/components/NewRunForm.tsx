@@ -292,7 +292,7 @@ export function NewRunForm({ sectors, prefill }: { sectors: Sector[]; prefill?: 
                 <legend className="sr-only">The person</legend>
                 <TSection step="02" title="The person" />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <TField label="Full name" name="name" value={values.name} onChange={set("name")} error={errors.name} placeholder="Priya Raman" autoComplete="off" autoFocus />
+                  <TField label="Full name" name="name" value={values.name} onChange={set("name")} error={errors.name} autoComplete="off" autoFocus />
                   <TField
                     label="Email"
                     name="email"
@@ -300,12 +300,11 @@ export function NewRunForm({ sectors, prefill }: { sectors: Sector[]; prefill?: 
                     value={values.email}
                     onChange={set("email")}
                     error={errors.email}
-                    placeholder="priya@northwindfreight.com"
                     tip="Only used to send the approved draft. Never researched or shown to the AI."
                     autoComplete="off"
                   />
-                  <TField label="Role" name="role" value={values.role} onChange={set("role")} error={errors.role} placeholder="VP Finance" />
-                  <TField label="LinkedIn profile" name="linkedinUrl" value={values.linkedinUrl} onChange={set("linkedinUrl")} error={errors.linkedinUrl} placeholder="linkedin.com/in/priya-raman" inputMode="url" />
+                  <TField label="Role" name="role" value={values.role} onChange={set("role")} error={errors.role} />
+                  <TField label="LinkedIn profile" name="linkedinUrl" value={values.linkedinUrl} onChange={set("linkedinUrl")} error={errors.linkedinUrl} inputMode="url" />
                 </div>
               </fieldset>
 
@@ -313,14 +312,14 @@ export function NewRunForm({ sectors, prefill }: { sectors: Sector[]; prefill?: 
                 <legend className="sr-only">Their company</legend>
                 <TSection step="03" title="Their company" />
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <TField label="Company" name="company" value={values.company} onChange={set("company")} error={errors.company} placeholder="Northwind Freight" />
-                  <TField label="Website" name="companyWebsite" value={values.companyWebsite} onChange={set("companyWebsite")} error={errors.companyWebsite} placeholder="northwindfreight.com" inputMode="url" />
+                  <TField label="Company" name="company" value={values.company} onChange={set("company")} error={errors.company} />
+                  <TField label="Website" name="companyWebsite" value={values.companyWebsite} onChange={set("companyWebsite")} error={errors.companyWebsite} inputMode="url" />
                 </div>
               </fieldset>
 
               <div className="p-5 sm:p-6">
                 <TSection step="04" title="Context" />
-                <TTextArea label="Anything else" name="notes" rows={2} value={values.notes} onChange={set("notes")} error={errors.notes} placeholder="e.g. Met at SaaStr" tip="Context only you know. The draft may reference it." />
+                <TTextArea label="Anything else" name="notes" rows={2} value={values.notes} onChange={set("notes")} error={errors.notes} tip="Context only you know. The draft may reference it." />
               </div>
 
               <div className="p-5 sm:p-6">

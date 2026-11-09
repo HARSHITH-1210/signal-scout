@@ -144,7 +144,6 @@ export function RunDashboard({ initialRuns }: { initialRuns: RunSummary[] }) {
                 ref={search}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search name or company"
                 className="h-10 w-full rounded-full border border-line bg-surface pl-9 pr-10 text-[13px] transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
               />
               <Kbd className="absolute right-3 top-1/2 -translate-y-1/2">/</Kbd>

@@ -483,7 +483,6 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
               type="email"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              placeholder="name@company.com"
               aria-describedby={`${titleId}-to`}
               aria-invalid={Boolean(to.trim()) && !toValid}
               className="min-w-0 flex-1 bg-transparent py-1 outline-none placeholder:text-fg-muted/70"
@@ -626,7 +625,6 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
                   rows={3}
                   maxLength={2000}
                   autoFocus
-                  placeholder="e.g. Make it shorter and warmer. Lead with the hiring news instead. Or ask: what did the source say about their expansion?"
                   aria-describedby={`${titleId}-ai-help`}
                   className="mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
                 />

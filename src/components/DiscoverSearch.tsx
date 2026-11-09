@@ -12,7 +12,6 @@ import { Skeleton } from "./ui/Card";
 import { InfoTip, Tooltip } from "./ui/Tooltip";
 import { T_PILL, T_PILL_PRIMARY } from "./ui/telemetry";
 
-const EXAMPLES = ["Freight companies expanding into Mexico", "Series B fintech startups in Austin", "Logistics firms hiring finance roles"];
 
 function researchHref(c: DiscoveredCompany) {
   const q = new URLSearchParams({ company: c.name });
@@ -113,7 +112,6 @@ export function DiscoverSearch() {
             onChange={(e) => setQuery(e.target.value)}
             maxLength={200}
             autoFocus
-            placeholder="Describe the companies you're looking for"
             className="h-10 w-full bg-transparent text-[15px] text-[var(--t-fg)] outline-none placeholder:text-[var(--t-dim)]"
           />
         </label>
@@ -123,22 +121,6 @@ export function DiscoverSearch() {
         </button>
       </form>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="t-label">Try</span>
-        {EXAMPLES.map((ex) => (
-          <button
-            key={ex}
-            type="button"
-            onClick={() => {
-              setQuery(ex);
-              void run(ex);
-            }}
-            className="rounded-full border border-[var(--t-line)] px-3 py-1.5 text-[12px] text-[var(--t-soft)] transition-colors hover:border-[var(--t-muted)] hover:text-[var(--t-fg)]"
-          >
-            {ex}
-          </button>
-        ))}
-      </div>
 
       <section aria-live="polite" aria-busy={busy} className="mt-8">
         {busy ? (

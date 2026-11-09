@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SAMPLE_SENDER_PROFILE } from "../fixtures/senderProfile";
 import * as repo from "@/lib/db/repo";
 import { useInMemoryDbForTests } from "@/lib/db/schema";
 import { runPipeline, setDepsFactory } from "@/lib/pipeline/runner";
@@ -16,6 +17,7 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
 beforeEach(() => {
   useInMemoryDbForTests();
+  repo.saveSenderProfile(SAMPLE_SENDER_PROFILE); // the app starts empty; these tests need a seller with offerings
   setDepsFactory(() => deps(northwindSearch(), northwindLlm()));
 });
 afterEach(() => vi.useRealTimers());

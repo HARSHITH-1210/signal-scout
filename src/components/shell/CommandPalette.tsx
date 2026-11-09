@@ -156,10 +156,10 @@ export function CommandPalette() {
                 }}
                 onKeyDown={onKeyDown}
                 role="combobox"
+                aria-label="Search pages, runs and actions"
                 aria-expanded="true"
                 aria-controls="command-list"
                 aria-activedescendant={filtered[active] ? `cmd-${filtered[active].id}` : undefined}
-                placeholder="Search pages, runs and actions…"
                 className="h-14 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted"
               />
               <Kbd>esc</Kbd>

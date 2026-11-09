@@ -27,7 +27,6 @@ function ListEditor({
   id,
   title,
   hint,
-  placeholder,
   items,
   onChange,
   relationship = false,
@@ -35,7 +34,6 @@ function ListEditor({
   id: string;
   title: string;
   hint: string;
-  placeholder: string;
   items: string[];
   onChange: (items: string[]) => void;
   relationship?: boolean;
@@ -86,7 +84,6 @@ function ListEditor({
             value={items.join("\n")}
             onChange={(e) => onChange(e.target.value.split(/\r?\n/))}
             onBlur={() => onChange(clean(items))}
-            placeholder={placeholder}
             className="acc w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-[13px] leading-relaxed transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
           />
         </label>
@@ -104,7 +101,6 @@ function ListEditor({
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder={placeholder.split("\n")[0]}
                 className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
               />
             </label>
@@ -131,7 +127,7 @@ function ListEditor({
             <label className="relative mt-4 block">
               <span className="sr-only">Filter {title}</span>
               <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Filter" className="h-9 w-full rounded-lg border border-line bg-subtle/50 pl-8 pr-3 text-[13px] focus:border-accent focus:outline-none" />
+              <input value={query} onChange={(e) => setQuery(e.target.value)} className="h-9 w-full rounded-lg border border-line bg-subtle/50 pl-8 pr-3 text-[13px] focus:border-accent focus:outline-none" />
             </label>
           )}
 
@@ -211,7 +207,6 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
         id="dnc-title"
         title="Do not contact"
         hint="Emails, domains or companies that are never researched or contacted."
-        placeholder={"priya@example.com\nexample.com"}
         items={values.doNotContact}
         onChange={(doNotContact) => setValues((v) => ({ ...v, doNotContact }))}
       />
@@ -219,7 +214,6 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
         id="rel-title"
         title="Existing relationships"
         hint="Customers, open deals or past contacts. A matching run stops and shows your note."
-        placeholder={"acme.com: customer since 2023\nGlobex: open deal, owner Sam"}
         items={values.relationships}
         onChange={(relationships) => setValues((v) => ({ ...v, relationships }))}
         relationship

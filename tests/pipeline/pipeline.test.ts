@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { SAMPLE_SENDER_PROFILE } from "../fixtures/senderProfile";
 import * as repo from "@/lib/db/repo";
 import { useInMemoryDbForTests } from "@/lib/db/schema";
 import { ProviderError } from "@/lib/errors";
@@ -24,6 +25,7 @@ import {
 
 beforeEach(() => {
   useInMemoryDbForTests();
+  repo.saveSenderProfile(SAMPLE_SENDER_PROFILE); // the app starts empty; these tests need a seller with offerings
 });
 
 const finalStatus = (id: string) => repo.getRunDetail(id)!;
@@ -84,7 +86,7 @@ describe("happy path", () => {
 
 describe("offerings the run pitches", () => {
   it("researches, links and drafts around the chosen offerings: best fit leads, the others are named", async () => {
-    const chosen = buildPitch(repo.DEFAULT_SENDER_PROFILE, { offeringIds: ["vendor-onboarding", "invoice-agents"] });
+    const chosen = buildPitch(SAMPLE_SENDER_PROFILE, { offeringIds: ["vendor-onboarding", "invoice-agents"] });
     if (!chosen.ok) throw new Error(chosen.error);
     const run = repo.createRun(NORTHWIND, [], chosen.pitch);
     const search = northwindSearch();

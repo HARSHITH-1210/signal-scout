@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { SAMPLE_SENDER_PROFILE } from "../fixtures/senderProfile";
 import { useInMemoryDbForTests } from "@/lib/db/schema";
 import * as repo from "@/lib/db/repo";
 import { runPipeline, setDepsFactory } from "@/lib/pipeline/runner";
@@ -18,6 +19,7 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
 
 beforeEach(() => {
   useInMemoryDbForTests();
+  repo.saveSenderProfile(SAMPLE_SENDER_PROFILE); // the app starts empty; these tests need a seller with offerings
   setDepsFactory(() => deps(northwindSearch(), northwindLlm()));
 });
 
@@ -70,12 +72,12 @@ describe("choosing what a run pitches", () => {
     const res = await createRunRoute(req({ ...NORTHWIND, offeringIds: ["vendor-onboarding"] }));
     expect(res.status).toBe(202);
     const { id } = await res.json();
-    repo.saveSenderProfile({ ...repo.DEFAULT_SENDER_PROFILE, sectors: [] });
+    repo.saveSenderProfile({ ...SAMPLE_SENDER_PROFILE, sectors: [] });
     expect(repo.getRun(id)!.pitch).toMatchObject({ mode: "chosen", offerings: [{ id: "vendor-onboarding", sectorName: "AI solutions", name: "Vendor onboarding checks" }] });
   });
 
   it("needs no choice when no offerings are set up", async () => {
-    repo.saveSenderProfile({ ...repo.DEFAULT_SENDER_PROFILE, sectors: [] });
+    repo.saveSenderProfile({ ...SAMPLE_SENDER_PROFILE, sectors: [] });
     const res = await createRunRoute(req(NORTHWIND));
     expect(res.status).toBe(202);
     expect(repo.getRun((await res.json()).id)!.pitch).toEqual({ mode: "auto", offerings: [] });
@@ -267,5 +269,12 @@ describe("deleting runs (F-21)", () => {
     expect(repo.listSources(run.id)).toEqual([]);
     const busy = repo.createRun({ company: "Acme" });
     expect((await deleteRunRoute(new Request("http://localhost", { method: "DELETE" }), params(busy.id))).status).toBe(409);
+  });
+});
+
+describe("a new workspace", () => {
+  it("starts with an empty sender profile: no example name, company, offerings or call to action", () => {
+    useInMemoryDbForTests();
+    expect(repo.getSenderProfile()).toEqual({ senderName: "", senderRole: "", companyName: "", companyWebsite: "", defaultCta: "", sectors: [] });
   });
 });

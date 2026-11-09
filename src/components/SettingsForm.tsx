@@ -179,7 +179,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                 <div className="space-y-4 border-t border-line px-4 pt-3 pb-4">
                   <div className="flex flex-wrap items-end gap-3">
                     <div className="min-w-0 flex-1">
-                      <TextField label="Sector name" name={`sectors.${s}.name`} value={sector.name} onChange={(e) => updateSector(s, { name: e.target.value })} error={errors[`sectors.${s}.name`]} placeholder="AI solutions" />
+                      <TextField label="Sector name" name={`sectors.${s}.name`} value={sector.name} onChange={(e) => updateSector(s, { name: e.target.value })} error={errors[`sectors.${s}.name`]} />
                     </div>
                     <button type="button" onClick={() => updateSectors((all) => all.filter((_, i) => i !== s))} className={`${quiet} mb-1`}>
                       <Icon name="trash" className="h-3.5 w-3.5" />
@@ -193,7 +193,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                       <div key={offering.id} className="rounded-xl border border-line-soft bg-subtle/50 p-4">
                         <div className="flex flex-wrap items-end gap-3">
                           <div className="min-w-0 flex-1">
-                            <TextField label="Offering" name={`${key}.name`} value={offering.name} onChange={(e) => updateOffering(s, o, { name: e.target.value })} error={errors[`${key}.name`]} placeholder="Invoice-processing agents" />
+                            <TextField label="Offering" name={`${key}.name`} value={offering.name} onChange={(e) => updateOffering(s, o, { name: e.target.value })} error={errors[`${key}.name`]} />
                           </div>
                           <button type="button" onClick={() => updateSector(s, { offerings: sector.offerings.filter((_, j) => j !== o) })} className={`${quiet} mb-1`}>
                             <Icon name="trash" className="h-3.5 w-3.5" />
@@ -202,7 +202,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                         </div>
                         <div className="mt-3 space-y-3">
                           <TextArea label="What it does" name={`${key}.whatItDoes`} rows={3} value={offering.whatItDoes} onChange={(e) => updateOffering(s, o, { whatItDoes: e.target.value })} error={errors[`${key}.whatItDoes`]} />
-                          <TextField label="Call to action for this offering" name={`${key}.cta`} value={offering.cta} onChange={(e) => updateOffering(s, o, { cta: e.target.value })} error={errors[`${key}.cta`]} placeholder="Uses the default" />
+                          <TextField label="Call to action for this offering" name={`${key}.cta`} value={offering.cta} onChange={(e) => updateOffering(s, o, { cta: e.target.value })} error={errors[`${key}.cta`]} />
                           {docs.length > 0 && (
                             <fieldset className="text-sm">
                               <legend className="flex items-center gap-1.5">

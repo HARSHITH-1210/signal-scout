@@ -421,43 +421,22 @@ export function getRunDetail(id: string, options: { forClient?: boolean } = {}):
   };
 }
 
-/** A neutral example the rep should replace. */
-export const DEFAULT_SENDER_PROFILE: SenderProfile = {
-  senderName: "Alex Morgan",
-  senderRole: "Account Executive",
-  companyName: "Ledgerline (example — edit in Settings)",
+/** A new workspace's profile: every field empty until the rep fills it in. */
+export const EMPTY_SENDER_PROFILE: SenderProfile = {
+  senderName: "",
+  senderRole: "",
+  companyName: "",
   companyWebsite: "",
-  defaultCta: "Offer a 20-minute call to compare notes on how their team handles this today.",
-  sectors: [
-    {
-      id: "ai-solutions",
-      name: "AI solutions",
-      offerings: [
-        {
-          id: "invoice-agents",
-          name: "Invoice-processing agents",
-          whatItDoes: "AI agents that capture, code and match supplier invoices, with a human approving every exception, so finance teams close faster without adding AP headcount.",
-          cta: "",
-          documentIds: [],
-        },
-        {
-          id: "vendor-onboarding",
-          name: "Vendor onboarding checks",
-          whatItDoes: "Automated checks on new vendors' tax, bank and compliance details before their first payment, so new suppliers are set up in days with fewer payment errors.",
-          cta: "",
-          documentIds: [],
-        },
-      ],
-    },
-  ],
+  defaultCta: "",
+  sectors: [],
 };
 
-/** The saved profile, upgraded from older versions; the example profile until the rep saves one. */
+/** The saved profile, upgraded from older versions; empty until the rep saves one. */
 export function getSenderProfile(): SenderProfile {
   const row = getDb().prepare(`SELECT value_json FROM settings WHERE key = 'sender_profile'`).get() as
     | { value_json: string }
     | undefined;
-  return row ? upgradeSenderProfile(JSON.parse(row.value_json), DEFAULT_SENDER_PROFILE) : DEFAULT_SENDER_PROFILE;
+  return row ? upgradeSenderProfile(JSON.parse(row.value_json), EMPTY_SENDER_PROFILE) : EMPTY_SENDER_PROFILE;
 }
 
 export function saveSenderProfile(profile: SenderProfile): void {

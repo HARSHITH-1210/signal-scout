@@ -102,11 +102,11 @@ export function Clarify({ detail, onResumed }: { detail: RunDetail; onResumed: (
       <div className="mt-6 border-t border-line pt-4">
         <p className="text-sm font-medium">None of these? Add a detail and search again.</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <TextField label="Company website" name="companyWebsite" value={extra.companyWebsite} error={fieldErrors.companyWebsite} onChange={(e) => setExtra({ ...extra, companyWebsite: e.target.value })} placeholder="atlasrobotics.io" />
-          <TextField label="LinkedIn profile" name="linkedinUrl" value={extra.linkedinUrl} error={fieldErrors.linkedinUrl} onChange={(e) => setExtra({ ...extra, linkedinUrl: e.target.value })} placeholder="linkedin.com/in/…" />
+          <TextField label="Company website" name="companyWebsite" value={extra.companyWebsite} error={fieldErrors.companyWebsite} onChange={(e) => setExtra({ ...extra, companyWebsite: e.target.value })} />
+          <TextField label="LinkedIn profile" name="linkedinUrl" value={extra.linkedinUrl} error={fieldErrors.linkedinUrl} onChange={(e) => setExtra({ ...extra, linkedinUrl: e.target.value })} />
         </div>
         <div className="mt-3">
-          <TextField label="Anything else that narrows it down" name="notes" value={extra.notes} error={fieldErrors.notes} onChange={(e) => setExtra({ ...extra, notes: e.target.value })} placeholder="Based in Austin, robotics company" />
+          <TextField label="Anything else that narrows it down" name="notes" value={extra.notes} error={fieldErrors.notes} onChange={(e) => setExtra({ ...extra, notes: e.target.value })} />
         </div>
         <button disabled={busy || !(extra.companyWebsite || extra.linkedinUrl || extra.notes)} onClick={() => submit(extra)} className={`${secondary} mt-3`}>
           Search again
