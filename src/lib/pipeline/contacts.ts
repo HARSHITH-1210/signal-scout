@@ -1,5 +1,6 @@
 import type { ContactHold, ContactRules } from "../types";
 import { mentionsCompany } from "./evidence";
+import { entryKind, relationshipLabel } from "../contacts/rules";
 
 /** What a contact-list entry is compared against. */
 export interface ContactSubject {
@@ -8,8 +9,6 @@ export interface ContactSubject {
   website?: string | null;
   domain?: string | null;
 }
-
-const DOMAIN = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
 
 function bareDomain(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -21,8 +20,9 @@ function bareDomain(value: string | null | undefined): string | null {
 export function entryMatches(entry: string, subject: ContactSubject): boolean {
   const e = entry.trim().toLowerCase();
   if (!e) return false;
-  if (e.includes("@")) return subject.email?.trim().toLowerCase() === e;
-  if (DOMAIN.test(e)) {
+  const kind = entryKind(e);
+  if (kind === "email") return subject.email?.trim().toLowerCase() === e;
+  if (kind === "domain") {
     const domains = [bareDomain(subject.email), bareDomain(subject.website), bareDomain(subject.domain)].filter(Boolean) as string[];
     return domains.some((d) => d === e || d.endsWith(`.${e}`));
   }
@@ -38,7 +38,10 @@ export function checkContactRules(subject: ContactSubject, rules: ContactRules, 
   if (optOut) return { kind: "do_not_contact", match: optOut.trim(), note: null, overridden: false };
   if (relationshipOverridden) return null;
   const rel = rules.relationships.find((r) => entryMatches(r.match, subject));
-  return rel ? { kind: "relationship", match: rel.match.trim(), note: rel.note.trim() || null, overridden: false } : null;
+  if (!rel) return null;
+  // The type leads the note the rep sees on the held run: "Customer · owner Sam".
+  const note = [relationshipLabel(rel.kind), rel.note.trim()].filter(Boolean).join(" · ");
+  return { kind: "relationship", match: rel.match.trim(), note: note || null, overridden: false };
 }
 
 /** Parses the settings textarea: one entry per line, "match: note" for relationships. */

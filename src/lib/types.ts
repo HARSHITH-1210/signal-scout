@@ -381,11 +381,21 @@ export interface GmailStatus {
 }
 
 /** The rep's own list: people and companies not to contact, and existing relationships to check first. */
+/** What an existing relationship is. Absent on entries saved before types existed. */
+export type RelationshipKind = "customer" | "open_deal" | "past_contact" | "partner" | "other";
+
+export interface RelationshipEntry {
+  /** An email, a domain or a company name. */
+  match: string;
+  kind?: RelationshipKind;
+  note: string;
+}
+
 export interface ContactRules {
   /** Emails, domains or company names that opted out. Never researched, never sent to. */
   doNotContact: string[];
   /** Customers, open deals, past contacts: the run stops for the rep, with this note. */
-  relationships: { match: string; note: string }[];
+  relationships: RelationshipEntry[];
 }
 
 /** Why a run stopped before research. A relationship hold can be overridden; an opt-out can't. */

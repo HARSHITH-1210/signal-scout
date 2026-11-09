@@ -226,3 +226,9 @@ validate → resolve_identity ──ambiguous──▶ [needs_clarification] ─
   - Signing in without the send scope is allowed, but `checkSendable` refuses until it's granted. Consent is forced only until a refresh token is stored.
   - Top bar: Search is its own round button beside the nav pill (no ⌘K label; the shortcut still works), with the theme toggle and an account menu (Sign out) on the right.
   - Tests: `tests/unit/session.test.ts`, sign-in callback cases in `tests/unit/gmail.test.ts`. Verified in a production build: gating, 401s, forged-cookie rejection, the Google redirect. A real Google sign-in wasn't exercised here.
+- v19 (Contacts, user-requested):
+  - Relationships carry a type (`customer`, `open_deal`, `past_contact`, `partner`, `other`) shown before the note on a held run; older entries without one still work.
+  - `src/lib/contacts/rules.ts` (pure): entry kind (email/domain/company), normalisation (lowercase, URL to domain, shared-mail domains refused), list validation and de-duplication, shared by the page, `PUT /api/settings/contacts` and the run checks. Lists hold up to 5,000 entries each.
+  - `src/lib/contacts/importer.ts` (pure, browser-side): CSV/TSV/paste parsing with header detection, column guessing with per-row fallback, CRM stage to type, import preview (new / duplicate / skipped with reasons), CSV export with formula cells defused. Files are never uploaded.
+  - Contacts page: explainer, *Check a contact*, structured add rows, type badges, inline type/note edits, filter, paging, Import / Export / Clear per list.
+  - Tests: `tests/unit/contacts.test.ts`. Verified in a production build with a CRM-style CSV.

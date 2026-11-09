@@ -1,183 +1,349 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { parseRelationshipLines } from "@/lib/pipeline/contacts";
-import type { ContactRules } from "@/lib/types";
-import { SPRING_SNAPPY, cn } from "@/lib/ui/cn";
+import { toCsv } from "@/lib/contacts/importer";
+import { ENTRY_KIND_LABEL, entryKey, entryKind, normaliseEntry, RELATIONSHIP_KINDS, relationshipLabel, type EntryKind } from "@/lib/contacts/rules";
+import { checkContactRules, type ContactSubject } from "@/lib/pipeline/contacts";
+import type { ContactRules, RelationshipEntry, RelationshipKind } from "@/lib/types";
+import { cn } from "@/lib/ui/cn";
+import { ImportDialog, LIST_TITLE, selectClass, type ListName } from "./contacts/ImportDialog";
 import { Icon } from "./Icon";
 import { send } from "./run/api";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
-import { SegmentedControl } from "./ui/Tabs";
+import { useConfirm } from "./ui/Dialog";
 import { useToast } from "./ui/Toast";
-import { InfoTip } from "./ui/Tooltip";
 
-type Lists = { doNotContact: string[]; relationships: string[] };
+const PAGE = 100;
+const inputClass =
+  "h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15";
 
-const toLists = (rules: ContactRules): Lists => ({
-  doNotContact: rules.doNotContact,
-  relationships: rules.relationships.map((r) => (r.note ? `${r.match}: ${r.note}` : r.match)),
-});
+const KIND_STYLE: Record<EntryKind, string> = {
+  email: "bg-info-soft text-info",
+  domain: "bg-accent-soft text-accent",
+  company: "bg-subtle text-fg-muted",
+};
 
-const clean = (lines: string[]) => lines.map((l) => l.trim()).filter(Boolean);
+function KindBadge({ value }: { value: string }) {
+  const kind = entryKind(value);
+  return <span className={cn("shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em]", KIND_STYLE[kind])}>{ENTRY_KIND_LABEL[kind]}</span>;
+}
 
-/** One list as removable rows with an add box; or, for bulk paste, as plain text (one entry per line). */
-function ListEditor({
-  id,
-  title,
-  hint,
-  items,
-  onChange,
-  relationship = false,
-}: {
-  id: string;
-  title: string;
-  hint: string;
-  items: string[];
-  onChange: (items: string[]) => void;
-  relationship?: boolean;
-}) {
-  const [draft, setDraft] = useState("");
-  const [mode, setMode] = useState<"list" | "text">("list");
-  const [query, setQuery] = useState("");
+const MATCH_HELP: Record<EntryKind, (v: string) => string> = {
+  email: (v) => `Matches only ${v}`,
+  domain: (v) => `Matches anyone at ${v} (their email or company website), including subdomains`,
+  company: (v) => `Matches a prospect whose company is ${v}`,
+};
 
-  const add = () => {
-    const entries = clean(draft.split(/\r?\n/));
-    if (entries.length === 0) return;
-    const known = new Set(items.map((i) => i.toLowerCase()));
-    onChange([...items, ...entries.filter((e) => !known.has(e.toLowerCase()))]);
-    setDraft("");
-  };
-  const preview = relationship && draft.trim() ? parseRelationshipLines(draft)[0] : null;
-  const visible = query.trim() ? items.filter((i) => i.toLowerCase().includes(query.trim().toLowerCase())) : items;
+function download(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: name });
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** What the page explains up front: the two lists, how entries match, and when they're checked. */
+function HowItWorks() {
+  return (
+    <Card className="p-5 sm:p-6">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <h2 className="flex items-center gap-2 text-[14px] font-semibold">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-danger" />
+            Do not contact
+          </h2>
+          <p className="mt-1 text-[13px] text-fg-muted">People who opted out, competitors, anyone off-limits. A match is never researched and never emailed. Nothing overrides it.</p>
+        </div>
+        <div>
+          <h2 className="flex items-center gap-2 text-[14px] font-semibold">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-warn" />
+            Existing relationships
+          </h2>
+          <p className="mt-1 text-[13px] text-fg-muted">Customers, open deals, past contacts, partners. A match pauses the run before research and shows your note; you decide whether to go ahead.</p>
+        </div>
+      </div>
+      <div className="mt-5 border-t border-line-soft pt-4">
+        <p className="t-label">Each entry is one of</p>
+        <ul className="mt-2 grid gap-2 text-[13px] text-fg-muted sm:grid-cols-3">
+          {(["email", "domain", "company"] as EntryKind[]).map((k) => (
+            <li key={k} className="flex items-start gap-2">
+              <span className={cn("mt-px shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em]", KIND_STYLE[k])}>{ENTRY_KIND_LABEL[k]}</span>
+              <span>{k === "email" ? "That one address" : k === "domain" ? "Everyone at that domain" : "That company, by name"}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-[12px] text-fg-muted">Checked when a run starts, again once the prospect is identified, and right before any email is sent.</p>
+      </div>
+    </Card>
+  );
+}
+
+/** Type an email, website or company to see what a run would do with it, using the lists as edited (saved or not). */
+function CheckContact({ rules }: { rules: ContactRules }) {
+  const [value, setValue] = useState("");
+  const result = useMemo(() => {
+    const n = normaliseEntry(value);
+    if (!value.trim()) return null;
+    if (!n.ok) return { tone: "muted" as const, text: n.reason };
+    const subject: ContactSubject = n.kind === "email" ? { email: n.value } : n.kind === "domain" ? { website: n.value, domain: n.value } : { company: n.value };
+    const hold = checkContactRules(subject, rules);
+    if (!hold)
+      return {
+        tone: "ok" as const,
+        text:
+          n.kind === "company"
+            ? "No match by name. A run would go ahead, but domain entries are also checked once the run finds the company's website."
+            : "No match. A run would go ahead (company-name entries are also checked once the run identifies the company).",
+      };
+    if (hold.kind === "do_not_contact") return { tone: "bad" as const, text: `Blocked by Do not contact (${hold.match}). Never researched or emailed.` };
+    return { tone: "warn" as const, text: `Paused: existing relationship (${hold.match})${hold.note ? `, ${hold.note}` : ""}. You'd choose whether to go ahead.` };
+  }, [value, rules]);
 
   return (
     <Card className="p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 id={id} className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em]">
-            {title}
-            <span className="acc rounded-full bg-subtle px-2 py-0.5 text-[11px] font-normal text-fg-muted">{items.length}</span>
-            <InfoTip label={`About ${title}`} align="start">
-              {hint}
-            </InfoTip>
-          </h2>
+      <label className="block">
+        <span className="text-[14px] font-semibold">Check a contact</span>
+        <span className="block text-[12px] text-fg-muted">An email, website or company name, checked against both lists as they are now</span>
+        <input value={value} onChange={(e) => setValue(e.target.value)} className={cn(inputClass, "mt-2")} autoComplete="off" />
+      </label>
+      {result && (
+        <p
+          role="status"
+          className={cn(
+            "mt-2 text-[13px]",
+            result.tone === "bad" ? "text-danger" : result.tone === "warn" ? "text-warn" : result.tone === "ok" ? "text-ok" : "text-fg-muted",
+          )}
+        >
+          {result.text}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+/** One list: add, filter, edit, remove, import, export, clear. */
+function ListCard({
+  list,
+  rules,
+  onChange,
+  onImport,
+}: {
+  list: ListName;
+  rules: ContactRules;
+  onChange: (next: ContactRules) => void;
+  onImport: () => void;
+}) {
+  const rel = list === "relationships";
+  const entries: RelationshipEntry[] = rel ? rules.relationships : rules.doNotContact.map((match) => ({ match, note: "" }));
+  const [match, setMatch] = useState("");
+  const [kind, setKind] = useState<RelationshipKind>("customer");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [shown, setShown] = useState(PAGE);
+  const confirm = useConfirm();
+  const titleId = `${list}-title`;
+
+  const preview = match.trim() ? normaliseEntry(match) : null;
+  const onOtherList = preview?.ok && rel && rules.doNotContact.some((d) => entryKey(d) === entryKey(preview.value));
+
+  const set = (next: RelationshipEntry[]) =>
+    onChange(rel ? { ...rules, relationships: next } : { ...rules, doNotContact: next.map((e) => e.match) });
+
+  function add() {
+    const n = normaliseEntry(match);
+    if (!n.ok) return setError(n.reason);
+    if (entries.some((e) => entryKey(e.match) === entryKey(n.value))) return setError(`${n.value} is already in this list.`);
+    set([{ match: n.value, ...(rel ? { kind } : {}), note: rel ? note.trim() : "" }, ...entries]);
+    setMatch("");
+    setNote("");
+    setError(null);
+  }
+
+  async function clearAll() {
+    const ok = await confirm({
+      title: `Clear ${LIST_TITLE[list]}?`,
+      description: `All ${entries.length.toLocaleString("en")} entries are removed when you save. Export first if you might want them back.`,
+      confirmLabel: "Clear list",
+      tone: "danger",
+    });
+    if (ok) set([]);
+  }
+
+  const q = query.trim().toLowerCase();
+  const visible = q ? entries.filter((e) => e.match.toLowerCase().includes(q) || e.note.toLowerCase().includes(q) || (relationshipLabel(e.kind) ?? "").toLowerCase().includes(q)) : entries;
+
+  return (
+    <Card className="p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id={titleId} className="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em]">
+          <span aria-hidden className={cn("h-2 w-2 rounded-full", rel ? "bg-warn" : "bg-danger")} />
+          {LIST_TITLE[list]}
+          <span className="acc rounded-full bg-subtle px-2 py-0.5 text-[11px] font-normal text-fg-muted">{entries.length.toLocaleString("en")}</span>
+        </h2>
+        <div className="flex flex-wrap gap-1.5">
+          <Button size="sm" onClick={onImport}>
+            <Icon name="upload" className="h-3.5 w-3.5" />
+            Import CSV
+          </Button>
+          {entries.length > 0 && (
+            <>
+              <Button size="sm" variant="ghost" onClick={() => download(rel ? "existing-relationships.csv" : "do-not-contact.csv", toCsv(list, rel ? rules.relationships : rules.doNotContact))}>
+                <Icon name="download" className="h-3.5 w-3.5" />
+                Export
+              </Button>
+              <Button size="sm" variant="ghost" className="hover:bg-danger-soft hover:text-danger" onClick={clearAll}>
+                Clear
+              </Button>
+            </>
+          )}
         </div>
-        <SegmentedControl
-          label={`${title} view`}
-          size="sm"
-          value={mode}
-          onChange={setMode}
-          items={[
-            { value: "list", label: "List" },
-            { value: "text", label: "Text" },
-          ]}
-        />
       </div>
 
-      {mode === "text" ? (
-        <label className="mt-4 block">
-          <span className="sr-only">{title}, one per line</span>
-          <textarea
-            rows={Math.max(4, items.length + 1)}
-            value={items.join("\n")}
-            onChange={(e) => onChange(e.target.value.split(/\r?\n/))}
-            onBlur={() => onChange(clean(items))}
-            className="acc w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-[13px] leading-relaxed transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
+      <form
+        className={cn("mt-4 grid gap-2", rel ? "sm:grid-cols-[minmax(0,1.3fr)_auto_minmax(0,1.4fr)_auto]" : "sm:grid-cols-[minmax(0,1fr)_auto]")}
+        onSubmit={(e) => {
+          e.preventDefault();
+          add();
+        }}
+      >
+        <label className="block min-w-0">
+          <span className="text-[12px] font-medium text-fg-muted">Email, domain or company</span>
+          <input
+            value={match}
+            onChange={(e) => {
+              setMatch(e.target.value);
+              setError(null);
+            }}
+            aria-invalid={Boolean(error)}
+            className={cn(inputClass, "mt-1")}
+            autoComplete="off"
           />
         </label>
+        {rel && (
+          <>
+            <label className="block">
+              <span className="text-[12px] font-medium text-fg-muted">Type</span>
+              <select value={kind} onChange={(e) => setKind(e.target.value as RelationshipKind)} className={cn(selectClass, "mt-1 w-full")}>
+                {RELATIONSHIP_KINDS.map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {k.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block min-w-0">
+              <span className="text-[12px] font-medium text-fg-muted">Note (optional)</span>
+              <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={cn(inputClass, "mt-1")} autoComplete="off" />
+            </label>
+          </>
+        )}
+        <Button type="submit" size="sm" className="h-10 self-end" disabled={!match.trim()}>
+          <Icon name="plus" className="h-3.5 w-3.5" />
+          Add
+        </Button>
+      </form>
+      {error ? (
+        <p role="alert" className="mt-1.5 text-[12px] text-danger">
+          {error}
+        </p>
+      ) : (
+        preview && (
+          <p className="mt-1.5 text-[12px] text-fg-muted">
+            {preview.ok ? MATCH_HELP[preview.kind](preview.value) : <span className="text-danger">{preview.reason}</span>}
+            {onOtherList && <span className="text-warn"> · It&apos;s also on Do not contact, which always wins.</span>}
+          </p>
+        )
+      )}
+
+      {entries.length > 6 && (
+        <label className="relative mt-4 block">
+          <span className="sr-only">Filter {LIST_TITLE[list]}</span>
+          <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} className="h-9 w-full rounded-lg border border-line bg-subtle/50 pl-8 pr-3 text-[13px] focus:border-accent focus:outline-none" />
+        </label>
+      )}
+
+      {entries.length === 0 ? (
+        <p className="mt-4 rounded-lg border border-dashed border-line px-4 py-6 text-center text-[13px] text-fg-muted">
+          Nothing here yet. Add entries above, or import a CSV.
+        </p>
       ) : (
         <>
-          <form
-            className="mt-4 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              add();
-            }}
-          >
-            <label className="min-w-0 flex-1">
-              <span className="sr-only">Add to {title}</span>
-              <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                className="h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm transition-[border-color,box-shadow] focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15"
-              />
-            </label>
-            <Button type="submit" size="sm" className="h-10" disabled={!draft.trim()}>
-              <Icon name="plus" className="h-3.5 w-3.5" />
-              Add
-            </Button>
-          </form>
-          {preview && (
-            <p className="mt-1.5 text-[12px] text-fg-muted">
-              Matches <span className="acc text-fg">{preview.match}</span>
-              {preview.note ? (
-                <>
-                  {" "}
-                  · <span className="text-fg">{preview.note}</span>
-                </>
-              ) : (
-                <> · add a note after a colon</>
-              )}
-            </p>
-          )}
-
-          {items.length > 6 && (
-            <label className="relative mt-4 block">
-              <span className="sr-only">Filter {title}</span>
-              <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-muted" />
-              <input value={query} onChange={(e) => setQuery(e.target.value)} className="h-9 w-full rounded-lg border border-line bg-subtle/50 pl-8 pr-3 text-[13px] focus:border-accent focus:outline-none" />
-            </label>
-          )}
-
-          <ul aria-labelledby={id} className={cn("mt-4", items.length > 0 && "divide-y divide-line-soft rounded-lg border border-line")}>
+          <ul aria-labelledby={titleId} className="mt-4 divide-y divide-line-soft rounded-lg border border-line">
             <AnimatePresence initial={false}>
-              {visible.map((item) => {
-                const parsed = relationship ? parseRelationshipLines(item)[0] : null;
-                return (
-                  <motion.li
-                    key={item}
-                    layout
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ ...SPRING_SNAPPY, opacity: { duration: 0.15 } }}
-                    className="overflow-hidden"
-                  >
-                    <div className="flex items-center gap-3 px-3 py-2">
-                      <span className="min-w-0 flex-1 text-sm">
-                        <span className="acc text-[13px] text-fg">{parsed ? parsed.match : item}</span>
-                        {parsed?.note && <span className="ml-2 text-[13px] text-fg-muted">{parsed.note}</span>}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => onChange(items.filter((i) => i !== item))}
-                        aria-label={`Remove ${item}`}
-                        className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-fg-muted transition-colors hover:bg-danger-soft hover:text-danger"
+              {visible.slice(0, shown).map((entry) => (
+                <motion.li
+                  key={entry.match}
+                  layout="position"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2"
+                >
+                  <KindBadge value={entry.match} />
+                  <span className="acc min-w-0 flex-1 truncate text-[13px] text-fg" title={entry.match}>
+                    {entry.match}
+                  </span>
+                  {rel && (
+                    <>
+                      <select
+                        aria-label={`Type for ${entry.match}`}
+                        value={entry.kind ?? "other"}
+                        onChange={(e) => set(entries.map((x) => (x.match === entry.match ? { ...x, kind: e.target.value as RelationshipKind } : x)))}
+                        className={cn(selectClass, "h-8 text-[13px]")}
                       >
-                        <Icon name="cross" className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </motion.li>
-                );
-              })}
+                        {RELATIONSHIP_KINDS.map((k) => (
+                          <option key={k.value} value={k.value}>
+                            {k.label}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        aria-label={`Note for ${entry.match}`}
+                        value={entry.note}
+                        maxLength={300}
+                        onChange={(e) => set(entries.map((x) => (x.match === entry.match ? { ...x, note: e.target.value } : x)))}
+                        className="h-8 w-full min-w-0 rounded-md border border-transparent bg-transparent px-2 text-[13px] text-fg-muted hover:border-line focus:border-accent focus:text-fg focus:outline-none sm:w-64"
+                      />
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => set(entries.filter((x) => x.match !== entry.match))}
+                    aria-label={`Remove ${entry.match}`}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-fg-muted transition-colors hover:bg-danger-soft hover:text-danger"
+                  >
+                    <Icon name="cross" className="h-3.5 w-3.5" />
+                  </button>
+                </motion.li>
+              ))}
             </AnimatePresence>
           </ul>
-          {items.length === 0 && <p className="mt-3 rounded-lg border border-dashed border-line px-4 py-6 text-center text-[13px] text-fg-muted">Nothing here yet.</p>}
+          {q && visible.length === 0 && <p className="mt-3 text-[13px] text-fg-muted">No entries match that filter.</p>}
+          {visible.length > shown && (
+            <Button size="sm" variant="ghost" className="mt-3" onClick={() => setShown((s) => s + PAGE * 2)}>
+              Show more ({(visible.length - shown).toLocaleString("en")} hidden)
+            </Button>
+          )}
         </>
       )}
     </Card>
   );
 }
 
-/** The rep's own contact list, checked before any research and before any send. */
+const same = (a: ContactRules, b: ContactRules) => JSON.stringify(a) === JSON.stringify(b);
+
+/** The rep's contact list, checked before any research and before any send. */
 export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
-  const [saved, setSaved] = useState(toLists(initial));
-  const [values, setValues] = useState(saved);
+  const [saved, setSaved] = useState(initial);
+  const [values, setValues] = useState(initial);
   const [busy, setBusy] = useState(false);
+  const [importing, setImporting] = useState<{ target: ListName; key: number } | null>(null);
   const toast = useToast();
-  const dirty = clean(values.doNotContact).join("\n") !== saved.doNotContact.join("\n") || clean(values.relationships).join("\n") !== saved.relationships.join("\n");
+  const dirty = !same(values, saved);
 
   useEffect(() => {
     if (!dirty) return;
@@ -188,36 +354,35 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
 
   async function save() {
     setBusy(true);
-    const rules: ContactRules = {
-      doNotContact: clean(values.doNotContact),
-      relationships: parseRelationshipLines(clean(values.relationships).join("\n")),
-    };
-    const result = await send("/api/settings/contacts", "PUT", rules);
+    const result = await send("/api/settings/contacts", "PUT", values);
     setBusy(false);
-    if (!result.ok) return toast({ tone: "bad", title: "Couldn't save the list", description: result.error });
-    const next = toLists((result.data as { rules: ContactRules }).rules);
+    if (!result.ok) return toast({ tone: "bad", title: "Couldn't save the contact list", description: result.error });
+    const next = (result.data as { rules: ContactRules }).rules;
     setSaved(next);
     setValues(next);
-    toast({ tone: "ok", title: "Contact list saved", description: "New runs are checked against it before any research." });
+    toast({ tone: "ok", title: "Contact list saved", description: "Every new run is checked against it." });
   }
 
+  function imported(target: ListName, added: ContactRules) {
+    const count = target === "doNotContact" ? added.doNotContact.length : added.relationships.length;
+    setValues((v) =>
+      target === "doNotContact" ? { ...v, doNotContact: [...added.doNotContact, ...v.doNotContact] } : { ...v, relationships: [...added.relationships, ...v.relationships] },
+    );
+    toast({ tone: "ok", title: `${count.toLocaleString("en")} ${count === 1 ? "entry" : "entries"} added to ${LIST_TITLE[target]}`, description: "Save the list to apply them." });
+  }
+
+  const openImport = (target: ListName) => setImporting((i) => ({ target, key: (i?.key ?? 0) + 1 }));
+
   return (
-    <div className="space-y-6">
-      <ListEditor
-        id="dnc-title"
-        title="Do not contact"
-        hint="Emails, domains or companies that are never researched or contacted."
-        items={values.doNotContact}
-        onChange={(doNotContact) => setValues((v) => ({ ...v, doNotContact }))}
-      />
-      <ListEditor
-        id="rel-title"
-        title="Existing relationships"
-        hint="Customers, open deals or past contacts. A matching run stops and shows your note."
-        items={values.relationships}
-        onChange={(relationships) => setValues((v) => ({ ...v, relationships }))}
-        relationship
-      />
+    <div className="space-y-6 pb-20">
+      <HowItWorks />
+      <CheckContact rules={values} />
+      <ListCard list="doNotContact" rules={values} onChange={setValues} onImport={() => openImport("doNotContact")} />
+      <ListCard list="relationships" rules={values} onChange={setValues} onImport={() => openImport("relationships")} />
+
+      {importing && (
+        <ImportDialog key={importing.key} open initialTarget={importing.target} rules={values} onClose={() => setImporting(null)} onImport={imported} />
+      )}
 
       <AnimatePresence>
         {dirty && (

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /** The rep's list of people and companies on the receiving side: opt-outs and existing relationships. */
 export default function ContactsPage() {
   return (
-    <div className="max-w-[760px]">
+    <div className="max-w-[880px]">
       <PageHeader
         title="Contacts"
         label="Checked before research, after identity and before any send"
