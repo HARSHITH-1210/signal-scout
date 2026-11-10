@@ -43,6 +43,17 @@ export function clearSession(res: NextResponse): void {
   res.cookies.set(SESSION_COOKIE, "", { httpOnly: true, sameSite: "lax", secure: secureCookies(), path: "/", maxAge: 0 });
 }
 
+/** The signed-in rep's email for a route handler, read from the request's session cookie (null when signed out). */
+export async function requestUser(request: Request): Promise<string | null> {
+  if (!authEnabled(process.env)) return null;
+  const pair = (request.headers.get("cookie") ?? "")
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith(`${SESSION_COOKIE}=`));
+  const session = await verifySession(pair?.slice(SESSION_COOKIE.length + 1), sessionSecret(process.env));
+  return session?.email ?? null;
+}
+
 /** The signed-in rep for server components, or null (also null when sign-in isn't configured). */
 export async function currentUser(): Promise<{ email: string } | null> {
   if (!authEnabled(process.env)) return null;

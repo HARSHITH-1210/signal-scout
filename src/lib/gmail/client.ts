@@ -48,8 +48,9 @@ export function newOAuthState(): string {
 }
 
 /**
- * Google sign-in, which also grants Gmail sending: one consent covers both. The consent screen is
- * forced only when no refresh token is stored yet, so returning reps just pick their account.
+ * Google sign-in, which also grants Gmail sending: one consent covers both. Which account will sign in
+ * isn't known yet, so reps pick their account; a new account that comes back without a refresh token
+ * is sent round once more with the consent screen (NeedsConsentError).
  */
 export function authorizationUrl(state: string, options: { consent?: boolean } = {}): string {
   const { clientId, redirectUri } = requireConfig();
@@ -59,7 +60,7 @@ export function authorizationUrl(state: string, options: { consent?: boolean } =
     response_type: "code",
     scope: GMAIL_SCOPES.join(" "),
     access_type: "offline",
-    prompt: options.consent || !getGmailConnection() ? "consent" : "select_account",
+    prompt: options.consent ? "consent" : "select_account",
     include_granted_scopes: "true",
     state,
   });
@@ -125,8 +126,7 @@ export async function connectWithCode(code: string, authorize: (email: string) =
   if (!email) throw new GmailError("Couldn't read which Google account signed in.", "rejected");
   const refusal = authorize(email);
   if (refusal) throw new GmailError(refusal, "auth");
-  const previous = getGmailConnection();
-  const samePrevious = previous && previous.email.toLowerCase() === email.toLowerCase() ? previous : null;
+  const samePrevious = getGmailConnection(email);
   // A returning rep who skipped the consent screen gets no new refresh token; keep the stored one.
   const refreshToken = tokens.refresh_token ?? samePrevious?.refreshToken;
   if (!refreshToken) throw new NeedsConsentError();

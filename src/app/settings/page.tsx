@@ -3,10 +3,12 @@ import { GmailPanel } from "@/components/GmailPanel";
 import { SettingsForm } from "@/components/SettingsForm";
 import { PageHeader } from "@/components/ui/Card";
 import { gmailStatus } from "@/lib/gmail/send";
+import { currentUser } from "@/lib/auth/server";
 
 export const dynamic = "force-dynamic";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const user = await currentUser();
   return (
     <div>
       <PageHeader
@@ -16,7 +18,7 @@ export default function SettingsPage() {
       <SettingsForm
         initial={getSenderProfile()}
         initialDocuments={listDocuments("sender").map(toStoredDocument)}
-        aside={<GmailPanel initial={gmailStatus()} />}
+        aside={<GmailPanel initial={gmailStatus(user?.email ?? null)} />}
       />
     </div>
   );

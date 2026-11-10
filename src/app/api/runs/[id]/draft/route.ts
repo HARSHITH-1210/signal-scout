@@ -6,6 +6,7 @@ import { enqueueRun } from "@/lib/pipeline/runner";
 import { logError } from "@/lib/config";
 import { GmailError } from "@/lib/gmail/client";
 import { checkSendable, sendApprovedDraft } from "@/lib/gmail/send";
+import { requestUser } from "@/lib/auth/server";
 import { badNewsHold } from "@/lib/pipeline/sensitive";
 import { draftConfidence, isExpired } from "@/lib/pipeline/confidence";
 import { prospectNames } from "@/lib/pipeline/stages/draft";
@@ -77,9 +78,9 @@ const ActionSchema = z.object({
 });
 
 /** Sends the approved version; on failure the run stays approved and records why it wasn't sent. */
-async function deliver(id: string, version: number, to: string, from: string) {
+async function deliver(account: string | null, id: string, version: number, to: string, from: string) {
   try {
-    const sent = await sendApprovedDraft(id, version, to, from);
+    const sent = await sendApprovedDraft(account, id, version, to, from);
     return json({ status: "sent", sent });
   } catch (error) {
     const message = error instanceof GmailError ? error.message : "Sending failed. See the server log.";
@@ -96,6 +97,8 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
   if (!run) return notFound();
   const parsed = ActionSchema.safeParse(await readJson(request));
   if (!parsed.success) return badRequest("Unknown draft action.");
+  // Sending goes through the signed-in rep's own Gmail connection.
+  const account = await requestUser(request);
 
   switch (parsed.data.action) {
     case "approve": {
@@ -109,12 +112,12 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
       if (badNewsHold(listSignals(id)).length > 0 && !parsed.data.acknowledgeBadNews)
         return json({ error: "This prospect is on hold: there's recent bad news about them. Confirm you still want to reach out now.", hold: "bad_news" }, 409);
       // Check everything sending needs BEFORE approving, so a blocked send leaves the draft in review.
-      const check = parsed.data.send ? checkSendable(id, draft.version, parsed.data.to, { acknowledgeUnaudited: parsed.data.acknowledgeUnaudited }) : null;
+      const check = parsed.data.send ? checkSendable(account, id, draft.version, parsed.data.to, { acknowledgeUnaudited: parsed.data.acknowledgeUnaudited }) : null;
       if (check && !check.ok) return json({ error: check.reason, ...(check.unaudited ? { unaudited: true } : {}) }, 409);
       updateRun(id, { status: "approved", approvedVersion: draft.version });
       if (check?.ok) {
         addEvent(id, "guard", "succeeded", `Rep approved version ${draft.version} and sent it to ${check.to}.`);
-        return deliver(id, draft.version, check.to, check.from);
+        return deliver(account, id, draft.version, check.to, check.from);
       }
       addEvent(id, "guard", "succeeded", `Rep approved version ${draft.version} without sending.`);
       return json({ status: "approved" });
@@ -126,9 +129,9 @@ export const POST = handle(async (request: Request, { params }: { params: Promis
         return conflict("Only the approved, latest version can be sent.");
       const expired = expiredResponse(draft);
       if (expired) return expired;
-      const check = checkSendable(id, draft.version, parsed.data.to, { acknowledgeUnaudited: parsed.data.acknowledgeUnaudited });
+      const check = checkSendable(account, id, draft.version, parsed.data.to, { acknowledgeUnaudited: parsed.data.acknowledgeUnaudited });
       if (!check.ok) return json({ error: check.reason, ...(check.unaudited ? { unaudited: true } : {}) }, 409);
-      return deliver(id, draft.version, check.to, check.from);
+      return deliver(account, id, draft.version, check.to, check.from);
     }
     case "regenerate": {
       if (!run.hook) return conflict("There is no verified hook to draft from.");

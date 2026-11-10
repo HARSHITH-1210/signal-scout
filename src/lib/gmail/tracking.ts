@@ -77,12 +77,12 @@ async function fetchThread(token: string, threadId: string): Promise<GmailThread
 export type TrackingResult = { checked: number; skipped: "throttled" | "not_connected" | "no_permission" | null; error: string | null };
 
 /**
- * Re-checks sent emails for replies and bounces. Final states (replied, bounced) aren't re-checked.
+ * Re-checks the signed-in rep's (`account`) sent emails for replies and bounces. Final states (replied, bounced) aren't re-checked.
  * Throttled unless forced; never throws (errors come back as a message for the page).
  */
-export async function refreshTracking(options: { force?: boolean; now?: Date } = {}): Promise<TrackingResult> {
+export async function refreshTracking(account: string | null, options: { force?: boolean; now?: Date } = {}): Promise<TrackingResult> {
   const now = options.now ?? new Date();
-  const connection = repo.getGmailConnection();
+  const connection = repo.getGmailConnection(account);
   if (!connection) return { checked: 0, skipped: "not_connected", error: null };
   if (!canTrack(connection)) return { checked: 0, skipped: "no_permission", error: null };
 

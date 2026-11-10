@@ -5,8 +5,9 @@ import { buildRawMessage, isSafeAddress } from "./mime";
 import { isExpired } from "../pipeline/confidence";
 import { checkContactRules } from "../pipeline/contacts";
 
-export function gmailStatus(): GmailStatus {
-  const connection = repo.getGmailConnection();
+/** Gmail status of the signed-in rep (`account`): each rep sends from their own Google account. */
+export function gmailStatus(account: string | null): GmailStatus {
+  const connection = repo.getGmailConnection(account);
   return {
     configured: gmailConfigured(),
     connected: Boolean(connection),
@@ -26,9 +27,15 @@ export type SendCheck = { ok: true; to: string; from: string } | { ok: false; re
  * Everything that must be true before an approval may send an email. Checked BEFORE approving, so a
  * failed check leaves the draft in review rather than approved-but-unsent.
  */
-export function checkSendable(runId: string, version: number, to: string | undefined, options: { acknowledgeUnaudited?: boolean } = {}): SendCheck {
+export function checkSendable(
+  account: string | null,
+  runId: string,
+  version: number,
+  to: string | undefined,
+  options: { acknowledgeUnaudited?: boolean } = {},
+): SendCheck {
   if (!gmailConfigured()) return { ok: false, reason: "Gmail isn't set up (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET)." };
-  const connection = repo.getGmailConnection();
+  const connection = repo.getGmailConnection(account);
   if (!connection) return { ok: false, reason: "Sign in with Google first; sending uses the account you sign in with." };
   if (!canSend(connection)) return { ok: false, reason: "Send permission wasn't granted. Sign out, sign in again and allow Signal Scout to send email." };
   const run = repo.getRun(runId);
@@ -53,10 +60,10 @@ export function checkSendable(runId: string, version: number, to: string | undef
 }
 
 /** Sends the approved version through Gmail and records the result. Never retried automatically. */
-export async function sendApprovedDraft(runId: string, version: number, to: string, from: string): Promise<SentRecord> {
-  const connection = repo.getGmailConnection();
+export async function sendApprovedDraft(account: string | null, runId: string, version: number, to: string, from: string): Promise<SentRecord> {
+  const connection = repo.getGmailConnection(account);
   const draft = repo.latestDraft(runId);
-  if (!connection || !draft || draft.version !== version) throw new GmailError("The draft or the signed-in Google account changed. Reload and try again.", "rejected");
+  if (!connection || connection.email.toLowerCase() !== from.toLowerCase() || !draft || draft.version !== version) throw new GmailError("The draft or the signed-in Google account changed. Reload and try again.", "rejected");
   if (inFlight.has(runId)) throw new GmailError("This draft is being sent right now.", "rejected");
   inFlight.add(runId);
   let sent: { id: string; threadId: string | null };

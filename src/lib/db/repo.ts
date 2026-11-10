@@ -534,19 +534,35 @@ export interface GmailConnection {
   scopes?: string[];
 }
 
-export function getGmailConnection(): GmailConnection | null {
-  const row = getDb().prepare(`SELECT value_json FROM settings WHERE key = 'gmail'`).get() as { value_json: string } | undefined;
-  return row ? (JSON.parse(row.value_json) as GmailConnection) : null;
+const gmailKey = (email: string) => `gmail:${email.trim().toLowerCase()}`;
+
+/**
+ * The Gmail connection of one signed-in rep. Each Google account has its own, so a rep's approved
+ * drafts are only ever sent from the account they signed in with, never a colleague's.
+ */
+export function getGmailConnection(account: string | null | undefined): GmailConnection | null {
+  if (!account) return null;
+  const db = getDb();
+  const row = db.prepare(`SELECT value_json FROM settings WHERE key = ?`).get(gmailKey(account)) as { value_json: string } | undefined;
+  if (row) return JSON.parse(row.value_json) as GmailConnection;
+  // Before connections were per account there was one shared 'gmail' row; it moves to its owner's key.
+  const legacy = db.prepare(`SELECT value_json FROM settings WHERE key = 'gmail'`).get() as { value_json: string } | undefined;
+  if (!legacy) return null;
+  const connection = JSON.parse(legacy.value_json) as GmailConnection;
+  if (connection.email.toLowerCase() !== account.trim().toLowerCase()) return null;
+  saveGmailConnection(connection);
+  db.prepare(`DELETE FROM settings WHERE key = 'gmail'`).run();
+  return connection;
 }
 
 export function saveGmailConnection(connection: GmailConnection): void {
   getDb()
-    .prepare(`INSERT INTO settings (key, value_json) VALUES ('gmail', ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json`)
-    .run(JSON.stringify(connection));
+    .prepare(`INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json`)
+    .run(gmailKey(connection.email), JSON.stringify(connection));
 }
 
-export function deleteGmailConnection(): void {
-  getDb().prepare(`DELETE FROM settings WHERE key = 'gmail'`).run();
+export function deleteGmailConnection(account: string): void {
+  getDb().prepare(`DELETE FROM settings WHERE key = ? OR (key = 'gmail' AND lower(json_extract(value_json, '$.email')) = ?)`).run(gmailKey(account), account.trim().toLowerCase());
 }
 
 /** The Google account that owns this workspace: the first to sign in, when ALLOWED_EMAILS is unset. */

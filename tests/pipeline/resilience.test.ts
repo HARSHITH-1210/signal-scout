@@ -19,6 +19,7 @@ import type { Signal } from "@/lib/types";
 import { deps, FakeLlm, FakeSearch, result } from "../fixtures/fakes";
 import { NORTHWIND, northwindLlm, northwindSearch, NW } from "../fixtures/scenarios";
 
+const REP = "rep@example.com";
 const quota = (p: "tavily" | "openrouter") => new ProviderError(p, "quota", `${p} quota used up`);
 const down = (p: "tavily" | "openrouter" | "gemini") => new ProviderError(p, "unavailable", `${p} is down`);
 
@@ -191,9 +192,9 @@ describe("resume, deadline and send gate", () => {
       await runPipeline(run.id, deps(northwindSearch(), northwindLlm({ check_claims: () => down("openrouter") })));
       const d = repo.getRunDetail(run.id)!;
       expect(d.drafts[0].guard.issues.map((i) => i.code)).toContain("claim_check_unavailable");
-      expect(checkSendable(run.id, 1, undefined)).toMatchObject({ ok: false, unaudited: true });
+      expect(checkSendable(REP, run.id, 1, undefined)).toMatchObject({ ok: false, unaudited: true });
       const errors = d.drafts[0].guard.issues.filter((i) => i.severity === "error");
-      if (errors.length === 0) expect(checkSendable(run.id, 1, undefined, { acknowledgeUnaudited: true }).ok).toBe(true);
+      if (errors.length === 0) expect(checkSendable(REP, run.id, 1, undefined, { acknowledgeUnaudited: true }).ok).toBe(true);
     } finally {
       delete process.env.GOOGLE_CLIENT_ID;
       delete process.env.GOOGLE_CLIENT_SECRET;

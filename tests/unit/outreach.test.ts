@@ -10,6 +10,7 @@ import type { SentRecord } from "@/lib/types";
 import { deps } from "../fixtures/fakes";
 import { NORTHWIND, northwindLlm, northwindSearch } from "../fixtures/scenarios";
 
+const REP = "rep@example.com";
 const NOW = new Date("2026-11-05T12:00:00Z");
 const sent = (o: Partial<SentRecord> = {}): SentRecord => ({
   to: "priya@example.com", from: "rep@example.com", version: 1, messageId: "m1", threadId: "t1", sentAt: "2026-11-05T10:00:00Z", ...o,
@@ -54,7 +55,7 @@ describe("refreshTracking", () => {
 
   it("does nothing without the header permission (older connections)", async () => {
     connect([GMAIL_SEND_SCOPE]);
-    expect((await refreshTracking()).skipped).toBe("no_permission");
+    expect((await refreshTracking(REP)).skipped).toBe("no_permission");
     expect(calls).toHaveLength(0);
   });
 
@@ -62,12 +63,12 @@ describe("refreshTracking", () => {
     connect([GMAIL_SEND_SCOPE, GMAIL_METADATA_SCOPE]);
     const run = repo.createRun(NORTHWIND);
     repo.updateRun(run.id, { status: "sent", sent: sent({ messageId: "m1" }) });
-    const first = await refreshTracking({ now: NOW });
+    const first = await refreshTracking(REP, { now: NOW });
     expect(first).toMatchObject({ checked: 1, error: null });
     expect(calls[0]).toMatch(/threads\/t1\?format=metadata/);
     expect(repo.getRun(run.id)?.sent?.tracking?.state).toBe("replied");
     // Replied is final: never re-checked.
-    expect((await refreshTracking({ force: true, now: NOW })).checked).toBe(0);
+    expect((await refreshTracking(REP, { force: true, now: NOW })).checked).toBe(0);
   });
 
   it("reports an auth failure as a message, not a crash", async () => {
@@ -75,7 +76,7 @@ describe("refreshTracking", () => {
     setGmailFetchForTests(async () => new Response("{}", { status: 401 }));
     const run = repo.createRun(NORTHWIND);
     repo.updateRun(run.id, { status: "sent", sent: sent() });
-    expect((await refreshTracking({ now: NOW })).error).toMatch(/sign in again/);
+    expect((await refreshTracking(REP, { now: NOW })).error).toMatch(/sign in again/);
   });
 });
 
