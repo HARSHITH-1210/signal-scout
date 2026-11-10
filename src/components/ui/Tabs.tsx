@@ -36,7 +36,7 @@ export function Tabs<T extends string>({ items, value, onChange, label, classNam
               tabIndex={active ? 0 : -1}
               onClick={() => onChange(item.value)}
               onKeyDown={(e) => onKey(e, i)}
-              className={cn("relative flex min-h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition-colors", active ? "text-fg" : "text-fg-muted hover:text-fg")}
+              className={cn("relative flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[13px] sm:gap-2 sm:px-3.5 font-medium transition-colors", active ? "text-fg" : "text-fg-muted hover:text-fg")}
             >
               {active && <motion.span layoutId={`${group}-pill`} transition={SPRING_SNAPPY} className="absolute inset-0 rounded-full bg-[var(--t-pill-active)]" />}
               <span className="relative">{item.label}</span>

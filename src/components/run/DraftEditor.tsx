@@ -535,7 +535,7 @@ function DraftEditorBody({ detail, gmail, onChanged, onResumed, draft }: EditorP
       </div>
 
       {/* Sticky action bar: one primary action, Save when dirty, the rest in a menu. */}
-      <div className="sticky bottom-0 z-10 border-t border-line bg-surface/90 px-5 py-3 backdrop-blur-md">
+      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-10 border-t sm:bottom-0 border-line bg-surface/90 px-5 py-3 backdrop-blur-md">
         <div className="flex flex-wrap items-center gap-2">
           {primary && (
             <Tooltip align="start" content={primary.disabled && busy === null ? primary.reason : primary.help}>

@@ -154,7 +154,7 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
             subTone={tracked && t.replied > 0 ? "ok" : undefined}
           />
         </StaggerItem>
-        <StaggerItem>
+        <StaggerItem className="col-span-2 md:col-span-1">
           <Stat label="Bounced" value={tracked ? t.bounced : null} sub={tracked ? "address rejected" : "not tracked"} subTone={t.bounced > 0 ? "bad" : undefined} />
         </StaggerItem>
       </Stagger>
@@ -165,14 +165,14 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
           Funnel
         </h2>
         <ol
-          className="mt-4 grid grid-cols-3 gap-x-1.5 gap-y-5 sm:grid-cols-[repeat(var(--steps),minmax(0,1fr))]"
+          className="mt-4 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-[repeat(var(--steps),minmax(0,1fr))] sm:gap-x-1.5"
           style={{ "--steps": Math.max(1, stats.funnel.length) } as React.CSSProperties}
         >
           {stats.funnel.map((step, i) => {
             const untracked = (step.key === "delivered" || step.key === "replied") && !tracked;
             const ratio = untracked ? 0 : step.count / top;
             return (
-              <li key={step.key} className="flex min-w-0 flex-col gap-2 pr-4">
+              <li key={step.key} className="flex min-w-0 flex-col gap-2 sm:pr-4">
                 <span className="block h-1 overflow-hidden rounded-full bg-[var(--t-line)]">
                   <motion.span
                     className="t-seg block h-full origin-left rounded-full"
@@ -183,8 +183,8 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
                   />
                 </span>
                 <span className="flex items-baseline justify-between gap-2">
-                  <span className="t-label break-words">{step.label}</span>
-                  <span className="t-mono text-[12px]">{untracked ? "–" : step.count}</span>
+                  <span className="t-label min-w-0 break-words">{step.label}</span>
+                  <span className="t-mono shrink-0 text-[12px]">{untracked ? "–" : step.count}</span>
                 </span>
               </li>
             );
@@ -213,10 +213,10 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
                   <StaggerItem key={a.runId}>
                     <li>
                       <Link href={`/runs/${a.runId}`} className="group flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 transition-colors hover:bg-[var(--t-pill-hover)]">
-                        <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{a.label}</span>
+                        <span className="min-w-0 basis-full truncate text-[14px] font-medium sm:basis-0 sm:flex-1">{a.label}</span>
                         <Tag tone={ACTION[a.kind].tone}>{ACTION[a.kind].label}</Tag>
                         {a.dueAt && <span className="t-mono text-[11px] text-[var(--t-muted)]">by {formatDate(a.dueAt.slice(0, 10))}</span>}
-                        <span aria-hidden className="text-[var(--t-muted)] transition-transform duration-200 group-hover:translate-x-0.5">
+                        <span aria-hidden className="ml-auto text-[var(--t-muted)] transition-transform duration-200 group-hover:translate-x-0.5 sm:ml-0">
                           →
                         </span>
                         {a.note && <span className="basis-full text-[12px] text-[var(--t-muted)]">{a.note}</span>}
@@ -241,8 +241,8 @@ export function OutreachDashboard({ initial, gmail, providers }: { initial: Outr
           ) : (
             <ul className="divide-y divide-[var(--t-line)]">
               {stats.sentLog.slice(0, 8).map((s) => (
-                <li key={s.runId} className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-5 py-3">
-                  <div className="min-w-0 flex-1">
+                <li key={s.runId} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3">
+                  <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                     <Link href={`/runs/${s.runId}`} className="text-[14px] font-medium hover:underline">
                       {s.label}
                     </Link>

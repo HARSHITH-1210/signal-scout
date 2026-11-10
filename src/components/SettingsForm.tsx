@@ -178,7 +178,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                 </summary>
                 <div className="space-y-4 border-t border-line px-4 pt-3 pb-4">
                   <div className="flex flex-wrap items-end gap-3">
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-[12rem] flex-1">
                       <TextField label="Sector name" name={`sectors.${s}.name`} value={sector.name} onChange={(e) => updateSector(s, { name: e.target.value })} error={errors[`sectors.${s}.name`]} />
                     </div>
                     <button type="button" onClick={() => updateSectors((all) => all.filter((_, i) => i !== s))} className={`${quiet} mb-1`}>
@@ -192,7 +192,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
                     return (
                       <div key={offering.id} className="rounded-xl border border-line-soft bg-subtle/50 p-4">
                         <div className="flex flex-wrap items-end gap-3">
-                          <div className="min-w-0 flex-1">
+                          <div className="min-w-[12rem] flex-1">
                             <TextField label="Offering" name={`${key}.name`} value={offering.name} onChange={(e) => updateOffering(s, o, { name: e.target.value })} error={errors[`${key}.name`]} />
                           </div>
                           <button type="button" onClick={() => updateSector(s, { offerings: sector.offerings.filter((_, j) => j !== o) })} className={`${quiet} mb-1`}>
@@ -262,7 +262,7 @@ export function SettingsForm({ initial, initialDocuments, aside }: { initial: Se
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={SPRING_SOFT}
-            className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-[min(560px,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-line bg-surface/90 py-2.5 pl-4 pr-2.5 shadow-[var(--shadow-overlay)] backdrop-blur-md"
+            className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-40 mx-auto flex w-[min(560px,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-line bg-surface/90 py-2.5 pl-4 pr-2.5 shadow-[var(--shadow-overlay)] backdrop-blur-md"
           >
             <span className="flex flex-1 items-center gap-2 text-sm text-fg-soft">
               <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden />

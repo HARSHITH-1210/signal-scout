@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Martian_Mono, Outfit } from "next/font/google";
 import { missingSettings } from "@/lib/config";
 import { TopNav } from "@/components/shell/TopNav";
@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   title: "Signal Scout",
   description: "Research a prospect, verify every finding against its source, and review a grounded outreach draft.",
 };
+
+// viewport-fit=cover lets the phone tab bar pad itself clear of the iPhone home indicator.
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +39,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </p>
             </div>
           )}
-          <main id="main" className="mx-auto max-w-[1440px] px-4 py-8 sm:px-8 sm:py-10">
+          {/* Bottom padding clears the phone tab bar (56px plus the home-indicator inset). */}
+          <main id="main" className="mx-auto max-w-[1440px] px-4 pt-6 pb-[calc(88px+env(safe-area-inset-bottom))] sm:px-8 sm:py-10">
             {children}
           </main>
         </Providers>

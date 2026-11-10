@@ -70,7 +70,7 @@ Dark is the reference design; light is its inversion.
 
 ## Layout
 
-- **Navbar:** centred and sticky (`TopNav`). It's one glass pill holding the brand and tabs, with a sliding active pill. ⌘K and the theme toggle sit on the right, and below the pill on small screens.
+- **Navbar:** centred and sticky (`TopNav`). It's one glass pill holding the brand and tabs, with a sliding active pill. ⌘K and the theme toggle sit on the right, and below the pill on tablets. On phones (under 640px) the top bar shrinks to one row (brand, theme, account, search) and every destination moves to a fixed bottom tab bar with icon and label; anything pinned to the bottom (the Start research bar, the draft action bar, save bars, toasts) sits above it, and `main` pads for it including the iPhone safe area.
 - **Page header:** every page opens with `PageHeader`: a title, a mono context line (`label`), one optional sentence, and actions on the right.
 - **Dashboards** (`/`): a row of compact stat cards, a slim funnel track, two-up cards, and charts.
 - **Forms** (`/runs/new`): numbered sections (`TSection`) in one card, a pill mode switch, and a floating pill submit bar.

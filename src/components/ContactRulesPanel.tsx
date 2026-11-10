@@ -391,7 +391,7 @@ export function ContactRulesPanel({ initial }: { initial: ContactRules }) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-[min(520px,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-line bg-surface/90 py-2.5 pl-4 pr-2.5 shadow-[var(--shadow-overlay)] backdrop-blur-md"
+            className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-40 mx-auto flex w-[min(520px,calc(100vw-2rem))] items-center gap-3 rounded-2xl border border-line bg-surface/90 py-2.5 pl-4 pr-2.5 shadow-[var(--shadow-overlay)] backdrop-blur-md"
           >
             <span className="flex flex-1 items-center gap-2 text-sm text-fg-soft">
               <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden />

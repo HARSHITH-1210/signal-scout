@@ -372,7 +372,7 @@ export function NewRunForm({ sectors, prefill }: { sectors: Sector[]; prefill?: 
       )}
 
       {/* One primary action, always in reach: a floating pill bar. */}
-      <div className="sticky bottom-4 z-20 pt-2">
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] sm:bottom-4 z-20 pt-2">
         <div className="inline-flex items-center gap-3 rounded-full border border-[var(--t-pill-line)] bg-[color-mix(in_oklab,var(--canvas)_80%,transparent)] p-1.5 shadow-[var(--shadow-overlay)] backdrop-blur-[18px]">
           {mode === "single" ? (
             <>
